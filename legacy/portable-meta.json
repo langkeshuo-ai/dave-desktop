@@ -1,0 +1,13 @@
+{
+  "kind": "windows-all-in-one-client",
+  "version": "1.17.13",
+  "channel": "latest",
+  "peBytes": 189195776,
+  "builtAt": "2026-07-17T14:37:55.766Z",
+  "entry": "Dave.exe",
+  "notes": [
+    "All-in-one Bun.compile client (no bin/dave-agent.exe shell layer).",
+    "upgrade/uninstall frozen (exit 2).",
+    "Default channel=latest (DAVE_SKIP_* refused unless DAVE_DEV=1)."
+  ]
+}

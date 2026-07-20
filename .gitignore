@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+
+# Electron runtime
+electron-binaries/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Legacy CLI artifacts (kept under legacy/ for reference but not tracked)
+legacy/*.exe
+legacy/*.zip
+legacy/*.7z
+legacy/*.msi
+legacy/Dave.exe
+legacy/Dave-Setup*
+
+# Lockfile is tracked intentionally — comment out to ignore
+# package-lock.json
