@@ -9,12 +9,12 @@
 
 Dave Desktop 的内核由四层构成，每层职责明确、可独立替换：
 
-| 层 | 实现 | 职责 |
-|----|------|------|
-| 主进程（Main） | Electron 42 + Node + TypeScript | 窗口管理、单实例锁、IPC 路由、AI API 调用、SSE 流式解析、会话持久化、系统托盘、开机自启动；Win 隐藏原生菜单 |
-| Preload | `@electron-toolkit/preload` + contextBridge | 安全桥接 — `contextIsolation: true` + `nodeIntegration: false`，仅暴露白名单 API 到 `window.dave` |
-| 渲染进程（Renderer） | React 18 + Tailwind 4 + react-markdown + rehype-highlight + lucide-react | UI 渲染、状态管理（Zustand）、Markdown GFM + 代码高亮 + unified-diff 视图 |
-| 持久化 | `electron-store`（机器派生密钥加密）+ `electron-window-state` | 设置加密、窗口状态、会话消息 |
+| 层                   | 实现                                                                     | 职责                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 主进程（Main）       | Electron 42 + Node + TypeScript                                          | 窗口管理、单实例锁、IPC 路由、AI API 调用、SSE 流式解析、会话持久化、系统托盘、开机自启动；Win 隐藏原生菜单 |
+| Preload              | `@electron-toolkit/preload` + contextBridge                              | 安全桥接 — `contextIsolation: true` + `nodeIntegration: false`，仅暴露白名单 API 到 `window.dave`           |
+| 渲染进程（Renderer） | React 18 + Tailwind 4 + react-markdown + rehype-highlight + lucide-react | UI 渲染、状态管理（Zustand）、Markdown GFM + 代码高亮 + unified-diff 视图                                   |
+| 持久化               | `electron-store`（机器派生密钥加密）+ `electron-window-state`            | 设置加密、窗口状态、会话消息                                                                                |
 
 ### 内核不是 Bun.compile CLI
 
@@ -24,19 +24,19 @@ Dave Desktop 的内核由四层构成，每层职责明确、可独立替换：
 
 ### 关键依赖（全部活跃维护、兼容许可证）
 
-| 依赖 | 用途 | 许可证 |
-|------|------|--------|
-| `electron` 42 | 桌面应用运行时 | MIT |
-| `electron-vite` 3 | 构建 + 开发服务器 | MIT |
-| `electron-builder` 26 | 跨平台打包（NSIS / DMG / AppImage） | MIT |
-| `electron-store` 11 | 加密设置持久化 | MIT |
-| `electron-window-state` 5 | 窗口状态持久化 | MIT |
-| `electron-log` 5 | 主进程日志 | MIT |
-| `react` 18 + `react-dom` 18 | UI 框架 | MIT |
-| `tailwindcss` 4 | 原子 CSS | MIT |
-| `zustand` 5 | 状态管理 | MIT |
-| `react-markdown` 10 + `remark-gfm` 4 + `rehype-highlight` 7 | Markdown GFM + 代码高亮 | MIT |
-| `lucide-react` 0.500 | 图标库 | ISC |
+| 依赖                                                        | 用途                                | 许可证 |
+| ----------------------------------------------------------- | ----------------------------------- | ------ |
+| `electron` 42                                               | 桌面应用运行时                      | MIT    |
+| `electron-vite` 3                                           | 构建 + 开发服务器                   | MIT    |
+| `electron-builder` 26                                       | 跨平台打包（NSIS / DMG / AppImage） | MIT    |
+| `electron-store` 11                                         | 加密设置持久化                      | MIT    |
+| `electron-window-state` 5                                   | 窗口状态持久化                      | MIT    |
+| `electron-log` 5                                            | 主进程日志                          | MIT    |
+| `react` 18 + `react-dom` 18                                 | UI 框架                             | MIT    |
+| `tailwindcss` 4                                             | 原子 CSS                            | MIT    |
+| `zustand` 5                                                 | 状态管理                            | MIT    |
+| `react-markdown` 10 + `remark-gfm` 4 + `rehype-highlight` 7 | Markdown GFM + 代码高亮             | MIT    |
+| `lucide-react` 0.500                                        | 图标库                              | ISC    |
 
 ---
 
@@ -46,12 +46,12 @@ Dave Desktop 的内核由四层构成，每层职责明确、可独立替换：
 
 主进程 IPC `chat-stream` handler 直接 `fetch` 调用 AI API，按 provider 路由：
 
-| Provider | 端点 | 鉴权 | SSE 字段 |
-|----------|------|------|----------|
-| OpenAI | `https://api.openai.com/v1/chat/completions` | `Authorization: Bearer <key>` | `choices[0].delta.content` |
-| Anthropic | `https://api.anthropic.com/v1/messages` | `x-api-key: <key>` + `anthropic-version: 2023-06-01` | `delta.text`（`content_block_delta` 事件） |
-| DeepSeek | `https://api.deepseek.com/v1/chat/completions` | `Authorization: Bearer <key>` | `choices[0].delta.content` |
-| 自定义 | 用户配置 host | `Authorization: Bearer <key>` | OpenAI 兼容 |
+| Provider  | 端点                                           | 鉴权                                                 | SSE 字段                                   |
+| --------- | ---------------------------------------------- | ---------------------------------------------------- | ------------------------------------------ |
+| OpenAI    | `https://api.openai.com/v1/chat/completions`   | `Authorization: Bearer <key>`                        | `choices[0].delta.content`                 |
+| Anthropic | `https://api.anthropic.com/v1/messages`        | `x-api-key: <key>` + `anthropic-version: 2023-06-01` | `delta.text`（`content_block_delta` 事件） |
+| DeepSeek  | `https://api.deepseek.com/v1/chat/completions` | `Authorization: Bearer <key>`                        | `choices[0].delta.content`                 |
+| 自定义    | 用户配置 host                                  | `Authorization: Bearer <key>`                        | OpenAI 兼容                                |
 
 Anthropic 分支独立处理：不同 schema（`messages` 不含 `system` role → 提到 top-level `system`；`max_tokens` 必填；SSE 事件形状不同）。
 
@@ -65,31 +65,31 @@ Anthropic 分支独立处理：不同 schema（`messages` 不含 `system` role �
 
 ### 四种批准模式（Codex 风格）
 
-| 模式 | 行为 |
-|------|------|
-| `ask` | 纯流式对话，不跑工具 |
-| `suggest` | 可建议 diff / 变更；写入与 shell 需批准 |
-| `auto` | 可自动读写文件；shell 需批准 |
+| 模式        | 行为                                           |
+| ----------- | ---------------------------------------------- |
+| `ask`       | 纯流式对话，不跑工具                           |
+| `suggest`   | 可建议 diff / 变更；写入与 shell 需批准        |
+| `auto`      | 可自动读写文件；shell 需批准                   |
 | `full-auto` | 读写 + shell 默认可跑；**高危 shell 仍弹批准** |
 
 > 四种模式均已接通主进程 agent 循环（`chat-loop` + 9 工具 + 批准对话框 + unified-diff）。
 
 ### 跨平台
 
-| 平台 | 打包格式 | 自启动 |
-|------|----------|--------|
+| 平台    | 打包格式             | 自启动                                                                     |
+| ------- | -------------------- | -------------------------------------------------------------------------- |
 | Windows | NSIS `.exe`（109MB） | `%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/Dave Desktop.lnk` |
-| macOS | DMG | `~/Library/LaunchAgents/com.dave.desktop.plist` |
-| Linux | AppImage | `~/.config/autostart/dave-desktop.desktop` |
+| macOS   | DMG                  | `~/Library/LaunchAgents/com.dave.desktop.plist`                            |
+| Linux   | AppImage             | `~/.config/autostart/dave-desktop.desktop`                                 |
 
 ### 资源占用
 
-| 项 | 值 |
-|----|----|
-| 安装包大小 | 109MB（NSIS） / 233MB（解压后） |
-| 主进程内存 | ~80MB（空闲） |
+| 项           | 值                                        |
+| ------------ | ----------------------------------------- |
+| 安装包大小   | 109MB（NSIS） / 233MB（解压后）           |
+| 主进程内存   | ~80MB（空闲）                             |
 | 渲染进程内存 | ~120MB（含 React + markdown + highlight） |
-| 启动时间 | ~1.5s（冷启动到窗口可见） |
+| 启动时间     | ~1.5s（冷启动到窗口可见）                 |
 
 ---
 
@@ -107,57 +107,57 @@ Anthropic 分支独立处理：不同 schema（`messages` 不含 `system` role �
 
 #### 浅白（默认）
 
-| 变量 | 值 | 用途 |
-|------|----|------|
-| `--bg` | `#ffffff` | 编辑器背景 |
-| `--bg-panel` | `#fafbfc` | 侧栏 / 面板 |
-| `--bg-active` | `#eaeef2` | 活跃行 / hover |
-| `--bg-sunk` | `#f3f5f8` | 凹陷区 / 表头 / inline code 背景 |
-| `--bg-title` | `#0b0b0b` | 标题栏（暗色，Cursor 风格） |
-| `--border` | `#d7dde4` | 分割线 |
-| `--border-strong` | `#b9c2cf` | 输入框边框 |
-| `--accent` | `#0064b9` | 按钮蓝 |
-| `--accent-hover` | `#0052a0` | 按钮 hover |
-| `--accent-soft` | `rgba(0,100,185,0.08)` | 活跃行背景 / 用户气泡背景 |
-| `--text` | `#1f1f1f` | 正文 |
-| `--text-strong` | `#0b0b0b` | 强调文字 |
-| `--text-dim` | `#575757` | 弱文字 |
-| `--text-faint` | `#8b949e` | 占位符 / 时间戳 |
-| `--syntax-fn` | `#6f42c1` | 函数名（紫） |
-| `--syntax-str` | `#0a3069` | 字符串（深蓝） |
-| `--syntax-kw` | `#cf222e` | 关键字（红） |
-| `--syntax-comment` | `#6e7781` | 注释（灰） |
-| `--diff-add` | `#1a7f37` | 添加行 |
-| `--diff-del` | `#cf222e` | 删除行 |
+| 变量               | 值                     | 用途                             |
+| ------------------ | ---------------------- | -------------------------------- |
+| `--bg`             | `#ffffff`              | 编辑器背景                       |
+| `--bg-panel`       | `#fafbfc`              | 侧栏 / 面板                      |
+| `--bg-active`      | `#eaeef2`              | 活跃行 / hover                   |
+| `--bg-sunk`        | `#f3f5f8`              | 凹陷区 / 表头 / inline code 背景 |
+| `--bg-title`       | `#0b0b0b`              | 标题栏（暗色，Cursor 风格）      |
+| `--border`         | `#d7dde4`              | 分割线                           |
+| `--border-strong`  | `#b9c2cf`              | 输入框边框                       |
+| `--accent`         | `#0064b9`              | 按钮蓝                           |
+| `--accent-hover`   | `#0052a0`              | 按钮 hover                       |
+| `--accent-soft`    | `rgba(0,100,185,0.08)` | 活跃行背景 / 用户气泡背景        |
+| `--text`           | `#1f1f1f`              | 正文                             |
+| `--text-strong`    | `#0b0b0b`              | 强调文字                         |
+| `--text-dim`       | `#575757`              | 弱文字                           |
+| `--text-faint`     | `#8b949e`              | 占位符 / 时间戳                  |
+| `--syntax-fn`      | `#6f42c1`              | 函数名（紫）                     |
+| `--syntax-str`     | `#0a3069`              | 字符串（深蓝）                   |
+| `--syntax-kw`      | `#cf222e`              | 关键字（红）                     |
+| `--syntax-comment` | `#6e7781`              | 注释（灰）                       |
+| `--diff-add`       | `#1a7f37`              | 添加行                           |
+| `--diff-del`       | `#cf222e`              | 删除行                           |
 
 #### 夜晚（备用，`html.night`）
 
-| 变量 | 值 |
-|------|----|
-| `--bg` | `#1e1e1e` |
-| `--bg-panel` | `#252526` |
-| `--bg-active` | `#2d2d2d` |
-| `--accent` | `#4fc3f7` |
-| `--text` | `#cccccc` |
+| 变量            | 值        |
+| --------------- | --------- |
+| `--bg`          | `#1e1e1e` |
+| `--bg-panel`    | `#252526` |
+| `--bg-active`   | `#2d2d2d` |
+| `--accent`      | `#4fc3f7` |
+| `--text`        | `#cccccc` |
 | `--text-strong` | `#ffffff` |
-| `--syntax-fn` | `#dcdcaa` |
-| `--syntax-str` | `#ce9178` |
-| `--syntax-kw` | `#569cd6` |
+| `--syntax-fn`   | `#dcdcaa` |
+| `--syntax-str`  | `#ce9178` |
+| `--syntax-kw`   | `#569cd6` |
 
 ### 排版层级
 
-| 元素 | 字号 | 字重 | 行高 |
-|------|------|------|------|
-| H1 | 1.35rem | 700 | 1.3 |
-| H2 | 1.2rem | 700 | 1.35 |
-| H3 | 1.05rem | 600 | 1.5 |
-| H4–H6 | 1rem | 600 | 1.5 |
-| 正文 | 13px | 400 | 1.55 |
-| inline code | 0.85em | 400 | 1.5 |
-| 代码块 | 12.5px | 400 | 1.55 |
-| diff 行 | 12.5px | 400 | 1.55 |
-| 状态栏 | 11px | 400 | 1.5 |
-| 面板头 | 11px | 500 | 1.5（大写、字间距 0.05em） |
+| 元素        | 字号    | 字重 | 行高                       |
+| ----------- | ------- | ---- | -------------------------- |
+| H1          | 1.35rem | 700  | 1.3                        |
+| H2          | 1.2rem  | 700  | 1.35                       |
+| H3          | 1.05rem | 600  | 1.5                        |
+| H4–H6       | 1rem    | 600  | 1.5                        |
+| 正文        | 13px    | 400  | 1.55                       |
+| inline code | 0.85em  | 400  | 1.5                        |
+| 代码块      | 12.5px  | 400  | 1.55                       |
+| diff 行     | 12.5px  | 400  | 1.55                       |
+| 状态栏      | 11px    | 400  | 1.5                        |
+| 面板头      | 11px    | 500  | 1.5（大写、字间距 0.05em） |
 
 ### 字体
 

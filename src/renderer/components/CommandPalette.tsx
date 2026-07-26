@@ -100,12 +100,12 @@ export function CommandPalette(props: CommandPaletteProps) {
     [theme, sidebarOpen, onNewSession, onOpenSettings, onToggleTheme, onToggleSidebar],
   )
 
-  const all: CommandPaletteItem[] = useMemo(() => [...actionItems, ...sessionItems], [actionItems, sessionItems])
-
-  const filtered = useMemo(
-    () => filterCommands(all, query) as CommandPaletteItem[],
-    [all, query],
+  const all: CommandPaletteItem[] = useMemo(
+    () => [...actionItems, ...sessionItems],
+    [actionItems, sessionItems],
   )
+
+  const filtered = useMemo(() => filterCommands(all, query) as CommandPaletteItem[], [all, query])
 
   // 打开时:聚焦输入、清空 query、重置 active
   useEffect(() => {
@@ -162,23 +162,29 @@ export function CommandPalette(props: CommandPaletteProps) {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div ref={panelRef} tabIndex={-1} className="cmdk-panel" style={{ outline: "none" }} onKeyDown={(e) => {
-        if (e.key === "ArrowDown") {
-          e.preventDefault()
-          setActive((i) => Math.min(i + 1, Math.max(0, filtered.length - 1)))
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault()
-          setActive((i) => Math.max(0, i - 1))
-        } else if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-          // 排除 IME 合成态:中文/日文/韩文用 Enter 选词时不应触发命令。
-          e.preventDefault()
-          const it = filtered[active]
-          if (it?.run) {
-            it.run()
-            onClose()
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="cmdk-panel"
+        style={{ outline: "none" }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault()
+            setActive((i) => Math.min(i + 1, Math.max(0, filtered.length - 1)))
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault()
+            setActive((i) => Math.max(0, i - 1))
+          } else if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+            // 排除 IME 合成态:中文/日文/韩文用 Enter 选词时不应触发命令。
+            e.preventDefault()
+            const it = filtered[active]
+            if (it?.run) {
+              it.run()
+              onClose()
+            }
           }
-        }
-      }}>
+        }}
+      >
         <input
           ref={inputRef}
           className="cmdk-input"
@@ -205,7 +211,7 @@ export function CommandPalette(props: CommandPaletteProps) {
                   onClose()
                 }}
               >
-                {it.icon as ReactNode}
+                {it.icon}
                 <span>{it.title}</span>
                 {it.hint && <span className="cmdk-item-hint">{it.hint}</span>}
               </div>

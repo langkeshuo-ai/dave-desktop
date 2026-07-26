@@ -28,6 +28,9 @@ desktop.ini
 .env.local
 .env.*.local
 
+# Temp test directories
+ts-test-*/
+
 # Legacy CLI artifacts (kept under legacy/ for reference but not tracked)
 legacy/*.exe
 legacy/*.zip

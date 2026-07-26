@@ -7,12 +7,14 @@ import {
   parsePatchForView,
   normalizePatchBody,
 } from "../src/shared/patch"
-import {
-  clampToolOutput,
-  truncateMessages,
-  estimateTokens,
-} from "../src/shared/context"
+import { clampToolOutput, truncateMessages, estimateTokens } from "../src/shared/context"
 import { deniedShellReason, isElevatedShellRisk } from "../src/shared/shell-policy"
+import {
+  isAllowedStoreKey,
+  sanitizeSessionTitle,
+  STORE_VALUE_MAX,
+  SESSION_TITLE_MAX,
+} from "../src/shared/store-policy"
 import { formatPathMention, messagesToMarkdown } from "../src/shared/export"
 import {
   toAnthropicMessages,
@@ -113,16 +115,26 @@ describe("patch (diff package + shared)", () => {
   })
 
   it("applies multi-hunk patch without corrupting later hunks", () => {
-    const original = [
-      "A1", "A2", "A3",
-      ...Array.from({ length: 40 }, (_, i) => `pad-${i}`),
-      "B1", "B2", "B3",
-    ].join("\n") + "\n"
-    const target = [
-      "A1", "A2-MOD", "A3",
-      ...Array.from({ length: 40 }, (_, i) => `pad-${i}`),
-      "B1", "B2-MOD", "B3",
-    ].join("\n") + "\n"
+    const original =
+      [
+        "A1",
+        "A2",
+        "A3",
+        ...Array.from({ length: 40 }, (_, i) => `pad-${i}`),
+        "B1",
+        "B2",
+        "B3",
+      ].join("\n") + "\n"
+    const target =
+      [
+        "A1",
+        "A2-MOD",
+        "A3",
+        ...Array.from({ length: 40 }, (_, i) => `pad-${i}`),
+        "B1",
+        "B2-MOD",
+        "B3",
+      ].join("\n") + "\n"
     const patch = createTwoFilesPatch("m.txt", "m.txt", original, target)
     const parsed = parsePatch(patch)
     expect(parsed[0].hunks.length).toBeGreaterThanOrEqual(2)
@@ -160,7 +172,10 @@ describe("context truncation", () => {
     expect(out).toContain("截断")
   })
 
-  it("truncateMessages keeps newest under budget", () => {
+  // js-tiktoken getEncoding("cl100k_base") cold-load takes ~6.5s on first call,
+  // exceeding the default 5000ms Vitest timeout. This test is the first to
+  // trigger the lazy init, so we give it a generous timeout.
+  it("truncateMessages keeps newest under budget", { timeout: 15_000 }, () => {
     const msgs: ChatMessage[] = [
       { role: "system", content: "sys" },
       { role: "user", content: "old ".repeat(2000) },
@@ -185,9 +200,7 @@ describe("deleteSession cleans sessionRuntime", () => {
     vi.resetModules()
     // 在 mock 前取出真实 SessionRuntime,把它的 abortSession 替换为 spy。
     const realRuntimeMod = await import("../src/main/session-runtime")
-    const spy = vi.fn((id: string) =>
-      realRuntimeMod.sessionRuntime.abortSession(id),
-    )
+    const spy = vi.fn((id: string) => realRuntimeMod.sessionRuntime.abortSession(id))
     // mock sessionRuntime 模块,让 session.ts 拿到带 spy 的实例。
     vi.doMock("../src/main/session-runtime", () => {
       class TrackedRuntime extends realRuntimeMod.SessionRuntime {
@@ -204,9 +217,15 @@ describe("deleteSession cleans sessionRuntime", () => {
     }
     vi.doMock("electron-store", () => ({
       default: class {
-        get(k: string): unknown { return fakeStore[k] }
-        set(k: string, v: string): void { fakeStore[k] = v }
-        delete(k: string): void { delete fakeStore[k] }
+        get(k: string): unknown {
+          return fakeStore[k]
+        }
+        set(k: string, v: string): void {
+          fakeStore[k] = v
+        }
+        delete(k: string): void {
+          delete fakeStore[k]
+        }
       },
     }))
     vi.doMock("electron", () => ({
@@ -609,9 +628,7 @@ describe("telemetry funnel", () => {
 
   it("does NOT count single-launch as retained", () => {
     const now = Date.now()
-    const events: TelemetryEvent[] = [
-      { name: "app_launch", ts: now, props: { ret: "0" } },
-    ]
+    const events: TelemetryEvent[] = [{ name: "app_launch", ts: now, props: { ret: "0" } }]
     expect(isSevenDayRetained(events, now)).toBe(false)
   })
 
@@ -702,9 +719,9 @@ describe("providers — body / delta extras", () => {
 
   it("extractDelta handles OpenAI and Anthropic shapes", () => {
     expect(extractDelta("openai", { choices: [{ delta: { content: "a" } }] })).toBe("a")
-    expect(
-      extractDelta("anthropic", { type: "content_block_delta", delta: { text: "b" } }),
-    ).toBe("b")
+    expect(extractDelta("anthropic", { type: "content_block_delta", delta: { text: "b" } })).toBe(
+      "b",
+    )
     expect(extractDelta("anthropic", { type: "message_start" })).toBe("")
   })
 })
@@ -720,9 +737,15 @@ describe("telemetry store integration", () => {
     const store: Record<string, unknown> = {}
     vi.doMock("electron-store", () => ({
       default: class {
-        get(k: string) { return store[k] }
-        set(k: string, v: unknown) { store[k] = v }
-        delete(k: string) { delete store[k] }
+        get(k: string) {
+          return store[k]
+        }
+        set(k: string, v: unknown) {
+          store[k] = v
+        }
+        delete(k: string) {
+          delete store[k]
+        }
       },
     }))
     vi.doMock("electron", () => ({ app: { getPath: () => process.cwd() } }))
@@ -742,9 +765,15 @@ describe("telemetry store integration", () => {
     const store: Record<string, unknown> = {}
     vi.doMock("electron-store", () => ({
       default: class {
-        get(k: string) { return store[k] }
-        set(k: string, v: unknown) { store[k] = v }
-        delete(k: string) { delete store[k] }
+        get(k: string) {
+          return store[k]
+        }
+        set(k: string, v: unknown) {
+          store[k] = v
+        }
+        delete(k: string) {
+          delete store[k]
+        }
       },
     }))
     vi.doMock("electron", () => ({ app: { getPath: () => process.cwd() } }))
@@ -763,9 +792,15 @@ describe("telemetry store integration", () => {
     const store: Record<string, unknown> = {}
     vi.doMock("electron-store", () => ({
       default: class {
-        get(k: string) { return store[k] }
-        set(k: string, v: unknown) { store[k] = v }
-        delete(k: string) { delete store[k] }
+        get(k: string) {
+          return store[k]
+        }
+        set(k: string, v: unknown) {
+          store[k] = v
+        }
+        delete(k: string) {
+          delete store[k]
+        }
       },
     }))
     vi.doMock("electron", () => ({ app: { getPath: () => process.cwd() } }))
@@ -969,7 +1004,8 @@ describe("toolDefsFor — registry shape", () => {
     expect(defs.length).toBeGreaterThan(0)
     for (const d of defs) {
       expect(d.type).toBe("function")
-      const fn = (d as { function: { name: string; description: string; parameters: unknown } }).function
+      const fn = (d as { function: { name: string; description: string; parameters: unknown } })
+        .function
       expect(typeof fn.name).toBe("string")
       expect(typeof fn.description).toBe("string")
       expect(fn.parameters).toBeTruthy()
@@ -992,9 +1028,7 @@ describe("extractDelta — provider-specific edge cases", () => {
   })
 
   it("returns empty for Anthropic content_block_delta without text", () => {
-    expect(
-      extractDelta("anthropic", { type: "content_block_delta", delta: {} }),
-    ).toBe("")
+    expect(extractDelta("anthropic", { type: "content_block_delta", delta: {} })).toBe("")
     expect(
       extractDelta("anthropic", { type: "content_block_delta", delta: { text: undefined } }),
     ).toBe("")
@@ -1161,5 +1195,331 @@ describe("telemetry event-name allowlist (security)", () => {
     expect(allow.has("app_launch")).toBe(true)
     expect(allow.has("totally-bogus-event-name")).toBe(false)
     expect(allow.has("")).toBe(false)
+  })
+})
+
+describe("store-policy — IPC key whitelist + title sanitization", () => {
+  // 锁住 IPC store-* handler 的 key 白名单契约:防止渲染端被注入后
+  // 写入 __proto__ / 任意业务无关字段撑爆 electron-store 文件。
+
+  it("isAllowedStoreKey accepts whitelisted keys", () => {
+    expect(isAllowedStoreKey("theme")).toBe(true)
+    expect(isAllowedStoreKey("cwd")).toBe(true)
+    expect(isAllowedStoreKey("mode")).toBe(true)
+    expect(isAllowedStoreKey("last-session-id")).toBe(true)
+    expect(isAllowedStoreKey("provider")).toBe(true)
+    expect(isAllowedStoreKey("onboarding_completed")).toBe(true)
+    expect(isAllowedStoreKey("onboarding_skipped")).toBe(true)
+  })
+
+  it("isAllowedStoreKey accepts ${provider}-api-key pattern", () => {
+    expect(isAllowedStoreKey("openai-api-key")).toBe(true)
+    expect(isAllowedStoreKey("anthropic-api-key")).toBe(true)
+    expect(isAllowedStoreKey("deepseek-api-key")).toBe(true)
+    expect(isAllowedStoreKey("custom-api-key")).toBe(true)
+  })
+
+  it("isAllowedStoreKey rejects unknown / suspicious keys", () => {
+    // 未知 key
+    expect(isAllowedStoreKey("unknown-key")).toBe(false)
+    // 原型污染尝试
+    expect(isAllowedStoreKey("__proto__")).toBe(false)
+    expect(isAllowedStoreKey("constructor")).toBe(false)
+    expect(isAllowedStoreKey("prototype")).toBe(false)
+    // 路径穿越风格
+    expect(isAllowedStoreKey("../../etc/passwd")).toBe(false)
+    // 伪造 provider 后缀(不在 4 个 provider 列表内)
+    expect(isAllowedStoreKey("google-api-key")).toBe(false)
+    expect(isAllowedStoreKey("azure-api-key")).toBe(false)
+    // 空字符串
+    expect(isAllowedStoreKey("")).toBe(false)
+  })
+
+  it("isAllowedStoreKey rejects non-string and oversize inputs", () => {
+    expect(isAllowedStoreKey(null)).toBe(false)
+    expect(isAllowedStoreKey(undefined)).toBe(false)
+    expect(isAllowedStoreKey(42)).toBe(false)
+    expect(isAllowedStoreKey({})).toBe(false)
+    expect(isAllowedStoreKey("a".repeat(65))).toBe(false)
+    // 64 字符仍允许(边界)
+    expect(isAllowedStoreKey("a".repeat(64))).toBe(false) // 不在白名单也不匹配 api-key 模式
+  })
+
+  it("STORE_VALUE_MAX is reasonable (16K)", () => {
+    // 防止误改成 16M 或 16 字节:16K 足够 theme/cwd/api-key 等配置字段。
+    expect(STORE_VALUE_MAX).toBe(16_384)
+    expect(STORE_VALUE_MAX).toBeGreaterThan(1024)
+    expect(STORE_VALUE_MAX).toBeLessThan(1024 * 1024)
+  })
+
+  it("sanitizeSessionTitle trims and truncates oversize input", () => {
+    // 正常 trim
+    expect(sanitizeSessionTitle("  hello  ")).toBe("hello")
+    // 截断到 SESSION_TITLE_MAX
+    const long = "x".repeat(SESSION_TITLE_MAX + 50)
+    const safe = sanitizeSessionTitle(long)
+    expect(safe).not.toBeNull()
+    expect(safe!.length).toBe(SESSION_TITLE_MAX)
+    // 边界:正好 SESSION_TITLE_MAX 不截断
+    const exact = "y".repeat(SESSION_TITLE_MAX)
+    expect(sanitizeSessionTitle(exact)).toBe(exact)
+  })
+
+  it("sanitizeSessionTitle returns null for empty / non-string", () => {
+    expect(sanitizeSessionTitle("")).toBeNull()
+    expect(sanitizeSessionTitle("   ")).toBeNull()
+    expect(sanitizeSessionTitle("\t\n")).toBeNull()
+    expect(sanitizeSessionTitle(null)).toBeNull()
+    expect(sanitizeSessionTitle(undefined)).toBeNull()
+    expect(sanitizeSessionTitle(42)).toBeNull()
+    expect(sanitizeSessionTitle({})).toBeNull()
+  })
+
+  it("SESSION_TITLE_MAX is 80 (covers manual rename)", () => {
+    // autoTitleSession 用 40 截断自动标题;手动重命名允许稍长,80 足够。
+    expect(SESSION_TITLE_MAX).toBe(80)
+  })
+})
+
+// =====================================================================
+// secure-storage — Electron safeStorage 加解密封装
+// 纯函数测试:不依赖 electron runtime,用 vi.doMock 注入 safeStorage。
+// =====================================================================
+describe("secure-storage", () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it("encrypt/decrypt round-trip returns original plaintext", async () => {
+    // Mock safeStorage:同步 API 加解密为 base64,验证 round-trip
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: (s: string) => Buffer.from(`ENC:${s}`, "utf8"),
+        decryptString: (b: Buffer) => b.toString("utf8").replace(/^ENC:/, ""),
+      },
+    }))
+    const { initSecureStorage, encrypt, decrypt } = await import("../src/main/secure-storage")
+    await initSecureStorage()
+    const plain = "sk-test-key-12345"
+    const hex = await encrypt(plain)
+    expect(hex).not.toBeNull()
+    const decrypted = await decrypt(hex!)
+    expect(decrypted).toBe(plain)
+  })
+
+  it("encrypt returns null when safeStorage unavailable", async () => {
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: {
+        isEncryptionAvailable: () => false,
+      },
+    }))
+    const { initSecureStorage, encrypt, isSecureStorageAvailable } =
+      await import("../src/main/secure-storage")
+    await initSecureStorage()
+    expect(isSecureStorageAvailable()).toBe(false)
+    const result = await encrypt("secret")
+    expect(result).toBeNull()
+  })
+
+  it("encrypt returns null for empty input", async () => {
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: (s: string) => Buffer.from(s),
+        decryptString: (b: Buffer) => b.toString(),
+      },
+    }))
+    const { initSecureStorage, encrypt } = await import("../src/main/secure-storage")
+    await initSecureStorage()
+    expect(await encrypt("")).toBeNull()
+  })
+
+  it("decrypt returns null for empty input", async () => {
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: (s: string) => Buffer.from(s),
+        decryptString: (b: Buffer) => b.toString(),
+      },
+    }))
+    const { initSecureStorage, decrypt } = await import("../src/main/secure-storage")
+    await initSecureStorage()
+    expect(await decrypt("")).toBeNull()
+  })
+})
+
+// =====================================================================
+// store — setSecure/getSecure 加密路径
+// 验证 API Key 字段(-api-key 结尾)走加密,普通 key 走明文。
+// =====================================================================
+describe("store secure helpers", () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it("getSecure returns plain value for non-api-key fields", async () => {
+    const storeData: Record<string, unknown> = { theme: "night", cwd: "/home" }
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: { isEncryptionAvailable: () => false },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        store: Record<string, unknown> = storeData
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { getSecure } = await import("../src/main/store")
+    const result = await getSecure("theme")
+    expect(result).toBe("night")
+  })
+
+  it("setSecure stores api-key fields via encryption", async () => {
+    const storeData: Record<string, unknown> = {}
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: {
+        isEncryptionAvailable: () => true,
+        encryptString: (s: string) => Buffer.from(`ENC:${s}`),
+        decryptString: (b: Buffer) => b.toString().replace(/^ENC:/, ""),
+      },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        store: Record<string, unknown> = storeData
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { setSecure, getSecure } = await import("../src/main/store")
+    await setSecure("openai-api-key", "sk-secret")
+    // 应存储加密后的 hex,不是明文
+    expect(storeData["openai-api-key"]).not.toBe("sk-secret")
+    // getSecure 应解密回明文
+    const decrypted = await getSecure("openai-api-key")
+    expect(decrypted).toBe("sk-secret")
+  })
+
+  it("setSecure stores non-api-key fields in plain text", async () => {
+    const storeData: Record<string, unknown> = {}
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: { isEncryptionAvailable: () => true },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        store: Record<string, unknown> = storeData
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { setSecure, getSecure } = await import("../src/main/store")
+    await setSecure("theme", "night")
+    expect(storeData["theme"]).toBe("night")
+    expect(await getSecure("theme")).toBe("night")
+  })
+
+  it("setSecure deletes key when value is empty", async () => {
+    const storeData: Record<string, unknown> = { "openai-api-key": "old-enc" }
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: { isEncryptionAvailable: () => true },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        store: Record<string, unknown> = storeData
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { setSecure, getSecure } = await import("../src/main/store")
+    await setSecure("openai-api-key", "")
+    expect("openai-api-key" in storeData).toBe(false)
+    expect(await getSecure("openai-api-key")).toBeNull()
+  })
+})
+
+// =====================================================================
+// validateSender — IPC 来源校验
+// 防止其他窗口/子进程绕过白名单发 IPC。生产模式严格,开发模式放行。
+// =====================================================================
+describe("validateSender — IPC origin validation", () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it("allows all senders in dev mode (app not packaged)", async () => {
+    vi.doMock("electron", () => ({
+      app: { isPackaged: false, getPath: () => "/tmp" },
+      BrowserWindow: { getAllWindows: () => [] },
+    }))
+    const { validateSender } = await import("../src/main/ipc")
+    // 任意 sender.id 在开发模式下都放行
+    expect(validateSender({ sender: { id: 999 } })).toBe(true)
+    expect(validateSender({ sender: { id: undefined } })).toBe(true)
+  })
+
+  it("rejects sender whose webContents.id is not in any window (production)", async () => {
+    vi.doMock("electron", () => ({
+      app: { isPackaged: true, getPath: () => "/tmp" },
+      BrowserWindow: {
+        getAllWindows: () => [{ webContents: { id: 1 } }, { webContents: { id: 2 } }],
+      },
+    }))
+    const { validateSender } = await import("../src/main/ipc")
+    // 已知窗口 id 放行
+    expect(validateSender({ sender: { id: 1 } })).toBe(true)
+    expect(validateSender({ sender: { id: 2 } })).toBe(true)
+    // 未知 id 拒绝
+    expect(validateSender({ sender: { id: 999 } })).toBe(false)
+    // undefined id 拒绝
+    expect(validateSender({ sender: { id: undefined } })).toBe(false)
+  })
+
+  it("rejects when no windows exist (production)", async () => {
+    vi.doMock("electron", () => ({
+      app: { isPackaged: true, getPath: () => "/tmp" },
+      BrowserWindow: { getAllWindows: () => [] },
+    }))
+    const { validateSender } = await import("../src/main/ipc")
+    expect(validateSender({ sender: { id: 1 } })).toBe(false)
   })
 })

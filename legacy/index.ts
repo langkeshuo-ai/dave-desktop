@@ -50,10 +50,16 @@ export async function runCli(forwarded: string[]) {
     .parserConfiguration({ "populate--": true })
     .scriptName(process.env.DAVE_CLI_NAME || process.env.OPENCODE_CLI_NAME || "dave")
     .wrap(100)
-    .help("help", "显示帮助").alias("help", "h")
-    .version("version", "显示版本号", InstallationVersion).alias("version", "v")
+    .help("help", "显示帮助")
+    .alias("help", "h")
+    .version("version", "显示版本号", InstallationVersion)
+    .alias("version", "v")
     .option("print-logs", { describe: "将日志打印到 stderr", type: "boolean" })
-    .option("log-level", { describe: "日志级别", type: "string", choices: ["DEBUG", "INFO", "WARN", "ERROR"] })
+    .option("log-level", {
+      describe: "日志级别",
+      type: "string",
+      choices: ["DEBUG", "INFO", "WARN", "ERROR"],
+    })
     .option("pure", { describe: "不加载外部插件运行", type: "boolean" })
     .middleware(async (opts) => {
       if (opts.printLogs) process.env.OPENCODE_PRINT_LOGS = "1"
@@ -66,15 +72,39 @@ export async function runCli(forwarded: string[]) {
     })
     .usage("")
     .completion("completion", "生成 shell 补全脚本")
-    .command(AcpCommand).command(McpCommand).command(AttachCommand).command(RunCommand)
-    .command(GenerateCommand).command(DebugCommand).command(ConsoleCommand).command(ProvidersCommand)
-    .command(AgentCommand).command(UpgradeCommand).command(UninstallCommand).command(ServeCommand)
-    .command(WebCommand).command(ModelsCommand).command(StatsCommand).command(ExportCommand)
-    .command(ImportCommand).command(GithubCommand).command(PrCommand).command(SessionCommand)
-    .command(PluginCommand).command(DoctorCommand).command(ScheduleCommand).command(DaveCommand)
-    .command(DbCommand).command(TuiCommand).command(TuiThreadCommand)
+    .command(AcpCommand)
+    .command(McpCommand)
+    .command(AttachCommand)
+    .command(RunCommand)
+    .command(GenerateCommand)
+    .command(DebugCommand)
+    .command(ConsoleCommand)
+    .command(ProvidersCommand)
+    .command(AgentCommand)
+    .command(UpgradeCommand)
+    .command(UninstallCommand)
+    .command(ServeCommand)
+    .command(WebCommand)
+    .command(ModelsCommand)
+    .command(StatsCommand)
+    .command(ExportCommand)
+    .command(ImportCommand)
+    .command(GithubCommand)
+    .command(PrCommand)
+    .command(SessionCommand)
+    .command(PluginCommand)
+    .command(DoctorCommand)
+    .command(ScheduleCommand)
+    .command(DaveCommand)
+    .command(DbCommand)
+    .command(TuiCommand)
+    .command(TuiThreadCommand)
     .fail((msg, err) => {
-      if (msg?.startsWith("Unknown argument") || msg?.startsWith("Not enough non-option arguments") || msg?.startsWith("Invalid values:")) {
+      if (
+        msg?.startsWith("Unknown argument") ||
+        msg?.startsWith("Not enough non-option arguments") ||
+        msg?.startsWith("Invalid values:")
+      ) {
         if (err) throw err
         cli.showHelp(show)
       }

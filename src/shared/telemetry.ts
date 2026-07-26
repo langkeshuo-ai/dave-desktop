@@ -149,8 +149,8 @@ export function checkStartupBudget(
     kind === "first_run"
       ? FIRST_RUN_BUDGET_MS
       : kind === "ttfb"
-      ? TTFB_BUDGET_MS
-      : COLD_WINDOW_BUDGET_MS
+        ? TTFB_BUDGET_MS
+        : COLD_WINDOW_BUDGET_MS
   const over = elapsed - budget
   return { within: over <= 0, budget, over }
 }
@@ -215,6 +215,8 @@ export function computeFunnel(events: TelemetryEvent[]): FunnelSnapshot {
 export function isSevenDayRetained(events: TelemetryEvent[], now: number): boolean {
   const firstLaunch = events.find((e) => e.name === "app_launch")
   if (!firstLaunch) return false
-  return now - firstLaunch.ts < SEVEN_DAY_MS * 4 && // 上限 28 天
+  return (
+    now - firstLaunch.ts < SEVEN_DAY_MS * 4 && // 上限 28 天
     events.filter((e) => e.name === "app_launch").length >= 2
+  )
 }

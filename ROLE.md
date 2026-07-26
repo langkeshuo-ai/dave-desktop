@@ -2,13 +2,13 @@
 
 **一句话**: 戴夫个人 Agent 的跨平台桌面应用，替代原有的 CLI/EXE 客户端方向。
 
-| 项 | 内容 |
-|----|------|
-| 所在目录 | `C:\Users\C\dave客户端开发` |
-| 技术栈 | Electron 42 + React 18 + TypeScript + Tailwind CSS |
-| 构建工具 | electron-vite + electron-builder |
-| 打包输出 | NSIS (Windows) / DMG (macOS) / AppImage (Linux) |
-| 状态 | 首次构建通过，可运行 |
+| 项       | 内容                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------- |
+| 所在目录 | `C:\Users\C\dave客户端开发`                                                                  |
+| 技术栈   | Electron 42 + React 18 + TypeScript + Tailwind CSS                                           |
+| 构建工具 | electron-vite + electron-builder                                                             |
+| 打包输出 | NSIS (Windows) / DMG (macOS) / AppImage (Linux)                                              |
+| 状态     | 首次构建通过，可运行                                                                         |
 | 淘汰旧物 | `Dave.exe`, `dave.ts`, `index.ts`, `dave-client-windows-x64.zip` 等旧 CLI 产物不再作为主入口 |
 
 ## 规则

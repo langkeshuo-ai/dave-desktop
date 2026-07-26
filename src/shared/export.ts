@@ -22,11 +22,7 @@ export function messagesToMarkdown(
     if (m.role === "assistant") {
       lines.push("## Assistant", "", m.content || "", "")
       if (m.tool_calls?.length) {
-        lines.push(
-          "",
-          "_tools:_ " + m.tool_calls.map((t) => t.function.name).join(", "),
-          "",
-        )
+        lines.push("", "_tools:_ " + m.tool_calls.map((t) => t.function.name).join(", "), "")
       }
       continue
     }
@@ -36,7 +32,12 @@ export function messagesToMarkdown(
       lines.push(`### tool · ${name}`, "", "```", body.slice(0, 8000), "```", "")
     }
   }
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n"
+  return (
+    lines
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim() + "\n"
+  )
 }
 
 /** Cursor-style path mention for the composer. */

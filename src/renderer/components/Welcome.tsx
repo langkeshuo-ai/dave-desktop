@@ -132,12 +132,7 @@ export function Welcome({ onComplete, onSkip }: WelcomeProps) {
               />
             ))}
           </div>
-          <button
-            onClick={skip}
-            className="btn-icon-muted"
-            title="跳过"
-            aria-label="跳过欢迎页"
-          >
+          <button onClick={skip} className="btn-icon-muted" title="跳过" aria-label="跳过欢迎页">
             <X size={14} />
           </button>
         </div>
@@ -149,9 +144,7 @@ export function Welcome({ onComplete, onSkip }: WelcomeProps) {
               <Icon size={22} />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[var(--text-strong)]">
-                {cur.title}
-              </h2>
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">{cur.title}</h2>
               <p className="text-[12px] text-[var(--text-dim)] mt-0.5">{cur.subtitle}</p>
             </div>
           </div>
@@ -167,7 +160,9 @@ export function Welcome({ onComplete, onSkip }: WelcomeProps) {
 
           <div className="mt-5 flex items-center gap-2 px-3 py-2 rounded-md bg-[var(--bg-sunk)] border border-[var(--border)] text-[11.5px] text-[var(--text-dim)]">
             <Zap size={12} className="text-[var(--accent)]" />
-            <span>提示:任意屏可按 <kbd className="kbd px-1.5">Esc</kbd> 跳过,稍后可在设置里再次打开。</span>
+            <span>
+              提示:任意屏可按 <kbd className="kbd px-1.5">Esc</kbd> 跳过,稍后可在设置里再次打开。
+            </span>
           </div>
         </div>
 
@@ -189,12 +184,7 @@ export function Welcome({ onComplete, onSkip }: WelcomeProps) {
             >
               跳过
             </button>
-            <button
-              onClick={next}
-              className="btn"
-              autoFocus
-              data-welcome-primary
-            >
+            <button onClick={next} className="btn" autoFocus data-welcome-primary>
               {isLast ? "开始配置" : "继续"}
               {!isLast && <ChevronRight size={14} />}
             </button>

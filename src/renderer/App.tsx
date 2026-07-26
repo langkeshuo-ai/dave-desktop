@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react"
+import { useState, useEffect, useCallback, useRef, Suspense, lazy, useMemo } from "react"
 import { ChatView } from "./components/ChatView"
 import { Sidebar } from "./components/Sidebar"
 import { StatusBar } from "./components/StatusBar"
@@ -6,9 +6,7 @@ import { ApprovalDialog } from "./components/ApprovalDialog"
 import { useStore } from "./stores/useStore"
 import type { DaveApi } from "../preload"
 import type { ChatStreamChunk, ChatStreamDone, ChatStreamError } from "../shared/types"
-import {
-  PanelLeft, Bot, Settings as SettingsIcon, Plus, Sun, Moon, FolderTree,
-} from "lucide-react"
+import { PanelLeft, Bot, Settings as SettingsIcon, Plus, Sun, Moon, FolderTree } from "lucide-react"
 import { formatPathMention } from "../shared/export"
 import { estimateMessageTokensRough } from "../shared/context"
 import { DEFAULT_CONTEXT_TOKEN_BUDGET } from "../shared/types"
@@ -18,9 +16,7 @@ import { checkStartupBudget, TTFB_BUDGET_MS } from "../shared/telemetry"
 // 懒加载非关键组件:首屏不挂载,缩减 renderer 启动 JS 体积,改善冷启动。
 // 设计:各自走 React.lazy + Suspense fallback,fallback 用 null 不闪屏,
 // 因为这些组件都是"按需打开"型,触发时才挂载、当时 fallback 已被替换。
-const Settings = lazy(() =>
-  import("./components/Settings").then((m) => ({ default: m.Settings })),
-)
+const Settings = lazy(() => import("./components/Settings").then((m) => ({ default: m.Settings })))
 const CommandPalette = lazy(() =>
   import("./components/CommandPalette").then((m) => ({ default: m.CommandPalette })),
 )
@@ -30,9 +26,7 @@ const KeyboardHelp = lazy(() =>
 const WorkspacePanel = lazy(() =>
   import("./components/WorkspacePanel").then((m) => ({ default: m.WorkspacePanel })),
 )
-const Welcome = lazy(() =>
-  import("./components/Welcome").then((m) => ({ default: m.Welcome })),
-)
+const Welcome = lazy(() => import("./components/Welcome").then((m) => ({ default: m.Welcome })))
 const ApiKeyWizard = lazy(() =>
   import("./components/ApiKeyWizard").then((m) => ({ default: m.ApiKeyWizard })),
 )
@@ -124,19 +118,25 @@ export default function App() {
       (t: string | null) => {
         if (t === "night") setTheme("night")
       },
-      () => { /* IPC 失败时静默走 light 默认值 */ },
+      () => {
+        /* IPC 失败时静默走 light 默认值 */
+      },
     )
     window.dave.store.get("cwd").then(
       (w: string | null) => {
         if (w) setWorkspace(w)
       },
-      () => { /* 同上 */ },
+      () => {
+        /* 同上 */
+      },
     )
     window.dave.store.get("mode").then(
       (m: string | null) => {
-        if (m === "suggest" || m === "auto" || m === "full-auto") setMode(m as Mode)
+        if (m === "suggest" || m === "auto" || m === "full-auto") setMode(m)
       },
-      () => { /* 同上 */ },
+      () => {
+        /* 同上 */
+      },
     )
     // Restore last session (or first) so the sidebar is not empty after relaunch.
     void (async () => {
@@ -144,8 +144,7 @@ export default function App() {
       const list = useStore.getState().sessions
       if (list.length === 0) return
       const last = await window.dave.store.get("last-session-id")
-      const pick =
-        last && list.some((s) => s.id === last) ? last : list[0].id
+      const pick = last && list.some((s) => s.id === last) ? last : list[0].id
       switchSession(pick)
       await loadSession(pick)
     })()
@@ -180,6 +179,22 @@ export default function App() {
       setWorkspace(w || "")
     })
   }, [])
+
+  // 会话切换:必须前置定义,因为 cbsRef 会在 kbd 快捷键 useEffect 中引用。
+  const handleSelectSession = useCallback(
+    async (id: string) => {
+      // Abort any in-flight stream for the current session before switching.
+      if (currentSessionId) {
+        void window.dave.chat.abort(currentSessionId)
+      }
+      switchSession(id)
+      track("session_switched", { id, via: "select" })
+      await loadSession(id)
+      setStatusMsg("已切换会话")
+      setStatus("idle")
+    },
+    [currentSessionId, switchSession, loadSession],
+  )
 
   // 新建会话:用 creatingSessionRef 防止菜单(Cmd+N)与侧栏"+"
   // 按钮并发触发导致产生孤儿会话(后者覆盖前者,但前者已落库)。
@@ -223,10 +238,18 @@ export default function App() {
   //  - Alt+Up/Down       → 上一/下一会话(在侧栏可见时启用)
   // 只在不在输入态(不在 textarea/contenteditable)时拦截,避免与正文编辑冲突。
   // 用 ref 拿到最新的 callbacks,避免 effect 依赖频繁变化导致重绑。
-  const cbsRef = useRef({ handleSelectSession: (_: string) => {}, sidebarOpen: true })
-  useEffect(() => {
-    cbsRef.current = { handleSelectSession, sidebarOpen }
+  const cbsRef = useRef<{ handleSelectSession: (id: string) => void; sidebarOpen: boolean }>({
+    handleSelectSession: (_: string) => {},
+    sidebarOpen: true,
   })
+  useEffect(() => {
+    cbsRef.current = {
+      handleSelectSession: (id: string) => {
+        void handleSelectSession(id)
+      },
+      sidebarOpen,
+    }
+  }, [handleSelectSession, sidebarOpen])
   useEffect(() => {
     const isEditable = (el: EventTarget | null): boolean => {
       if (!(el instanceof HTMLElement)) return false
@@ -261,10 +284,14 @@ export default function App() {
         const list = useStore.getState().sessions
         if (list.length === 0) return
         const cur = useStore.getState().currentSessionId
-        const idx = Math.max(0, list.findIndex((s) => s.id === cur))
-        const next = e.key === "ArrowDown"
-          ? list[Math.min(list.length - 1, idx + 1)]
-          : list[Math.max(0, idx - 1)]
+        const idx = Math.max(
+          0,
+          list.findIndex((s) => s.id === cur),
+        )
+        const next =
+          e.key === "ArrowDown"
+            ? list[Math.min(list.length - 1, idx + 1)]
+            : list[Math.max(0, idx - 1)]
         if (next && next.id !== cur) {
           void cbsRef.current.handleSelectSession(next.id)
         }
@@ -281,8 +308,7 @@ export default function App() {
       // 首个 chunk 到达:打 TTFB 点(若在测量窗口内)。
       // 注意:只打一次,后续 chunk 不再触发(避免污染预算判断)。
       if (ttfbStartedAtRef.current != null) {
-        const now =
-          typeof performance !== "undefined" ? performance.now() : Date.now()
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now()
         const ttfbMs = Math.round(now - (ttfbStartedAtRef.current ?? now))
         ttfbStartedAtRef.current = null
         const verdict = checkStartupBudget("ttfb", ttfbMs)
@@ -328,39 +354,41 @@ export default function App() {
       setStatus("error")
       setStatusMsg(data.error)
     })
-    const unsubApproval = window.dave.chat.onApproval((req: {
-      sessionId: string
-      tool: string
-      arguments: Record<string, unknown>
-      mutates: boolean
-      isShell: boolean
-    }) => {
-      if (req.sessionId !== currentSessionId) return
-      setApproval({
-        sessionId: req.sessionId,
-        tool: req.tool,
-        args: req.arguments,
-        mutates: req.mutates,
-        isShell: req.isShell,
-      })
-      setStatus("warn")
-      setStatusMsg(`待批准：${req.tool}`)
-    })
+    const unsubApproval = window.dave.chat.onApproval(
+      (req: {
+        sessionId: string
+        tool: string
+        arguments: Record<string, unknown>
+        mutates: boolean
+        isShell: boolean
+      }) => {
+        if (req.sessionId !== currentSessionId) return
+        setApproval({
+          sessionId: req.sessionId,
+          tool: req.tool,
+          args: req.arguments,
+          mutates: req.mutates,
+          isShell: req.isShell,
+        })
+        setStatus("warn")
+        setStatusMsg(`待批准：${req.tool}`)
+      },
+    )
     // Patch events become a discrete assistant message (not mixed into streamingContent).
-    const unsubPatch = window.dave.chat.onPatch((data: {
-      sessionId: string
-      patch: string
-      paths?: string[]
-    }) => {
-      if (data.sessionId !== currentSessionId) return
-      addMessage({ role: "assistant", content: `@@ patch\n${data.patch}` })
-      setStatusMsg("提议补丁中…")
-    })
-    const unsubTools = window.dave.chat.onTools?.((data: { sessionId: string; tools: string[] }) => {
-      if (data.sessionId !== currentSessionId) return
-      setStatus("running")
-      setStatusMsg(`工具：${data.tools.join(" · ")}`)
-    })
+    const unsubPatch = window.dave.chat.onPatch(
+      (data: { sessionId: string; patch: string; paths?: string[] }) => {
+        if (data.sessionId !== currentSessionId) return
+        addMessage({ role: "assistant", content: `@@ patch\n${data.patch}` })
+        setStatusMsg("提议补丁中…")
+      },
+    )
+    const unsubTools = window.dave.chat.onTools?.(
+      (data: { sessionId: string; tools: string[] }) => {
+        if (data.sessionId !== currentSessionId) return
+        setStatus("running")
+        setStatusMsg(`工具：${data.tools.join(" · ")}`)
+      },
+    )
     return () => {
       unsubChunk()
       unsubDone()
@@ -393,83 +421,87 @@ export default function App() {
     }
   }, [currentSessionId])
 
-  const handleSendMessage = useCallback(async (content: string) => {
-    // Gate: API key + workspace for agent modes (Cursor-style empty-state guidance).
-    try {
-      const provider = (await window.dave.store.get("provider")) || "openai"
-      const primary =
-        provider === "custom"
-          ? await window.dave.store.get("custom-api-key")
-          : await window.dave.store.get(`${provider}-api-key`)
-      const fallback = await window.dave.store.get(`${provider}-api-key`)
-      if (!(primary || fallback)?.trim()) {
-        setError("请先在设置中配置 API Key")
-        setStatus("warn")
-        setStatusMsg("未配置 API Key")
-        setSettingsOpen(true)
-        return
-      }
-      if (mode !== "ask") {
-        const cwd = (await window.dave.store.get("cwd")) || workspace
-        if (!cwd?.trim()) {
-          setError("Agent 模式需要工作区 — 请在设置中选择目录")
+  const handleSendMessage = useCallback(
+    async (content: string) => {
+      // Gate: API key + workspace for agent modes (Cursor-style empty-state guidance).
+      try {
+        const provider = (await window.dave.store.get("provider")) || "openai"
+        const primary =
+          provider === "custom"
+            ? await window.dave.store.get("custom-api-key")
+            : await window.dave.store.get(`${provider}-api-key`)
+        const fallback = await window.dave.store.get(`${provider}-api-key`)
+        if (!(primary || fallback)?.trim()) {
+          setError("请先在设置中配置 API Key")
           setStatus("warn")
-          setStatusMsg("未配置工作区")
+          setStatusMsg("未配置 API Key")
           setSettingsOpen(true)
           return
         }
+        if (mode !== "ask") {
+          const cwd = (await window.dave.store.get("cwd")) || workspace
+          if (!cwd?.trim()) {
+            setError("Agent 模式需要工作区 — 请在设置中选择目录")
+            setStatus("warn")
+            setStatusMsg("未配置工作区")
+            setSettingsOpen(true)
+            return
+          }
+        }
+      } catch {
+        /* proceed; main will error if needed */
       }
-    } catch {
-      /* proceed; main will error if needed */
-    }
 
-    let sid = currentSessionId
-    if (!sid) {
-      const newId = await createSession()
-      if (!newId) return
-      await loadSessions()
-      switchSession(newId)
-      await loadSession(newId)
-      sid = newId
-    }
+      let sid = currentSessionId
+      if (!sid) {
+        const newId = await createSession()
+        if (!newId) return
+        await loadSessions()
+        switchSession(newId)
+        await loadSession(newId)
+        sid = newId
+      }
 
-    // Double-check: session may have changed during the async create flow.
-    const current = useStore.getState().currentSessionId
-    if (current !== sid) return
+      // Double-check: session may have changed during the async create flow.
+      const current = useStore.getState().currentSessionId
+      if (current !== sid) return
 
-    addMessage({ role: "user", content })
-    setStreamingContent("")
-    setStreaming(true)
-    setError(null)
-    setStatus("running")
-    setStatusMsg(mode === "full-auto" ? "全自动执行中" : mode === "auto" ? "自动执行中" : "思考中")
+      addMessage({ role: "user", content })
+      setStreamingContent("")
+      setStreaming(true)
+      setError(null)
+      setStatus("running")
+      setStatusMsg(
+        mode === "full-auto" ? "全自动执行中" : mode === "auto" ? "自动执行中" : "思考中",
+      )
 
-    // 漏斗:每个 session 首条消息打点一次,辅助计算首问转化率。
-    if (!firstMessageSentRef.current.has(sid)) {
-      firstMessageSentRef.current.add(sid)
-      track("first_message_sent", { mode, hasWorkspace: workspace ? "1" : "0" })
-    }
-    track("message_sent", { mode, len: String(content.length) })
+      // 漏斗:每个 session 首条消息打点一次,辅助计算首问转化率。
+      if (!firstMessageSentRef.current.has(sid)) {
+        firstMessageSentRef.current.add(sid)
+        track("first_message_sent", { mode, hasWorkspace: workspace ? "1" : "0" })
+      }
+      track("message_sent", { mode, len: String(content.length) })
 
-    // TTFB 起点:从这一刻起,到第一个 chunk 到达 = 端到端首问延迟。
-    // 用 performance.now() 而非 Date.now(),精度到亚毫秒,且不受系统时钟跳变影响。
-    ttfbStartedAtRef.current =
-      typeof performance !== "undefined" ? performance.now() : Date.now()
+      // TTFB 起点:从这一刻起,到第一个 chunk 到达 = 端到端首问延迟。
+      // 用 performance.now() 而非 Date.now(),精度到亚毫秒,且不受系统时钟跳变影响。
+      ttfbStartedAtRef.current = typeof performance !== "undefined" ? performance.now() : Date.now()
 
-    void window.dave.chat.stream(content, sid)
-  }, [
-    currentSessionId,
-    createSession,
-    loadSessions,
-    switchSession,
-    loadSession,
-    addMessage,
-    setStreaming,
-    setStreamingContent,
-    setError,
-    mode,
-    workspace,
-  ])
+      void window.dave.chat.stream(content, sid)
+    },
+    [
+      currentSessionId,
+      createSession,
+      loadSessions,
+      switchSession,
+      loadSession,
+      addMessage,
+      setStreaming,
+      setStreamingContent,
+      setError,
+      mode,
+      workspace,
+    ],
+  )
 
   // 重新生成:复用最后一条 user 消息触发流式。Abort 是无侵入的安全网
   // (避免用户在生成中再点 regenerate 产生双流)。
@@ -484,46 +516,37 @@ export default function App() {
     [currentSessionId, isStreaming, handleSendMessage],
   )
 
-  const handleSelectSession = useCallback(async (id: string) => {
-    // Abort any in-flight stream for the current session before switching.
-    if (currentSessionId) {
-      void window.dave.chat.abort(currentSessionId)
-    }
-    switchSession(id)
-    track("session_switched", { id, via: "select" })
-    await loadSession(id)
-    setStatusMsg("已切换会话")
-    setStatus("idle")
-  }, [currentSessionId, switchSession, loadSession])
-
-  const handleDeleteSession = useCallback(async (id: string) => {
-    // 闭包守卫:deleteSession 是 async,等待期间用户可能已切换到别的会话。
-    // 此时捕获的 currentSessionId 已过期,需以 store 最新值判断,
-    // 否则会"误判自己还在被删会话上",触发错误的 switch。
-    const deletingCurrent = useStore.getState().currentSessionId === id
-    await deleteSession(id)
-    track("session_deleted", { wasCurrent: deletingCurrent ? "1" : "0" })
-    await loadSessions()
-    if (deletingCurrent) {
-      const stored = useStore.getState()
-      if (stored.sessions.length > 0) {
-        const nextId = stored.sessions[0].id
-        switchSession(nextId)
-        track("session_switched", { id: nextId, via: "post-delete" })
-        await loadSession(nextId)
-      } else {
-        const newId = await createSession()
-        if (newId) {
-          track("session_created", { via: "post-delete" })
-          await loadSessions()
-          switchSession(newId)
-          track("session_switched", { id: newId, via: "post-delete" })
-          await loadSession(newId)
+  const handleDeleteSession = useCallback(
+    async (id: string) => {
+      // 闭包守卫:deleteSession 是 async,等待期间用户可能已切换到别的会话。
+      // 此时捕获的 currentSessionId 已过期,需以 store 最新值判断,
+      // 否则会"误判自己还在被删会话上",触发错误的 switch。
+      const deletingCurrent = useStore.getState().currentSessionId === id
+      await deleteSession(id)
+      track("session_deleted", { wasCurrent: deletingCurrent ? "1" : "0" })
+      await loadSessions()
+      if (deletingCurrent) {
+        const stored = useStore.getState()
+        if (stored.sessions.length > 0) {
+          const nextId = stored.sessions[0].id
+          switchSession(nextId)
+          track("session_switched", { id: nextId, via: "post-delete" })
+          await loadSession(nextId)
+        } else {
+          const newId = await createSession()
+          if (newId) {
+            track("session_created", { via: "post-delete" })
+            await loadSessions()
+            switchSession(newId)
+            track("session_switched", { id: newId, via: "post-delete" })
+            await loadSession(newId)
+          }
         }
       }
-    }
-    setStatusMsg("会话已删除")
-  }, [deleteSession, loadSessions, switchSession, loadSession, createSession])
+      setStatusMsg("会话已删除")
+    },
+    [deleteSession, loadSessions, switchSession, loadSession, createSession],
+  )
 
   const modeLabel: Record<Mode, string> = {
     ask: "询问",
@@ -532,16 +555,17 @@ export default function App() {
     "full-auto": "全自动",
   }
 
-  const tokenCount = (() => {
+  // tokenCount 用 useMemo 缓存:messages 引用稳定时跳过 reduce 重算,
+  // 避免 App 每次重渲染(状态栏 / 主题 / 模式切换等)都全量重算所有消息 token。
+  const tokenCount = useMemo(() => {
     let n = messages.reduce((s, m) => s + estimateMessageTokensRough(m), 0)
     if (streamingContent) {
       n += estimateMessageTokensRough({ role: "assistant", content: streamingContent })
     }
     return n
-  })()
+  }, [messages, streamingContent])
 
-  const currentTitle =
-    sessions.find((s) => s.id === currentSessionId)?.title || "会话"
+  const currentTitle = sessions.find((s) => s.id === currentSessionId)?.title || "会话"
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
@@ -562,20 +586,25 @@ export default function App() {
               <Bot size={11} className="text-white" />
             </div>
             <span className="text-xs text-white font-medium">Dave</span>
-            <span className="text-[10px] text-[#9a9a9a] ml-1">Desktop</span>
+            <span className="text-[10px] text-[var(--text-on-inverse-dim)] ml-1">Desktop</span>
           </div>
         </div>
 
         {/* Center: drag region (window movable) */}
         <div className="drag-region flex items-center justify-center">
-          <span className="text-[11px] text-[#9a9a9a]">
+          <span className="text-[11px] text-[var(--text-on-inverse-dim)]">
             {currentSessionId ? "会话" : "—"}
           </span>
         </div>
 
         {/* Right cluster: new session + workspace + theme + settings */}
         <div className="flex items-center gap-1 px-2 no-drag">
-          <button onClick={handleNewSession} className="btn-icon" title="新建会话" aria-label="新建会话">
+          <button
+            onClick={() => void handleNewSession()}
+            className="btn-icon"
+            title="新建会话"
+            aria-label="新建会话"
+          >
             <Plus size={16} />
           </button>
           <button
@@ -588,14 +617,19 @@ export default function App() {
             <FolderTree size={16} />
           </button>
           <button
-            onClick={() => setTheme(theme === "light" ? "night" : "light")}
+            onClick={() => void setTheme(theme === "light" ? "night" : "light")}
             className="btn-icon"
             title={theme === "light" ? "切换到夜晚模式" : "切换到浅白模式"}
             aria-label="切换主题"
           >
             {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
           </button>
-          <button onClick={() => setSettingsOpen(true)} className="btn-icon" title="设置" aria-label="设置">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="btn-icon"
+            title="设置"
+            aria-label="设置"
+          >
             <SettingsIcon size={16} />
           </button>
         </div>
@@ -608,9 +642,9 @@ export default function App() {
           <Sidebar
             sessions={sessions}
             currentSessionId={currentSessionId}
-            onSelectSession={handleSelectSession}
-            onNewSession={handleNewSession}
-            onDeleteSession={handleDeleteSession}
+            onSelectSession={(id) => void handleSelectSession(id)}
+            onNewSession={() => void handleNewSession()}
+            onDeleteSession={(id) => void handleDeleteSession(id)}
             onRenameSession={async (id, title) => {
               await window.dave.session.updateTitle(id, title)
               await loadSessions()
@@ -644,9 +678,9 @@ export default function App() {
               streamingContent={streamingContent}
               isStreaming={isStreaming}
               error={error}
-              onSendMessage={handleSendMessage}
+              onSendMessage={(msg) => void handleSendMessage(msg)}
               onAbort={handleAbort}
-              onRegenerate={handleRegenerate}
+              onRegenerate={(msg) => void handleRegenerate(msg)}
               workspace={workspace}
               sessionId={currentSessionId}
               sessionTitle={currentTitle}
@@ -668,7 +702,7 @@ export default function App() {
                   <span className="chip">patch · shell · AST</span>
                   <span className="chip chip-accent">Codex 工具集</span>
                 </div>
-                <button onClick={handleNewSession} className="btn">
+                <button onClick={() => void handleNewSession()} className="btn">
                   新建会话
                 </button>
               </div>
@@ -709,8 +743,8 @@ export default function App() {
           onClose={() => setPaletteOpen(false)}
           sessions={sessions}
           currentSessionId={currentSessionId}
-          onSelectSession={handleSelectSession}
-          onNewSession={handleNewSession}
+          onSelectSession={(id) => void handleSelectSession(id)}
+          onNewSession={() => void handleNewSession()}
           onOpenSettings={() => setSettingsOpen(true)}
           onToggleTheme={() => setTheme(theme === "light" ? "night" : "light")}
           onToggleSidebar={() => setSidebarOpen((v) => !v)}

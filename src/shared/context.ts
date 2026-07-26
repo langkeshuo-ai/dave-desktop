@@ -35,9 +35,7 @@ export function estimateMessageTokensRough(m: ChatMessage): number {
   if (m.tool_calls) {
     for (const tc of m.tool_calls) {
       n +=
-        estimateTokensRough(tc.function.name) +
-        estimateTokensRough(tc.function.arguments || "") +
-        8
+        estimateTokensRough(tc.function.name) + estimateTokensRough(tc.function.arguments || "") + 8
     }
   }
   if (m.name) n += estimateTokensRough(m.name)

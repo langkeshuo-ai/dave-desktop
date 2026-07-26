@@ -75,14 +75,14 @@ export function parseUnifiedPatch(body: string): ParsedPatchFile[] {
  */
 export function applyPatchToText(source: string, structured: StructuredPatch): string {
   if (!structured || typeof structured !== "object") {
-    throw new Error(
-      `patch 应用失败：缺少结构化 patch（structured=${typeof structured}）`,
-    )
+    throw new Error(`patch 应用失败：缺少结构化 patch（structured=${typeof structured}）`)
   }
   // libApplyPatch returns false on failure in some versions; string on success.
   const result = libApplyPatch(source, structured)
   if (result === false || result == null) {
-    throw new Error(`patch 应用失败：${structured.newFileName || structured.oldFileName || "unknown"}`)
+    throw new Error(
+      `patch 应用失败：${structured.newFileName || structured.oldFileName || "unknown"}`,
+    )
   }
   return result
 }
@@ -101,13 +101,19 @@ export function parsePatchForView(body: string): { files: PatchFileView[] } {
     if (line.startsWith("index ") || line.startsWith("similarity ")) continue
 
     if (line.startsWith("--- ")) {
-      const oldP = line.slice(4).trim().replace(/^[ab]\//, "")
+      const oldP = line
+        .slice(4)
+        .trim()
+        .replace(/^[ab]\//, "")
       current = { path: oldP === "/dev/null" ? "" : oldP, rows: [{ type: "meta", text: line }] }
       files.push(current)
       continue
     }
     if (line.startsWith("+++ ")) {
-      const newP = line.slice(4).trim().replace(/^[ab]\//, "")
+      const newP = line
+        .slice(4)
+        .trim()
+        .replace(/^[ab]\//, "")
       if (current) {
         if (newP && newP !== "/dev/null") current.path = newP
         current.rows.push({ type: "meta", text: line })

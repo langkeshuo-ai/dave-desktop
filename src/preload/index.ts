@@ -11,11 +11,7 @@ import type {
   ChatStreamTools,
 } from "../shared/types"
 import type { FileTreeNode } from "../shared/workspace"
-import type {
-  FunnelSnapshot,
-  TelemetryEvent,
-  TelemetryEventName,
-} from "../shared/telemetry"
+import type { FunnelSnapshot, TelemetryEvent, TelemetryEventName } from "../shared/telemetry"
 
 const api = {
   store: {
@@ -51,60 +47,52 @@ const api = {
 
   autoLaunch: {
     get: () => ipcRenderer.invoke("auto-launch-get") as Promise<boolean>,
-    set: (enabled: boolean) =>
-      ipcRenderer.invoke("auto-launch-set", enabled) as Promise<boolean>,
+    set: (enabled: boolean) => ipcRenderer.invoke("auto-launch-set", enabled) as Promise<boolean>,
   },
 
   chat: {
     stream: (message: string, sessionId: string) =>
       ipcRenderer.invoke("chat-stream", message, sessionId) as Promise<void>,
-    abort: (sessionId: string) =>
-      ipcRenderer.invoke("chat-abort", sessionId) as Promise<void>,
+    abort: (sessionId: string) => ipcRenderer.invoke("chat-abort", sessionId) as Promise<void>,
     approve: (sessionId: string, approved: boolean) =>
       ipcRenderer.invoke("chat-approve", sessionId, approved) as Promise<void>,
     onChunk: (callback: (data: ChatStreamChunk) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamChunk) =>
-        callback(data)
+      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamChunk) => callback(data)
       ipcRenderer.on("chat-stream-chunk", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-chunk", handler)
       }
     },
     onDone: (callback: (data: ChatStreamDone) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamDone) =>
-        callback(data)
+      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamDone) => callback(data)
       ipcRenderer.on("chat-stream-done", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-done", handler)
       }
     },
     onError: (callback: (data: ChatStreamError) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamError) =>
-        callback(data)
+      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamError) => callback(data)
       ipcRenderer.on("chat-stream-error", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-error", handler)
       }
     },
     onApproval: (callback: (req: ChatStreamApproval) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, req: ChatStreamApproval) =>
-        callback(req)
+      const handler = (_event: Electron.IpcRendererEvent, req: ChatStreamApproval) => callback(req)
       ipcRenderer.on("chat-stream-approval", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-approval", handler)
       }
     },
     onPatch: (callback: (data: ChatStreamPatch) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamPatch) =>
-        callback(data)
+      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamPatch) => callback(data)
       ipcRenderer.on("chat-stream-patch", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-patch", handler)
       }
     },
     onTools: (callback: (data: ChatStreamTools) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamTools) =>
-        callback(data)
+      const handler = (_event: Electron.IpcRendererEvent, data: ChatStreamTools) => callback(data)
       ipcRenderer.on("chat-stream-tools", handler)
       return () => {
         ipcRenderer.removeListener("chat-stream-tools", handler)

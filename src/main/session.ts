@@ -35,7 +35,10 @@ export function saveSessionMessages(sessionId: string, messages: ChatMessage[]):
   getStore().set(`session-messages-${sessionId}`, JSON.stringify(messages))
 }
 
-export function getSession(sessionId: string): { session: Session | null; messages: ChatMessage[] } {
+export function getSession(sessionId: string): {
+  session: Session | null
+  messages: ChatMessage[]
+} {
   const session = getSessionList().find((s) => s.id === sessionId) ?? null
   return { session, messages: getSessionMessages(sessionId) }
 }
@@ -75,7 +78,7 @@ export function autoTitleSession(sessionId: string, messages: ChatMessage[]): vo
   if (!firstUser) return
   // Collapse whitespace; keep first line only so multi-line prompts stay readable.
   const oneLine = firstUser.content.replace(/\s+/g, " ").trim()
-  session.title = (oneLine.slice(0, 40) || "新会话")
+  session.title = oneLine.slice(0, 40) || "新会话"
   session.updatedAt = Date.now()
   saveSessionList(sessions)
 }

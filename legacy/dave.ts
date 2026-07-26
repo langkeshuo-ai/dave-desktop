@@ -18,10 +18,14 @@ import {
   isBareAgentUiArgv,
   isInteractiveAgentArgv,
   mapDaveArgsToOpencode,
-  resolveBareDaveArgv
+  resolveBareDaveArgv,
 } from "./cli/dave-map"
 import { formatPreflightFailure, preflightDefaultProvider } from "./cli/dave-auth-preflight"
-import { mayBeSelfCompiledAgent, nativeAgentCandidates, preferBunRuntimeForDev } from "./cli/dave-native"
+import {
+  mayBeSelfCompiledAgent,
+  nativeAgentCandidates,
+  preferBunRuntimeForDev,
+} from "./cli/dave-native"
 import { allowDevBypass as allowDevBypassFlag } from "./cli/dave-dev-bypass"
 import { cmdSetAssignmentsFromEnv, conhostCmdArgs } from "./cli/dave-win-cmd"
 
@@ -56,10 +60,10 @@ function showHelp() {
       "  dave tui                     显式全屏 TUI（默认 bun+dist/index.js；已验证 native PE 才用）",
       "  dave tui --mini              可选：轻量 UI（非默认；需显式指定）",
       "  dave --yolo                  全屏 TUI + 自动批准权限（明确危险）",
-      "  dave --yolo \"修这个 bug\"     同上 + 启动时注入初始提示词",
+      '  dave --yolo "修这个 bug"     同上 + 启动时注入初始提示词',
       "  dave --mini                  单独 --mini：轻量 UI（默认仍不启用）",
       "  dave web                     浏览器界面",
-      "  dave run \"prompt\"            非交互跑一轮后退出",
+      '  dave run "prompt"            非交互跑一轮后退出',
       "",
       "安全承诺:",
       "  默认模式                     稳定命令仅本地读写",
@@ -153,7 +157,9 @@ function rejectUnsupportedDangerousFlags(argv: string[]) {
 }
 
 function pathFromUrl(url: URL) {
-  return process.platform === "win32" ? decodeURIComponent(url.pathname.replace(/^\//, "")) : url.pathname
+  return process.platform === "win32"
+    ? decodeURIComponent(url.pathname.replace(/^\//, ""))
+    : url.pathname
 }
 
 function packageRootDir() {
@@ -315,7 +321,10 @@ function isDaveEntryShellBinary(hit: string): boolean {
     } else {
       const text = `${probe.stdout ?? ""}\n${probe.stderr ?? ""}`
       // 旧/壳入口特征：只讲 stable commands / 没有 opentui 会话 UI
-      if (/show this Dave command guide|Stable commands:|稳定命令:/.test(text) && !/opencode|OpenTUI|session/i.test(text)) {
+      if (
+        /show this Dave command guide|Stable commands:|稳定命令:/.test(text) &&
+        !/opencode|OpenTUI|session/i.test(text)
+      ) {
         isShell = true
       } else if (/Module not found|B:\/~BUN\/root/i.test(text)) {
         // 损坏的 bun 单文件包常见报错
@@ -391,7 +400,9 @@ function resolveNativeAgentBinary() {
       nativeAgentBin: process.env.DAVE_NATIVE_AGENT_BIN,
     })
   ) {
-    debugNativeLog("dev source argv → prefer bun runtime (set DAVE_PREFER_NATIVE=1 to scan PE trees)")
+    debugNativeLog(
+      "dev source argv → prefer bun runtime (set DAVE_PREFER_NATIVE=1 to scan PE trees)",
+    )
     return null
   }
 
@@ -497,7 +508,7 @@ function rejectUnknownCommand(command: string) {
     [
       `dave: 未知命令 '${command}'。`,
       "稳定命令: doctor, status, goal, cal。",
-      "编程 Agent UI（显式入口）: dave | dave tui | dave --yolo | dave web | dave run \"prompt\"",
+      '编程 Agent UI（显式入口）: dave | dave tui | dave --yolo | dave web | dave run "prompt"',
       "记忆: dave brain status（不是写代码 UI）",
       "Skills / 商店不在稳定产品面。",
       "",
@@ -507,7 +518,11 @@ function rejectUnknownCommand(command: string) {
 }
 
 /** Run interactive agent with signal forwarding so Ctrl+C cleans up the child. */
-function runInteractiveAgent(cmd: string, cmdArgs: string[], env: NodeJS.ProcessEnv): Promise<number> {
+function runInteractiveAgent(
+  cmd: string,
+  cmdArgs: string[],
+  env: NodeJS.ProcessEnv,
+): Promise<number> {
   // ponytail: Windows Terminal (WT) kills opentui native TUI tabs; re-launch under conhost.
   // Args are escaped for cmd.exe (see dave-win-cmd) — never raw-join user strings.
   if (process.platform === "win32" && process.env.WT_SESSION && !process.env.DAVE_NO_CONHOST) {
@@ -541,16 +556,12 @@ function runInteractiveAgent(cmd: string, cmdArgs: string[], env: NodeJS.Process
         settled = true
         resolve(code)
       }
-      const child = spawn(
-        "conhost.exe",
-        conhostCmdArgs(cmd, cmdArgs, envSets),
-        {
-          stdio: "ignore",
-          windowsHide: false,
-          env: { ...env, DAVE_NO_CONHOST: "1" },
-          detached: true,
-        },
-      )
+      const child = spawn("conhost.exe", conhostCmdArgs(cmd, cmdArgs, envSets), {
+        stdio: "ignore",
+        windowsHide: false,
+        env: { ...env, DAVE_NO_CONHOST: "1" },
+        detached: true,
+      })
       child.unref()
       // 等待 spawn 确认后再 resolve，避免启动失败被 exit 0 掩盖
       child.on("spawn", () => done(0))
@@ -751,9 +762,13 @@ async function main() {
         } catch (e) {
           const dump = e instanceof Error ? e : Object(e)
           const stack = dump.stack || ""
-          const cause = dump.cause ? `\ncause: ${dump.cause instanceof Error ? dump.cause.stack || dump.cause.message : JSON.stringify(dump.cause)}` : ""
+          const cause = dump.cause
+            ? `\ncause: ${dump.cause instanceof Error ? dump.cause.stack || dump.cause.message : JSON.stringify(dump.cause)}`
+            : ""
           const tag = dump._tag ? `\n_tag: ${dump._tag}` : ""
-          process.stderr.write(`dave: 进程内 Agent UI 异常: ${dump.message || String(e)}${tag}${cause}\n${stack}\n`)
+          process.stderr.write(
+            `dave: 进程内 Agent UI 异常: ${dump.message || String(e)}${tag}${cause}\n${stack}\n`,
+          )
           process.exit(1)
         }
       }

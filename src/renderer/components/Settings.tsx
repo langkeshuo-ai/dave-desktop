@@ -1,7 +1,16 @@
 import { useState, useEffect, useCallback } from "react"
 import {
-  X, Eye, EyeOff, Check, Power, Bot, FolderOpen, Shield,
-  Cpu, FolderTree, Info,
+  X,
+  Eye,
+  EyeOff,
+  Check,
+  Power,
+  Bot,
+  FolderOpen,
+  Shield,
+  Cpu,
+  FolderTree,
+  Info,
 } from "lucide-react"
 import { useFocusRestore } from "../lib/useFocusRestore"
 import { useMounted } from "../lib/useMounted"
@@ -12,8 +21,16 @@ interface SettingsProps {
 }
 
 const PROVIDERS = [
-  { id: "openai", name: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] },
-  { id: "anthropic", name: "Anthropic", models: ["claude-sonnet-4-20250514", "claude-3.5-sonnet", "claude-3-opus"] },
+  {
+    id: "openai",
+    name: "OpenAI",
+    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic",
+    models: ["claude-sonnet-4-20250514", "claude-3.5-sonnet", "claude-3-opus"],
+  },
   { id: "deepseek", name: "DeepSeek", models: ["deepseek-chat", "deepseek-reasoner"] },
   { id: "custom", name: "自定义", models: [] },
 ]
@@ -124,10 +141,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
       await window.dave.store.set("custom-host", customHost)
       await window.dave.store.set("custom-model", customModel || model)
       // Primary key is the main field; optional "备用" only overrides when non-empty.
-      await window.dave.store.set(
-        "custom-api-key",
-        (customApiKey || apiKey).trim(),
-      )
+      await window.dave.store.set("custom-api-key", (customApiKey || apiKey).trim())
     }
     await window.dave.store.set("cwd", cwd)
     await window.dave.store.set("autoclear", autoclear ? "true" : "false")
@@ -427,8 +441,12 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                       <Bot size={20} />
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-[var(--text-strong)]">Dave Desktop</div>
-                      <div className="text-[11px] text-[var(--text-dim)] mt-0.5">v0.1.0 · 本地 Agent</div>
+                      <div className="text-sm font-semibold text-[var(--text-strong)]">
+                        Dave Desktop
+                      </div>
+                      <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
+                        v0.1.0 · 本地 Agent
+                      </div>
                     </div>
                   </div>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed max-w-md">
@@ -566,7 +584,9 @@ function FunnelView() {
           <div className="text-[var(--text-dim)]">首问</div>
           <div className="text-[var(--text-strong)] font-medium">
             {funnel.firstMessage}
-            <span className="text-[var(--text-faint)] ml-1">({pct(funnel.rates.firstMessageRate)})</span>
+            <span className="text-[var(--text-faint)] ml-1">
+              ({pct(funnel.rates.firstMessageRate)})
+            </span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Tray, Menu, app, BrowserWindow, nativeImage } from "electron"
-import { isAppQuitting, setQuitting } from "./lifecycle"
+import { setQuitting } from "./lifecycle"
 import { existsSync } from "node:fs"
 import log from "electron-log"
 

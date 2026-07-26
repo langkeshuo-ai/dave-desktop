@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { MessageList } from "./MessageList"
 import { MessageInput } from "./MessageInput"
 import { EmptyStateTemplates } from "./EmptyStateTemplates"
@@ -57,19 +58,48 @@ export function ChatView({
   onInsertConsumed,
 }: ChatViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
   const modeMenuRef = useRef<HTMLDivElement>(null)
   const [modeOpen, setModeOpen] = useState(false)
-  const [atBottom, setAtBottom] = useState(true)
+  const [didInitialScroll, setDidInitialScroll] = useState(false)
+
+  // 虚拟列表:tanstack-virtual v3.14.2 原生 chat 支持。
+  // anchorTo:'end' 固定到底部, followOnAppend 在用户阅读历史时不移位,
+  // streaming 内容增长时自动调整偏移以保持底部固定。
+  const streamingExtra = isStreaming ? 1 : 0
+  const virtualizer = useVirtualizer({
+    count: messages.length + streamingExtra,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 72,
+    getItemKey: useCallback(
+      (index: number) => {
+        if (index < messages.length) {
+          const m = messages[index]
+          return `${m.role}-${index}-${m.content.length}-${m.name ?? ""}-${m.tool_call_id ?? ""}`
+        }
+        return "streaming"
+      },
+      [messages],
+    ),
+    anchorTo: "end",
+    followOnAppend: true,
+    scrollEndThreshold: 80,
+    overscan: 6,
+  })
+
+  // 首次加载时滚到底部
+  useEffect(() => {
+    if (didInitialScroll) return
+    if (messages.length > 0 || isStreaming) {
+      virtualizer.scrollToEnd()
+      setDidInitialScroll(true)
+    }
+  }, [didInitialScroll, messages.length, isStreaming, virtualizer])
 
   // 模式菜单打开时:点外部 / Esc 关闭。
-  // 之前只走 onMouseLeave,鼠标移走才关 — 切到其他区域或按 Esc 不会关,
-  // 体验不一致(Cmd+K / Settings 等其他模态都是 Esc / 点外部即关)。
   useEffect(() => {
     if (!modeOpen) return
     const onDown = (e: MouseEvent) => {
       const m = modeMenuRef.current
-      // 触发按钮本身(在菜单外)点击也要关,让出 open 状态
       const trigger = (e.target as HTMLElement)?.closest?.("[data-mode-trigger]")
       if (m && m.contains(e.target as Node)) return
       if (trigger) return
@@ -89,33 +119,11 @@ export function ChatView({
     }
   }, [modeOpen])
 
-  // 滚到底 — 仅在用户已经在底部时才自动跟随;否则等用户主动点按钮。
-  // 阈值 24px,留一点容差避免贴边判定。
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const onScroll = () => {
-      const dist = el.scrollHeight - el.scrollTop - el.clientHeight
-      setAtBottom(dist < 24)
-    }
-    el.addEventListener("scroll", onScroll, { passive: true })
-    onScroll()
-    return () => el.removeEventListener("scroll", onScroll)
-  }, [])
-
-  // 自动跟随:仅在内容变化时触发,atBottom 仅作闸门(不放进 deps,否则
-  // 用户点击"滚到底"按钮把 atBottom 翻成 true 时,会与按钮的 scrollIntoView
-  // 产生两次 smooth scroll 重叠造成抖屏)。
-  useEffect(() => {
-    if (!atBottom) return
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, streamingContent])
-
   const scrollToBottom = useCallback(() => {
-    // 不在这里 setAtBottom(true) — 让 scroll 事件自然触发监听器更新,
-    // 避免与 atBottom 变化触发的 effect 重复滚动。
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [])
+    virtualizer.scrollToEnd({ behavior: "smooth" })
+  }, [virtualizer])
+
+  const atBottom = messages.length > 0 || isStreaming ? virtualizer.isAtEnd(80) : true
 
   const shortWs = workspace
     ? workspace.replace(/\\/g, "/").split("/").filter(Boolean).slice(-2).join("/")
@@ -142,6 +150,8 @@ export function ChatView({
     a.click()
     URL.revokeObjectURL(url)
   }, [messages, sessionId, sessionTitle])
+
+  const virtualItems = virtualizer.getVirtualItems()
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -179,8 +189,13 @@ export function ChatView({
             <Download size={13} />
           </button>
           {isStreaming && (
-            <span className="flex items-center gap-1 text-[var(--accent)]">
-              <span className="spinner" /> 生成中
+            <span
+              className="flex items-center gap-1 text-[var(--accent)]"
+              role="status"
+              aria-live="polite"
+              aria-label="生成中"
+            >
+              <span className="spinner" aria-hidden="true" /> 生成中
             </span>
           )}
         </div>
@@ -201,7 +216,9 @@ export function ChatView({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--text-strong)]">{modeLabel[m]}</span>
+                  <span className="text-xs font-medium text-[var(--text-strong)]">
+                    {modeLabel[m]}
+                  </span>
                   {m === mode && <span className="text-[10px] text-[var(--accent)]">当前</span>}
                 </div>
                 <div className="text-[11px] text-[var(--text-dim)] mt-0.5">{modeDesc[m]}</div>
@@ -240,20 +257,34 @@ export function ChatView({
             />
           </div>
         ) : (
-          <MessageList
-            messages={messages}
-            streamingContent={streamingContent}
-            isStreaming={isStreaming}
-            onStop={onAbort}
-            onRegenerate={onRegenerate}
-          />
+          <div
+            ref={virtualizer.containerRef}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: virtualizer.getTotalSize(),
+            }}
+          >
+            <MessageList
+              messages={messages}
+              streamingContent={streamingContent}
+              isStreaming={isStreaming}
+              onStop={onAbort}
+              onRegenerate={onRegenerate}
+              virtualItems={virtualItems}
+              virtualizer={virtualizer}
+            />
+          </div>
         )}
         {error && (
-          <div className="mx-3 mb-2 p-2.5 bg-[var(--diff-del-bg)] border border-[rgba(207,34,46,0.35)] rounded text-xs text-[var(--diff-del)]">
+          <div
+            className="mx-3 mb-2 p-2.5 bg-[var(--diff-del-bg)] border border-[rgba(207,34,46,0.35)] rounded text-xs text-[var(--diff-del)]"
+            role="alert"
+            aria-live="assertive"
+          >
             <strong>错误</strong> · {error}
           </div>
         )}
-        <div ref={bottomRef} />
         {!atBottom && (messages.length > 0 || isStreaming) && (
           <button
             type="button"

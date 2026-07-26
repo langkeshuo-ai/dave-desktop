@@ -19,11 +19,11 @@ export function useFocusRestore<T extends HTMLElement>(open: boolean) {
   useEffect(() => {
     if (!open) return
     const prev = document.activeElement as HTMLElement | null
-    const t = setTimeout(() => rootRef.current?.focus(), 0)
+    const root = rootRef.current
+    const t = setTimeout(() => root?.focus(), 0)
     return () => {
       clearTimeout(t)
-      const r = rootRef.current
-      if (prev && r && document.activeElement && r.contains(document.activeElement)) {
+      if (prev && root && document.activeElement && root.contains(document.activeElement)) {
         prev.focus()
       }
     }

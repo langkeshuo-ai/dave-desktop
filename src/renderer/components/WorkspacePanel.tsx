@@ -1,6 +1,12 @@
 import { useEffect, useState, useCallback } from "react"
 import {
-  FolderTree, RefreshCw, File as FileIcon, Folder, FolderOpen, ChevronRight, ChevronDown,
+  FolderTree,
+  RefreshCw,
+  File as FileIcon,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react"
 import type { FileTreeNode } from "../../shared/workspace"
 import { useMounted } from "../lib/useMounted"

@@ -17,7 +17,7 @@ export function resolveEndpoint(provider: string, store: Store): string {
     provider === "deepseek"
       ? "https://api.deepseek.com/v1"
       : provider === "custom"
-        ? ((store.get("custom-host") as string) || "https://api.openai.com/v1")
+        ? (store.get("custom-host") as string) || "https://api.openai.com/v1"
         : "https://api.openai.com/v1"
   return `${base.replace(/\/$/, "")}/chat/completions`
 }
@@ -155,7 +155,9 @@ export function buildAgentBody(
       ...(tools.length > 0
         ? {
             tools: tools.map((t) => {
-              const fn = (t as { function: { name: string; description: string; parameters: unknown } }).function
+              const fn = (
+                t as { function: { name: string; description: string; parameters: unknown } }
+              ).function
               return {
                 name: fn.name,
                 description: fn.description,

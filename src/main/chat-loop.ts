@@ -6,12 +6,7 @@ import type { IpcMainInvokeEvent } from "electron"
 import log from "electron-log"
 import type { AgentMode, ChatMessage } from "../shared/types"
 import { clampToolOutput, truncateMessages } from "../shared/context"
-import {
-  getTool,
-  needsApproval,
-  toolDefsFor,
-  type ToolResult,
-} from "./agent"
+import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 import {
   anthropicToMessage,
   buildAgentBody,
@@ -24,11 +19,7 @@ import {
   resolveKey,
   resolveModel,
 } from "./providers"
-import {
-  autoTitleSession,
-  getSessionMessages,
-  saveSessionMessages,
-} from "./session"
+import { autoTitleSession, getSessionMessages, saveSessionMessages } from "./session"
 import { sessionRuntime } from "./session-runtime"
 import { getStore } from "./store"
 
@@ -143,7 +134,12 @@ async function runAskMode(
   headers: Record<string, string>,
 ): Promise<void> {
   const full = await streamFromProvider(
-    event, sessionId, provider, endpoint, headers, buildStreamBody(provider, model, messages),
+    event,
+    sessionId,
+    provider,
+    endpoint,
+    headers,
+    buildStreamBody(provider, model, messages),
   )
   messages.push({ role: "assistant", content: full })
   saveSessionMessages(sessionId, messages)
@@ -199,13 +195,17 @@ async function runAgentLoop(
       ? anthropicToMessage(parsed)
       : openAiToMessage(parsed)
 
-    const hasToolCalls = !!(assistantMsg.tool_calls?.length)
+    const hasToolCalls = !!assistantMsg.tool_calls?.length
     if (!hasToolCalls) {
       if (assistantMsg.content) {
         await emitLocalStream(event, sessionId, assistantMsg.content)
       } else {
         assistantMsg.content = await streamFromProvider(
-          event, sessionId, provider, endpoint, headers,
+          event,
+          sessionId,
+          provider,
+          endpoint,
+          headers,
           buildStreamBody(provider, model, [...messages, { role: "assistant", content: "" }]),
         )
       }
@@ -247,23 +247,34 @@ async function runToolCalls(
     const tool = getTool(tc.function.name)
     if (!tool) {
       messages.push({
-        role: "tool", tool_call_id: tc.id, name: tc.function.name,
+        role: "tool",
+        tool_call_id: tc.id,
+        name: tc.function.name,
         content: `错误：未知工具 ${tc.function.name}`,
       })
       continue
     }
     let args: Record<string, unknown> = {}
-    try { args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown> } catch { args = {} }
+    try {
+      args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>
+    } catch {
+      args = {}
+    }
 
     if (needsApproval(tool, mode, args)) {
       event.sender.send("chat-stream-approval", {
-        sessionId, tool: tool.name, arguments: args,
-        mutates: tool.mutates, isShell: tool.isShell,
+        sessionId,
+        tool: tool.name,
+        arguments: args,
+        mutates: tool.mutates,
+        isShell: tool.isShell,
       })
       const approved = await sessionRuntime.waitApproval(sessionId)
       if (!approved) {
         messages.push({
-          role: "tool", tool_call_id: tc.id, name: tool.name,
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tool.name,
           content: "用户拒绝了此操作（或会话已中止）",
         })
         continue
@@ -274,17 +285,23 @@ async function runToolCalls(
       const result: ToolResult = await tool.run(workspace, args, mode)
       if (result.patch) {
         event.sender.send("chat-stream-patch", {
-          sessionId, patch: result.patch, paths: result.paths,
+          sessionId,
+          patch: result.patch,
+          paths: result.paths,
         })
       }
       messages.push({
-        role: "tool", tool_call_id: tc.id, name: tool.name,
+        role: "tool",
+        tool_call_id: tc.id,
+        name: tool.name,
         content: clampToolOutput(result.output),
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       messages.push({
-        role: "tool", tool_call_id: tc.id, name: tool.name,
+        role: "tool",
+        tool_call_id: tc.id,
+        name: tool.name,
         content: `工具失败：${msg}`,
       })
     }
@@ -298,7 +315,9 @@ export async function handleChatStream(
 ): Promise<void> {
   const store = getStore()
   const provider = (store.get("provider") as string) || "openai"
-  const storedKey = ((store.get(`${provider}-api-key`) as string) || "").trim()
+  // 使用 secure storage 读取 API Key(支持 safeStorage 解密)
+  const { getSecure } = await import("./store")
+  const storedKey = ((await getSecure(`${provider}-api-key`)) || "").trim()
   const model = resolveModel(provider, store, (store.get(`${provider}-model`) as string) || "")
   // resolveKey handles custom-api-key alias; never ship empty Bearer headers.
   const key = resolveKey(provider, store, storedKey)
@@ -329,7 +348,17 @@ export async function handleChatStream(
       await runAskMode(event, sessionId, provider, model, messages, endpoint, headers)
       return
     }
-    await runAgentLoop(event, sessionId, provider, model, mode, workspace, messages, endpoint, headers)
+    await runAgentLoop(
+      event,
+      sessionId,
+      provider,
+      model,
+      mode,
+      workspace,
+      messages,
+      endpoint,
+      headers,
+    )
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       sessionRuntime.clearAbort(sessionId)

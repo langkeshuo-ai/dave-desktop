@@ -10,7 +10,6 @@ import { readFile, writeFile, mkdir, readdir, stat, rm, realpath } from "node:fs
 import { existsSync } from "node:fs"
 import { join, resolve, isAbsolute, relative, dirname, sep } from "node:path"
 import { execa } from "execa"
-import log from "electron-log"
 import { parseUnifiedPatch, applyPatchToText } from "../shared/patch"
 import { clampToolOutput } from "../shared/context"
 import { deniedShellReason, isElevatedShellRisk } from "../shared/shell-policy"
@@ -288,7 +287,13 @@ export async function toolFileTree(
     const entries = await readdir(dir, { withFileTypes: true })
     const nodes: FileTreeNode[] = []
     for (const e of entries) {
-      if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "target" || e.name === "dist" || e.name === "out")
+      if (
+        e.name.startsWith(".") ||
+        e.name === "node_modules" ||
+        e.name === "target" ||
+        e.name === "dist" ||
+        e.name === "out"
+      )
         continue
       const p = join(dir, e.name)
       const isDir = e.isDirectory()
@@ -514,10 +519,7 @@ export function needsApproval(
 }
 
 /** Apply a unified-diff inside the workspace (UI "应用" button). */
-export async function applyWorkspaceDiff(
-  workspace: string,
-  diff: string,
-): Promise<ToolResult> {
+export async function applyWorkspaceDiff(workspace: string, diff: string): Promise<ToolResult> {
   return toolApplyPatch(workspace, { diff })
 }
 

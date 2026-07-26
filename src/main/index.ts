@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut } from "electron"
+import { app, BrowserWindow, Tray, Menu, globalShortcut } from "electron"
 import { join } from "node:path"
 import { existsSync, writeFileSync } from "node:fs"
 import { registerIpcHandlers } from "./ipc"
@@ -9,9 +9,57 @@ import { trackEvent } from "./telemetry-store"
 import { checkStartupBudget, COLD_WINDOW_BUDGET_MS } from "../shared/telemetry"
 import log from "electron-log"
 import windowStateKeeper from "electron-window-state"
+import { initSecureStorage } from "./secure-storage"
+
+// 自动更新:electron-updater 已依赖(^6.0.0),仅在 packaged 生产构建中启用。
+// 实际部署需要代码签名 + GitHub Releases 托管策略,当前为接线预留。
+// 更新检查在 app.whenReady 后静默执行,失败不影响主流程。
+let updaterInitialized = false
+function setupAutoUpdater(): void {
+  if (updaterInitialized) return
+  updaterInitialized = true
+  if (!app.isPackaged) {
+    log.info("auto-updater: dev mode — skip")
+    return
+  }
+  try {
+    // dynamic import 避免 dev 模式加载 electron-updater 的 native 模块
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { autoUpdater } = require("electron-updater") as typeof import("electron-updater")
+    autoUpdater.logger = log
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = true
+    autoUpdater.on("error", (err) => {
+      log.error("auto-updater error:", err.message)
+    })
+    autoUpdater.on("checking-for-update", () => {
+      log.info("auto-updater: checking for update…")
+    })
+    autoUpdater.on("update-available", (info) => {
+      log.info("auto-updater: update available", info.version)
+    })
+    autoUpdater.on("update-not-available", (info) => {
+      log.info("auto-updater: up to date", info.version)
+    })
+    autoUpdater.on("download-progress", (progress) => {
+      log.info(`auto-updater: download ${progress.percent.toFixed(1)}%`)
+    })
+    autoUpdater.on("update-downloaded", () => {
+      log.info("auto-updater: update downloaded, ready to install")
+    })
+    autoUpdater.checkForUpdates().catch((err: Error) => {
+      log.warn("auto-updater check failed (non-fatal):", err.message)
+    })
+  } catch (err) {
+    log.warn(
+      "auto-updater init failed (non-fatal):",
+      err instanceof Error ? err.message : String(err),
+    )
+  }
+}
 
 let mainWindow: BrowserWindow | null = null
-let tray: Tray | null = null
+let _tray: Tray | null = null
 
 // 启动时刻锚点:ready-to-show 时算 elapsedMs,作为 cold_window 预算的基准。
 // 放在模块顶层以覆盖初始化路径(preload 注册前的早期 error 也算)。
@@ -62,6 +110,15 @@ if (!initialized) {
       log.error("getStore() failed during startup:", err)
     }
 
+    // 初始化 safeStorage(OS 级加密),用于 API Key 等敏感字段的安全存储。
+    // 初始化失败不影响主流程,仅降级为明文存储。
+    initSecureStorage().catch((err) => {
+      log.warn(
+        "initSecureStorage failed (non-fatal):",
+        err instanceof Error ? err.message : String(err),
+      )
+    })
+
     setupAppMenu()
 
     registerIpcHandlers({
@@ -75,10 +132,13 @@ if (!initialized) {
     })
 
     mainWindow = createWindow()
-    tray = createTray(mainWindow, iconPath("ico") || iconPath("png"))
+    _tray = createTray(mainWindow, iconPath("ico") || iconPath("png"))
     // Win has no native File menu — re-bind Cmd/Ctrl+N / , as focus-scoped shortcuts
     // so they don't steal keys from other apps when Dave is in the background.
     registerFocusScopedShortcuts()
+
+    // 自动更新:仅在 packaged 生产构建中静默检查,失败不影响主流程。
+    setupAutoUpdater()
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -130,7 +190,8 @@ function iconPath(ext: string): string {
 }
 
 function tryLoadDevUrl(win: BrowserWindow): void {
-  const http = require("node:http")
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const http = require("node:http") as typeof import("node:http")
   const req = http.get("http://localhost:5173", () => {
     win.loadURL("http://localhost:5173")
     win.webContents.openDevTools({ mode: "detach" })
@@ -159,7 +220,7 @@ function ensureDefaultIcon(): void {
       const dist = Math.sqrt(cx * cx + cy * cy)
       if (dist < size / 2 - 1) {
         const idx = (y * size + x) * 4
-        buf[idx] = 59      // B
+        buf[idx] = 59 // B
         buf[idx + 1] = 130 // G
         buf[idx + 2] = 246 // R
         buf[idx + 3] = 255 // A
@@ -241,7 +302,11 @@ function createWindow(): BrowserWindow {
     }
     ;(win as unknown as { _reloadAttempted?: boolean })._reloadAttempted = true
     setTimeout(() => {
-      try { win.reload() } catch (err) { log.error("renderer reload failed:", err) }
+      try {
+        win.reload()
+      } catch (err) {
+        log.error("renderer reload failed:", err)
+      }
     }, 500)
   })
   win.webContents.on("preload-error", (_e, preloadPath, error) => {
@@ -297,12 +362,7 @@ function setupAppMenu(): void {
     },
     {
       label: "窗口",
-      submenu: [
-        { role: "minimize" },
-        { role: "zoom" },
-        { type: "separator" },
-        { role: "front" },
-      ],
+      submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

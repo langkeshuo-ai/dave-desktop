@@ -13,7 +13,7 @@ export interface ToolCall {
 }
 
 export interface ChatMessage {
-  role: MessageRole | string
+  role: MessageRole
   content: string
   /** OpenAI-style tool_calls — present when assistant requests tools. */
   tool_calls?: ToolCall[]

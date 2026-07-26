@@ -1,0 +1,13 @@
+dist
+node_modules
+out
+*.log
+.DS_Store
+.vite-inspect
+*.local
+coverage
+.turbo
+.next
+build
+*.tsbuildinfo
+.cache

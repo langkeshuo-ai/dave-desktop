@@ -20,10 +20,10 @@
     }
   },
   "include": [
-    "src/renderer/**/*",
-    "src/renderer/**/*.tsx",
     "src/renderer/**/*.ts",
-    "src/shared/**/*.ts"
+    "src/renderer/**/*.tsx",
+    "src/shared/**/*.ts",
+    "src/preload/**/*.ts"
   ],
   "references": []
 }

@@ -75,19 +75,23 @@ function createWindowsLnk(targetPath: string): void {
   const psTarget = targetPath.replace(/'/g, "''")
   const psLnk = windowsStartupPath().replace(/'/g, "''")
   const ps = `$s=(New-Object -COMObject WScript.Shell).CreateShortcut('${psLnk}');$s.TargetPath='${psTarget}';$s.Description='Dave Desktop auto-launch';$s.WorkingDirectory='${psTarget.replace(/\\[^\\]+$/, "")}';$s.Save()`
-  execSync(`powershell -NoProfile -NonInteractive -Command "${ps.replace(/"/g, '\\"')}"`, { windowsHide: true })
+  execSync(`powershell -NoProfile -NonInteractive -Command "${ps.replace(/"/g, '\\"')}"`, {
+    windowsHide: true,
+  })
 }
 
 function desktopContent(): string {
-  return [
-    "[Desktop Entry]",
-    "Type=Application",
-    "Name=Dave Desktop",
-    `Exec=${app.getPath("exe")}`,
-    "Terminal=false",
-    "X-GNOME-Autostart-enabled=true",
-    "Categories=Utility;",
-  ].join("\n") + "\n"
+  return (
+    [
+      "[Desktop Entry]",
+      "Type=Application",
+      "Name=Dave Desktop",
+      `Exec=${app.getPath("exe")}`,
+      "Terminal=false",
+      "X-GNOME-Autostart-enabled=true",
+      "Categories=Utility;",
+    ].join("\n") + "\n"
+  )
 }
 
 function plistContent(): string {
@@ -129,7 +133,11 @@ export const autoLaunch: AutoLaunch = {
         // Clean up stale marker from the old broken version if present.
         const legacy = legacyWindowsMarkerPath()
         if (existsSync(legacy)) {
-          try { unlinkSync(legacy) } catch { /* best effort */ }
+          try {
+            unlinkSync(legacy)
+          } catch {
+            /* best effort */
+          }
         }
         //isEnabled true only if BOTH the .lnk and our sentinel exist — the
         // sentinel proves we created the .lnk, not the user.
@@ -152,18 +160,32 @@ export const autoLaunch: AutoLaunch = {
         // Always clean up the stale marker from the old broken version.
         const legacy = legacyWindowsMarkerPath()
         if (existsSync(legacy)) {
-          try { unlinkSync(legacy) } catch { /* best effort */ }
+          try {
+            unlinkSync(legacy)
+          } catch {
+            /* best effort */
+          }
         }
         if (enabled) {
           ensureParentDir(lnk)
           createWindowsLnk(app.getPath("exe"))
-          writeFileSync(sentinel, `installed at ${new Date().toISOString()}\n`, { encoding: "utf8" })
+          writeFileSync(sentinel, `installed at ${new Date().toISOString()}\n`, {
+            encoding: "utf8",
+          })
         } else {
           if (existsSync(lnk)) {
-            try { unlinkSync(lnk) } catch { /* best effort */ }
+            try {
+              unlinkSync(lnk)
+            } catch {
+              /* best effort */
+            }
           }
           if (existsSync(sentinel)) {
-            try { unlinkSync(sentinel) } catch { /* best effort */ }
+            try {
+              unlinkSync(sentinel)
+            } catch {
+              /* best effort */
+            }
           }
         }
         return true
@@ -195,5 +217,3 @@ export const autoLaunch: AutoLaunch = {
     }
   },
 }
-
-

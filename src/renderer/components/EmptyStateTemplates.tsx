@@ -96,13 +96,9 @@ export function EmptyStateTemplates({ hasWorkspace, onPick }: EmptyStateTemplate
                 size={14}
                 className={disabled ? "text-[var(--text-faint)]" : "text-[var(--accent)]"}
               />
-              <span className="text-[12.5px] font-medium text-[var(--text-strong)]">
-                {t.title}
-              </span>
+              <span className="text-[12.5px] font-medium text-[var(--text-strong)]">{t.title}</span>
             </div>
-            <div className="text-[11.5px] text-[var(--text-dim)] mt-1 line-clamp-2">
-              {t.prompt}
-            </div>
+            <div className="text-[11.5px] text-[var(--text-dim)] mt-1 line-clamp-2">{t.prompt}</div>
           </button>
         )
       })}

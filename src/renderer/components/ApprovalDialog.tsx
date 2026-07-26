@@ -116,7 +116,7 @@ function pickToolIcon(tool: string) {
     case "remove":
       return <Trash2 size={16} className="w-4 h-4 text-[var(--diff-del)]" />
     case "shell":
-      return <Terminal size={16} className="w-4 h-4 text-[#9a6a00]" />
+      return <Terminal size={16} className="w-4 h-4 text-[var(--tool-shell)]" />
     default:
       return <FileCode2 size={16} className={cls} />
   }

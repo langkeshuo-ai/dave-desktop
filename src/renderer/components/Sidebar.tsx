@@ -31,7 +31,8 @@ export function Sidebar({
     const diff = now.getTime() - d.getTime()
     if (diff < 60_000) return "刚刚"
     if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分前`
-    if (diff < 86_400_000) return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+    if (diff < 86_400_000)
+      return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
     if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)} 天前`
     return d.toLocaleDateString("zh-CN", { month: "short", day: "numeric" })
   }
@@ -53,14 +54,22 @@ export function Sidebar({
     <div className="w-60 panel flex flex-col shrink-0">
       <div className="panel-header">
         <span>会话</span>
-        <button onClick={onNewSession} className="btn-icon-muted" title="新建会话" aria-label="新建会话">
+        <button
+          onClick={onNewSession}
+          className="btn-icon-muted"
+          title="新建会话"
+          aria-label="新建会话"
+        >
           <Plus size={13} />
         </button>
       </div>
 
       <div className="px-2 pb-1.5">
         <div className="relative">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-faint)]" />
+          <Search
+            size={12}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-faint)]"
+          />
           <input
             type="search"
             value={query}
@@ -111,10 +120,11 @@ export function Sidebar({
                     const opts = Array.from(
                       container.querySelectorAll<HTMLElement>('[role="option"]'),
                     )
-                    const i = opts.indexOf(e.currentTarget as HTMLElement)
-                    const next = e.key === "ArrowDown"
-                      ? opts[Math.min(opts.length - 1, i + 1)]
-                      : opts[Math.max(0, i - 1)]
+                    const i = opts.indexOf(e.currentTarget)
+                    const next =
+                      e.key === "ArrowDown"
+                        ? opts[Math.min(opts.length - 1, i + 1)]
+                        : opts[Math.max(0, i - 1)]
                     next?.focus()
                   } else if (e.key === "Delete" || e.key === "Backspace") {
                     if (e.metaKey || e.ctrlKey) {

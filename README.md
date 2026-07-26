@@ -1,20 +1,22 @@
 # Dave Desktop
 
-> **定位:** 本地 Agent · 浅白 Cursor UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff  
+> **定位:** 本地 Agent · Cursor 风格 UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff  
 > **状态:** ✅ 可运行（Windows / macOS / Linux · Electron）  
-> **主题:** 浅白默认 · 夜晚备用
+> **主题:** 深色优先（Cursor 风格）· 浅色模式可选
 
 ## 技术栈
 
-| 层 | 技术 |
-|----|------|
-| 桌面框架 | Electron 42 + electron-vite 3 + electron-builder 26 |
-| 前端 | React 18 + TypeScript + Tailwind 4 + Zustand 5 |
-| Markdown | react-markdown 10 + remark-gfm 4 + rehype-highlight 7 |
-| 图标 | lucide-react 0.500 |
-| 持久化 | electron-store 11（机器派生密钥加密）+ electron-window-state 5 |
-| 日志 | electron-log 5 |
-| 字体 | Inter（正文）+ JetBrains Mono（代码）|
+| 层       | 技术                                                                      |
+| -------- | ------------------------------------------------------------------------- |
+| 桌面框架 | Electron 42 + electron-vite 3 + electron-builder 26                       |
+| 前端     | React 18 + TypeScript 5.7 + Tailwind 4 + Zustand 5                        |
+| Markdown | react-markdown 10 + remark-gfm 4 + rehype-highlight 7 + rehype-sanitize 6 |
+| 图标     | lucide-react 0.500                                                        |
+| 持久化   | electron-store 11 + electron-window-state 5 + safeStorage（API Key）      |
+| 日志     | electron-log 5                                                            |
+| 测试     | Vitest 4 + 123 单元测试                                                   |
+| 代码质量 | ESLint 9 + Prettier + Husky + lint-staged                                 |
+| 字体     | -apple-system / Segoe UI（系统栈）+ JetBrains Mono（代码）                |
 
 ## 功能
 
@@ -23,14 +25,8 @@
 - **会话** — 创建/切换/删除/搜索/重命名/自动标题/导出 Markdown
 - **工作区** — 文件树；点击插入 `@path`；patch 应用/忽略
 - **设置** — 模型连接测试、工作区、开机自启、打开日志目录
-- **桌面** — 托盘、浅白/夜晚主题、Win 无原生菜单栏、Ctrl+N / Ctrl+,
-
-## 打包产物（Windows）
-
-| 文件 | 说明 |
-|------|------|
-| `dist/dave-desktop-win-x64-portable.exe` | 便携版 |
-| `dist/dave-desktop-win-x64-setup.exe` | NSIS 安装包 |
+- **安全存储** — API Key 使用 OS 级加密（Windows DPAPI / macOS Keychain / Linux libsecret）
+- **桌面** — 托盘、深色/浅色主题、Win 无原生菜单栏、Ctrl+N / Ctrl+,
 
 ## 快速开始
 
@@ -40,6 +36,18 @@ npm install
 
 # 开发模式（热重载）
 npm run dev
+
+# 类型检查
+npm run typecheck
+
+# 运行测试（123 个单元测试）
+npm test
+
+# 代码格式化
+npm run format
+
+# ESLint 检查
+npm run lint
 
 # 生产构建
 npm run build
@@ -60,6 +68,13 @@ npm run package:mac
 # Linux（AppImage + deb）
 npm run package:linux
 ```
+
+## 打包产物（Windows）
+
+| 文件                                     | 说明        |
+| ---------------------------------------- | ----------- |
+| `dist/dave-desktop-win-x64-portable.exe` | 便携版      |
+| `dist/dave-desktop-win-x64-setup.exe`    | NSIS 安装包 |
 
 ## 项目结构
 

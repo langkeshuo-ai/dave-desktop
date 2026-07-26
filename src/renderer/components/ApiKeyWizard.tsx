@@ -9,9 +9,7 @@
    ========================================================================= */
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  Check, ChevronRight, Cpu, Eye, EyeOff, FolderOpen, Loader2, X,
-} from "lucide-react"
+import { Check, ChevronRight, Cpu, Eye, EyeOff, FolderOpen, Loader2, X } from "lucide-react"
 import { useFocusRestore } from "../lib/useFocusRestore"
 import { useMounted } from "../lib/useMounted"
 import { track } from "../lib/telemetry"
@@ -74,22 +72,25 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
     }
   }, [])
 
-  const chooseProvider = useCallback((id: ProviderId) => {
-    safeSet(() => {
-      setProvider(id)
-      setApiKey("")
-      setProbeOk(null)
-      setProbeMsg(null)
-      const p = PROVIDERS.find((x) => x.id === id)
-      if (p) setModel(p.defaultModel)
-      if (id === "custom") {
-        setModel("")
-      } else {
-        setCustomModel("")
-      }
-    })
-    track("onboarding_provider_chosen", { provider: id })
-  }, [safeSet])
+  const chooseProvider = useCallback(
+    (id: ProviderId) => {
+      safeSet(() => {
+        setProvider(id)
+        setApiKey("")
+        setProbeOk(null)
+        setProbeMsg(null)
+        const p = PROVIDERS.find((x) => x.id === id)
+        if (p) setModel(p.defaultModel)
+        if (id === "custom") {
+          setModel("")
+        } else {
+          setCustomModel("")
+        }
+      })
+      track("onboarding_provider_chosen", { provider: id })
+    },
+    [safeSet],
+  )
 
   const probe = useCallback(async () => {
     if (!apiKey.trim() && provider !== "custom") {
@@ -209,14 +210,11 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] bg-[var(--bg-panel)]">
           <div className="flex items-center gap-2 text-[12px] text-[var(--text-dim)]">
             <Cpu size={14} className="text-[var(--accent)]" />
-            <span>配置向导 · {stepIdx + 1}/{steps.length}</span>
+            <span>
+              配置向导 · {stepIdx + 1}/{steps.length}
+            </span>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-icon-muted"
-            title="关闭"
-            aria-label="关闭"
-          >
+          <button onClick={onClose} className="btn-icon-muted" title="关闭" aria-label="关闭">
             <X size={14} />
           </button>
         </div>
@@ -237,9 +235,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
         <div className="px-6 py-7 min-h-[260px]">
           {step === "provider" && (
             <div>
-              <h2 className="text-base font-semibold text-[var(--text-strong)]">
-                选一个 Provider
-              </h2>
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">选一个 Provider</h2>
               <p className="text-[12px] text-[var(--text-dim)] mt-1 mb-4">
                 之后可以在设置里随时切换。
               </p>
@@ -330,7 +326,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={probe}
+                    onClick={() => void probe()}
                     disabled={probeBusy}
                     className="btn-outline text-[12px] py-1.5 px-3 inline-flex items-center gap-1.5"
                     type="button"
@@ -344,9 +340,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
                     </span>
                   )}
                   {probeOk === false && (
-                    <span className="text-[12px] text-[var(--diff-del)]">
-                      {probeMsg}
-                    </span>
+                    <span className="text-[12px] text-[var(--diff-del)]">{probeMsg}</span>
                   )}
                 </div>
               </div>
@@ -370,7 +364,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
                   readOnly
                 />
                 <button
-                  onClick={pickWorkspace}
+                  onClick={() => void pickWorkspace()}
                   disabled={workspaceBusy}
                   className="btn-outline text-[12px] py-1.5 px-3 inline-flex items-center gap-1.5"
                   type="button"
@@ -390,12 +384,8 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
               <div className="w-12 h-12 rounded-full bg-[var(--diff-add-bg)] text-[var(--diff-add)] flex items-center justify-center mb-3">
                 <Check size={24} />
               </div>
-              <h2 className="text-base font-semibold text-[var(--text-strong)]">
-                配置完成
-              </h2>
-              <p className="text-[12px] text-[var(--text-dim)] mt-1">
-                正在进入主界面…
-              </p>
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">配置完成</h2>
+              <p className="text-[12px] text-[var(--text-dim)] mt-1">正在进入主界面…</p>
             </div>
           )}
         </div>
@@ -414,7 +404,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
               {step === "provider" ? "取消" : "上一步"}
             </button>
             <button
-              onClick={next}
+              onClick={() => void next()}
               disabled={step === "key" && (probeBusy || !apiKey.trim())}
               className="btn"
               type="button"

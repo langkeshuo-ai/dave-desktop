@@ -29,14 +29,14 @@ Overall         ███████░░░  6.9  A
 
 ### Finding Statistics
 
-| Severity | Count | Confirmed | Suspected |
-|----------|-------|-----------|-----------|
-| Critical | 0 | 0 | 0 |
-| High | 1 | 1 | 0 |
-| Medium | 4 | 3 | 1 |
-| Low | 3 | 3 | 0 |
-| Info | 1 | 1 | 0 |
-| **Total** | **9** | **8** | **1** |
+| Severity  | Count | Confirmed | Suspected |
+| --------- | ----- | --------- | --------- |
+| Critical  | 0     | 0         | 0         |
+| High      | 1     | 1         | 0         |
+| Medium    | 4     | 3         | 1         |
+| Low       | 3     | 3         | 0         |
+| Info      | 1     | 1         | 0         |
+| **Total** | **9** | **8**     | **1**     |
 
 ## 2. Project Map
 
@@ -44,19 +44,19 @@ Overall         ███████░░░  6.9  A
 
 **本目录文件分类：**
 
-| 文件 | 角色 | 行数 |
-|------|------|------|
-| `build-dave-client.ts` | 转发脚本，真正实现在 `packages/opencode/script/build-dave-client.ts` | 16 |
-| `dave-product-shell.ts（旧套壳入口，对比参考）.ts` | 旧产品壳，对比参考，非当前运行入口 | 216 |
-| `dave.ts（改interactive进程内import）.ts` | **当前运行时主入口**，CLI 路由 + Agent UI 启动 | 644 |
-| `index.ts（改导出runCli）.ts` | CLI 命令路由（yargs），导出 `runCli` 供进程内调用 | 116 |
-| `package-windows-portable.ts（旧便携包脚本，对比参考）.ts` | 旧便携包脚本，对比参考 | 618 |
-| `portable-meta.json` | 便携包元数据（kind/version/channel/peBytes/builtAt） | 13 |
-| `EXE_CLIENT_VERIFIED.md` | EXE 客户端构建验证文档 | 162 |
-| `RESIDUAL_RISKS.md` | 残留风险台账 | 73 |
-| `ROLE.md` | 本目录角色定义 | 14 |
-| `Dave.exe` | 构建产物 PE32+ x86-64，~133MB | 二进制 |
-| `dave-client-windows-x64.zip` | 分发 ZIP，~60MB | 二进制 |
+| 文件                                                       | 角色                                                                 | 行数   |
+| ---------------------------------------------------------- | -------------------------------------------------------------------- | ------ |
+| `build-dave-client.ts`                                     | 转发脚本，真正实现在 `packages/opencode/script/build-dave-client.ts` | 16     |
+| `dave-product-shell.ts（旧套壳入口，对比参考）.ts`         | 旧产品壳，对比参考，非当前运行入口                                   | 216    |
+| `dave.ts（改interactive进程内import）.ts`                  | **当前运行时主入口**，CLI 路由 + Agent UI 启动                       | 644    |
+| `index.ts（改导出runCli）.ts`                              | CLI 命令路由（yargs），导出 `runCli` 供进程内调用                    | 116    |
+| `package-windows-portable.ts（旧便携包脚本，对比参考）.ts` | 旧便携包脚本，对比参考                                               | 618    |
+| `portable-meta.json`                                       | 便携包元数据（kind/version/channel/peBytes/builtAt）                 | 13     |
+| `EXE_CLIENT_VERIFIED.md`                                   | EXE 客户端构建验证文档                                               | 162    |
+| `RESIDUAL_RISKS.md`                                        | 残留风险台账                                                         | 73     |
+| `ROLE.md`                                                  | 本目录角色定义                                                       | 14     |
+| `Dave.exe`                                                 | 构建产物 PE32+ x86-64，~133MB                                        | 二进制 |
+| `dave-client-windows-x64.zip`                              | 分发 ZIP，~60MB                                                      | 二进制 |
 
 **数据流与状态所有权：**
 
@@ -71,16 +71,16 @@ Overall         ███████░░░  6.9  A
 
 ### Coverage Matrix
 
-| Dimension | Coverage | Evidence inspected | Exclusions / limits |
-|-----------|----------|--------------------|---------------------|
-| Architecture | High | 4 个 .ts 文件全读，dave.ts 644 行逐段审计 | 未读 monorepo 主线对应文件做一致性比对 |
-| Security | High | dave.ts 鉴权预检路径、env 跳过逻辑、spawn 参数 | 未审计下游 `dave-auth-preflight.ts` 实现 |
-| Stability | High | runInteractiveAgent 信号处理、conhost 分支、退出码传播 | 未在真实 Windows Terminal 运行验证 |
-| Performance | Medium | isDaveEntryShellBinary 超时逻辑、resolveNativeAgentBinary 探测链 | 未实测 PE 探测延迟 |
-| Testing | High | project_inventory.py 确认本目录零测试文件；EXE_CLIENT_VERIFIED.md §5 记录主线 83 测试 | 未读主线测试文件确认覆盖范围 |
-| Maintainability | High | 文件名、目录结构、与主线对应关系全审计 | 未追踪 git 历史漂移频率 |
-| Design | High | principles.md 全部原则逐条对照 | — |
-| Release | Medium | portable-meta.json 字段完整、EXE_CLIENT_VERIFIED.md SHA-256 记录 | 文件名与 git 跟踪名不一致的具体影响未实测 |
+| Dimension       | Coverage | Evidence inspected                                                                    | Exclusions / limits                       |
+| --------------- | -------- | ------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Architecture    | High     | 4 个 .ts 文件全读，dave.ts 644 行逐段审计                                             | 未读 monorepo 主线对应文件做一致性比对    |
+| Security        | High     | dave.ts 鉴权预检路径、env 跳过逻辑、spawn 参数                                        | 未审计下游 `dave-auth-preflight.ts` 实现  |
+| Stability       | High     | runInteractiveAgent 信号处理、conhost 分支、退出码传播                                | 未在真实 Windows Terminal 运行验证        |
+| Performance     | Medium   | isDaveEntryShellBinary 超时逻辑、resolveNativeAgentBinary 探测链                      | 未实测 PE 探测延迟                        |
+| Testing         | High     | project_inventory.py 确认本目录零测试文件；EXE_CLIENT_VERIFIED.md §5 记录主线 83 测试 | 未读主线测试文件确认覆盖范围              |
+| Maintainability | High     | 文件名、目录结构、与主线对应关系全审计                                                | 未追踪 git 历史漂移频率                   |
+| Design          | High     | principles.md 全部原则逐条对照                                                        | —                                         |
+| Release         | Medium   | portable-meta.json 字段完整、EXE_CLIENT_VERIFIED.md SHA-256 记录                      | 文件名与 git 跟踪名不一致的具体影响未实测 |
 
 ## 3. Top Risks
 
@@ -284,19 +284,20 @@ Overall         ███████░░░  6.9  A
 ## 5. Architecture Analysis
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: 4 个 .ts 文件、ROLE.md、RESIDUAL_RISKS.md、project_inventory.py 输出
 - Exclusions / limits: 未读 monorepo 主线 `packages/opencode/src/cli/cmd/dave/*` 做模块边界一致性比对
 
 ### Architecture Summary
 
-| Subtype | Count | Affected Areas | Recommended Action |
-|---------|-------|----------------|-------------------|
-| ModuleBoundary | 1 | 本目录与 monorepo 主线边界模糊 | 明确本目录是"试验沙盒"还是"交付路径"，写入 ROLE.md |
-| DependencyDirection | 0 | — | — |
-| StateOwnership | 0 | — | — |
-| BoundaryContract | 1 | portable-meta.json 字段契约未文档化 | 在 docs/ 添加 meta schema 说明 |
-| EvolutionRisk | 1 | 两套 dave 入口并行，演化方向不清 | 决定单一入口源，删除另一套 |
+| Subtype             | Count | Affected Areas                      | Recommended Action                                 |
+| ------------------- | ----- | ----------------------------------- | -------------------------------------------------- |
+| ModuleBoundary      | 1     | 本目录与 monorepo 主线边界模糊      | 明确本目录是"试验沙盒"还是"交付路径"，写入 ROLE.md |
+| DependencyDirection | 0     | —                                   | —                                                  |
+| StateOwnership      | 0     | —                                   | —                                                  |
+| BoundaryContract    | 1     | portable-meta.json 字段契约未文档化 | 在 docs/ 添加 meta schema 说明                     |
+| EvolutionRisk       | 1     | 两套 dave 入口并行，演化方向不清    | 决定单一入口源，删除另一套                         |
 
 ### Findings
 
@@ -318,6 +319,7 @@ Overall         ███████░░░  6.9  A
 ## 6. Security Concerns
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: dave.ts 鉴权预检路径、env 跳过逻辑、spawn 参数、conhost 兼容降级
 - Exclusions / limits: 未审计下游 `dave-auth-preflight.ts` 实现
@@ -347,6 +349,7 @@ Overall         ███████░░░  6.9  A
 ## 7. Stability Concerns
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: runInteractiveAgent 信号处理、conhost 分支、退出码传播、PE 探测超时
 - Exclusions / limits: 未在真实 Windows Terminal 运行验证 conhost 降级路径
@@ -379,6 +382,7 @@ Overall         ███████░░░  6.9  A
 ## 8. Performance Concerns
 
 ### Coverage
+
 - Coverage: Medium
 - Inspected evidence: isDaveEntryShellBinary 超时逻辑、resolveNativeAgentBinary 探测链
 - Exclusions / limits: 未实测 PE 探测延迟
@@ -408,6 +412,7 @@ Overall         ███████░░░  6.9  A
 ## 9. Testing Gaps
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: project_inventory.py 报告本目录零测试文件；EXE_CLIENT_VERIFIED.md §5 记录主线 83 测试
 - Exclusions / limits: 未读主线测试文件确认覆盖范围
@@ -438,6 +443,7 @@ Overall         ███████░░░  6.9  A
 ## 10. Maintainability Concerns
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: 文件名、目录结构、与主线对应关系、代码复杂度
 - Exclusions / limits: 未追踪 git 历史漂移频率
@@ -473,20 +479,21 @@ Overall         ███████░░░  6.9  A
 ## 11. Design / Principles Concerns
 
 ### Coverage
+
 - Coverage: High
 - Inspected evidence: principles.md 全部原则逐条对照 dave.ts、index.ts、dave-product-shell.ts
 - Exclusions / limits: —
 
 ### Principles Violated
 
-| Principle | Violations | Severity | Affected Areas |
-|-----------|------------|----------|----------------|
-| Single Responsibility (SRP) | 1 | Low | dave.ts 包含路由、探测、降级、版本读取等多职责 |
-| File Size Limit | 1 | Low | dave.ts 644 行 > 500 阈值 |
-| YAGNI | 1 | Low | dave-product-shell.ts 旧实现未清理 |
-| Fail-Fast | 1 | Medium | isDaveEntryShellBinary 超时被吞，未 fail-fast 也不显式报错 |
-| Command-Query Separation | 0 | — | — |
-| DRY | 1 | Low | dave-product-shell.ts 与 dave.ts 职责重叠 |
+| Principle                   | Violations | Severity | Affected Areas                                             |
+| --------------------------- | ---------- | -------- | ---------------------------------------------------------- |
+| Single Responsibility (SRP) | 1          | Low      | dave.ts 包含路由、探测、降级、版本读取等多职责             |
+| File Size Limit             | 1          | Low      | dave.ts 644 行 > 500 阈值                                  |
+| YAGNI                       | 1          | Low      | dave-product-shell.ts 旧实现未清理                         |
+| Fail-Fast                   | 1          | Medium   | isDaveEntryShellBinary 超时被吞，未 fail-fast 也不显式报错 |
+| Command-Query Separation    | 0          | —        | —                                                          |
+| DRY                         | 1          | Low      | dave-product-shell.ts 与 dave.ts 职责重叠                  |
 
 ### Principles Respected
 
@@ -500,6 +507,7 @@ Overall         ███████░░░  6.9  A
 ## 12. Release Concerns
 
 ### Coverage
+
 - Coverage: Medium
 - Inspected evidence: portable-meta.json 字段、EXE_CLIENT_VERIFIED.md SHA-256 记录、RESIDUAL_RISKS.md PE 体积记录
 - Exclusions / limits: 文件名与 git 跟踪名不一致的具体影响未实测
@@ -520,13 +528,13 @@ Overall         ███████░░░  6.9  A
 
 ## 13. Quick Wins
 
-| # | Fix | Effort | Impact |
-|---|-----|--------|--------|
-| 1 | 重命名中文括号文件名为 ASCII 简短名 | 30 min | 解除跨平台 git 风险，提升可维护性 |
-| 2 | 删除 `dave-product-shell.ts（旧套壳入口，对比参考）.ts` 旧实现 | 10 min | 减少认知负担，消除 YAGNI 违规 |
-| 3 | 在 `.gitignore` 显式添加 `dave客户端开发/*.exe`、`*.zip` 规则 | 15 min | 防止大体积二进制误提交 |
-| 4 | 修正 EXE_CLIENT_VERIFIED.md 中 PE 体积记录（93MB → 188.6MB） | 15 min | 消除文档间数据不一致 |
-| 5 | 将 `isDaveEntryShellBinary` catch 块改为 `return false` | 5 min | 修复 PE 探测超时误判 |
+| #   | Fix                                                            | Effort | Impact                            |
+| --- | -------------------------------------------------------------- | ------ | --------------------------------- |
+| 1   | 重命名中文括号文件名为 ASCII 简短名                            | 30 min | 解除跨平台 git 风险，提升可维护性 |
+| 2   | 删除 `dave-product-shell.ts（旧套壳入口，对比参考）.ts` 旧实现 | 10 min | 减少认知负担，消除 YAGNI 违规     |
+| 3   | 在 `.gitignore` 显式添加 `dave客户端开发/*.exe`、`*.zip` 规则  | 15 min | 防止大体积二进制误提交            |
+| 4   | 修正 EXE_CLIENT_VERIFIED.md 中 PE 体积记录（93MB → 188.6MB）   | 15 min | 消除文档间数据不一致              |
+| 5   | 将 `isDaveEntryShellBinary` catch 块改为 `return false`        | 5 min  | 修复 PE 探测超时误判              |
 
 ## 14. Recommended Fix Order
 

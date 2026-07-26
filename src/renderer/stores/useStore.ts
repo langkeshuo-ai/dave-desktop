@@ -65,7 +65,7 @@ export const useStore = create<AppState>((set) => ({
       const data = await window.dave.session.get(id)
       // Keep tool rows so the transcript shows agent tool traces.
       // Drop pure system prompts if any.
-      const visible = (data.messages as ChatMessage[]).filter((m) => m.role !== "system")
+      const visible = data.messages.filter((m) => m.role !== "system")
       set({ messages: visible })
     } catch {
       set({ messages: [] })

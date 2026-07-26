@@ -22,7 +22,7 @@ export function useMounted() {
       mountedRef.current = false
     }
   }, [])
-  return useCallback(<T,>(fn: () => T) => {
+  return useCallback(<T>(fn: () => T) => {
     if (mountedRef.current) fn()
   }, [])
 }

@@ -5,7 +5,7 @@
 
 /** Patterns that must never run, even in full-auto. */
 export const SHELL_DENY_PATTERNS: Array<{ name: string; re: RegExp }> = [
-  { name: "rm -rf root/home", re: /\brm\s+-rf\s+[\/~]/i },
+  { name: "rm -rf root/home", re: /\brm\s+-rf\s+[/~]/i },
   { name: "fork bomb", re: /:\(\)\s*\{\s*:\|.*&.*\};/ },
   { name: "mkfs", re: /\bmkfs\b/i },
   { name: "dd if=", re: /\bdd\s+if=/i },
@@ -15,8 +15,8 @@ export const SHELL_DENY_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: "powershell -enc", re: /\bpowershell\b.*\s-e(nc|ncodedcommand)\b/i },
   { name: "del /s system roots", re: /\bdel\s+\/[sq]\s+[a-z]:\\/i },
   { name: "reg delete HKLM", re: /\breg\s+delete\s+HKLM/i },
-  { name: "chmod -R 777 root", re: /\bchmod\s+-R\s+777\s+[\/~]/i },
-  { name: "chown -R root", re: /\bchown\s+-R\s+.*\s+[\/~]/i },
+  { name: "chmod -R 777 root", re: /\bchmod\s+-R\s+777\s+[/~]/i },
+  { name: "chown -R root", re: /\bchown\s+-R\s+.*\s+[/~]/i },
   { name: "iptables -F", re: /\biptables\s+-F\b/i },
   { name: "killall -9", re: /\bkillall\s+-9\b/i },
   { name: "redirect to raw disk", re: />\s*\/dev\/sd[a-z]/i },
@@ -40,7 +40,8 @@ export const SHELL_DENY_PATTERNS: Array<{ name: string; re: RegExp }> = [
  */
 const ELEVATED_SHELL_RE = new RegExp(
   [
-    /\b(rm|rmdir|rd|del|erase|curl|wget|powershell|pwsh|reg\s|chmod|chown|kill|killall|taskkill|Remove-Item|Invoke-WebRequest|iwr\b)\b/.source,
+    /\b(rm|rmdir|rd|del|erase|curl|wget|powershell|pwsh|reg\s|chmod|chown|kill|killall|taskkill|Remove-Item|Invoke-WebRequest|iwr\b)\b/
+      .source,
     /(?:^|\s)(?:bash|sh|zsh|ksh|fish|cmd(?:\.exe)?|pwsh|powershell)\s+-[a-zA-Z0-9]*-?c\b/.source,
     /\bcmd(?:\.exe)?\s+\/c\b/.source,
   ].join("|"),

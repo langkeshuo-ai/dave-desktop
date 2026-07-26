@@ -1,12 +1,24 @@
-import { useEffect, useMemo, useState, useCallback } from "react"
+import { useEffect, useMemo, useState, useCallback, memo } from "react"
 import type { ChatMessage } from "../../shared/types"
 import { parsePatchForView } from "../../shared/patch"
-import { Bot, User, Copy, Check, FileCode2, Wrench, ChevronDown, ChevronRight, RefreshCw, Square } from "lucide-react"
+import {
+  Bot,
+  User,
+  Copy,
+  Check,
+  FileCode2,
+  Wrench,
+  ChevronDown,
+  ChevronRight,
+  RefreshCw,
+  Square,
+} from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import type { Pluggable, PluggableList } from "unified"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
+import type { ReactVirtualizer, VirtualItem } from "@tanstack/react-virtual"
 
 // rehype-sanitize 防御:即使将来引入 rehype-raw,LLM 输出的 <script>/<iframe> 等
 // 也会被白名单 schema 过滤掉;className 是 hljs 高亮必须保留的。
@@ -32,6 +44,8 @@ interface MessageListProps {
   isStreaming: boolean
   onStop?: () => void
   onRegenerate?: (userContent: string) => void
+  virtualItems: VirtualItem[]
+  virtualizer: ReactVirtualizer<HTMLDivElement, Element>
 }
 
 const PATCH_PREFIX = "@@ patch"
@@ -42,18 +56,15 @@ function classifyContent(content: string): "patch" | "code" | "text" {
   return "text"
 }
 
-export function MessageList({ messages, streamingContent, isStreaming, onStop, onRegenerate }: MessageListProps) {
-  const rendered = useMemo(
-    () =>
-      messages.map((msg, i) => ({
-        key: `${msg.role}-${i}-${msg.content.length}-${msg.content.slice(0, 12)}${msg.content.length > 12 ? msg.content.slice(-12) : ""}-${msg.name ?? ""}-${msg.tool_call_id ?? ""}`,
-        msg,
-        // 末条 assistant 才有"重新生成"按钮(否则中间任意一条都可触发,语义模糊)
-        isLastAssistant: i === messages.length - 1 && msg.role === "assistant",
-      })),
-    [messages],
-  )
-
+export function MessageList({
+  messages,
+  streamingContent,
+  isStreaming,
+  onStop,
+  onRegenerate,
+  virtualItems,
+  virtualizer,
+}: MessageListProps) {
   // 找到最后一条 user 消息,作为 regenerate 的输入
   const lastUser = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -63,46 +74,87 @@ export function MessageList({ messages, streamingContent, isStreaming, onStop, o
   }, [messages])
 
   return (
-    <div className="px-3 py-2 space-y-3">
-      {rendered.map(({ key, msg, isLastAssistant }) => (
-        <MessageBubble
-          key={key}
-          message={msg}
-          isLastAssistant={isLastAssistant}
-          lastUserContent={lastUser}
-          onRegenerate={onRegenerate}
-        />
-      ))}
-      {isStreaming && (
-        <MessageBubble
-          key="streaming"
-          message={{ role: "assistant", content: streamingContent }}
-          isStreaming
-          onStop={onStop}
-        />
-      )}
-      {isStreaming && !streamingContent && (
-        <div className="msg-row">
-          <div className="msg-avatar assistant"><Bot size={14} /></div>
-          <div className="msg-body flex items-center gap-2 text-xs text-[var(--text-dim)]">
-            <span className="spinner" /> 思考中…
-            <button
-              type="button"
-              onClick={onStop}
-              className="btn-icon-muted !p-1 ml-1 stop-btn"
-              title="停止生成"
-              aria-label="停止生成"
+    <>
+      {virtualItems.map((virtualItem) => {
+        const isLast = virtualItem.index === messages.length
+        const msg = isLast
+          ? { role: "assistant" as const, content: streamingContent }
+          : messages[virtualItem.index]
+        if (!msg) return null
+
+        // 流式空内容 — 显示"思考中…"指示器
+        if (isLast && isStreaming && !streamingContent) {
+          return (
+            <div
+              key="streaming-thinking"
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
+              className="msg-row px-3 py-2"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
             >
-              <Square size={12} fill="currentColor" />
-            </button>
+              <div className="msg-avatar assistant">
+                <Bot size={14} />
+              </div>
+              <div className="msg-body flex items-center gap-2 text-xs text-[var(--text-dim)]">
+                <span className="spinner" /> 思考中…
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="btn-icon-muted !p-1 ml-1 stop-btn"
+                  title="停止生成"
+                  aria-label="停止生成"
+                >
+                  <Square size={12} fill="currentColor" />
+                </button>
+              </div>
+            </div>
+          )
+        }
+
+        const isLastAssistant =
+          !isLast && virtualItem.index === messages.length - 1 && msg.role === "assistant"
+
+        return (
+          <div
+            key={virtualItem.key}
+            ref={virtualizer.measureElement}
+            data-index={virtualItem.index}
+            className="px-3 py-2"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            <MessageBubble
+              message={msg}
+              isStreaming={isLast && isStreaming}
+              isLastAssistant={isLastAssistant}
+              lastUserContent={lastUser}
+              onStop={onStop}
+              onRegenerate={onRegenerate}
+            />
           </div>
-        </div>
-      )}
-    </div>
+        )
+      })}
+    </>
   )
 }
 
-function MessageBubble({
+// React.memo 包裹:streaming 时只有最末条 MessageBubble(带 isStreaming)
+// 的 props 变化,其他历史消息的 message/lastUserContent 引用稳定,
+// 跳过重渲染避免 ReactMarkdown 重复解析(长会话性能优化关键)。
+// 自定义比较:isStreaming 标志翻转 / message 引用变化 / lastUserContent
+// 变化 / 回调引用变化时才重渲染。
+const MessageBubble = memo(function MessageBubble({
   message,
   isStreaming,
   isLastAssistant,
@@ -130,7 +182,9 @@ function MessageBubble({
   ) {
     return (
       <div className="msg-row">
-        <div className="msg-avatar assistant"><Wrench size={13} /></div>
+        <div className="msg-avatar assistant">
+          <Wrench size={13} />
+        </div>
         <div className="msg-body">
           <div className="tool-trace">
             <span className="tool-trace-title">调用工具</span>
@@ -173,7 +227,9 @@ function MessageBubble({
             >
               {message.content || ""}
             </ReactMarkdown>
-            {isStreaming && <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />}
+            {isStreaming && (
+              <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />
+            )}
             <MessageActions
               isStreaming={!!isStreaming}
               isLastAssistant={!!isLastAssistant}
@@ -187,7 +243,7 @@ function MessageBubble({
       </div>
     </div>
   )
-}
+})
 
 /** 内联操作条:复制 / 重新生成 / 停止。复制是本地能力,其余委托上层。 */
 function MessageActions({
@@ -288,19 +344,23 @@ function ToolTrace({ message }: { message: ChatMessage }) {
         >
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           <span className="tool-trace-title">{name}</span>
-          <span className="tool-trace-preview">{open ? "" : preview}{!open && (message.content?.length ?? 0) > 120 ? "…" : ""}</span>
+          <span className="tool-trace-preview">
+            {open ? "" : preview}
+            {!open && (message.content?.length ?? 0) > 120 ? "…" : ""}
+          </span>
         </button>
-        {open && (
-          <pre className="tool-trace-body">{message.content || "(无输出)"}</pre>
-        )}
+        {open && <pre className="tool-trace-body">{message.content || "(无输出)"}</pre>}
       </div>
     </div>
   )
 }
 
 function CodeBlockPre({ children }: { children?: React.ReactNode }) {
-  const codeEl = Array.isArray(children)
-    ? children.find((c: { props?: { className?: string } }) => c?.props?.className?.startsWith("language-"))
+  const codeEl: unknown = Array.isArray(children)
+    ? children.find((c: unknown) => {
+        const candidate = c as { props?: { className?: string } }
+        return candidate?.props?.className?.startsWith("language-")
+      })
     : (children as { props?: { className?: string } })?.props?.className?.startsWith("language-")
       ? children
       : null
@@ -308,12 +368,25 @@ function CodeBlockPre({ children }: { children?: React.ReactNode }) {
   const className: string = el?.props?.className || ""
   const lang = className.replace("language-", "").trim() || "text"
   const raw = el?.props?.children ?? ""
-  const text = typeof raw === "string" ? raw : Array.isArray(raw) ? raw.join("") : String(raw ?? "")
+  const text =
+    typeof raw === "string" ? raw : Array.isArray(raw) ? raw.join("") : JSON.stringify(raw)
 
-  return <CodeBlock lang={lang} code={text}>{codeEl as React.ReactNode}</CodeBlock>
+  return (
+    <CodeBlock lang={lang} code={text}>
+      {codeEl as React.ReactNode}
+    </CodeBlock>
+  )
 }
 
-function CodeBlock({ lang, code, children }: { lang: string; code: string; children?: React.ReactNode }) {
+function CodeBlock({
+  lang,
+  code,
+  children,
+}: {
+  lang: string
+  code: string
+  children?: React.ReactNode
+}) {
   const [copied, setCopied] = useState(false)
   const copy = useCallback(() => {
     // 与 MessageActions 保持一致:clipboard 写失败时静默,只更新本地 UI
@@ -339,12 +412,17 @@ function CodeBlock({ lang, code, children }: { lang: string; code: string; child
         <span className="lang-tag flex items-center gap-1.5">
           <FileCode2 size={11} /> {lang}
         </span>
-        <button onClick={copy} className={`copy-btn flex items-center gap-1 ${copied ? "copied" : ""}`}>
+        <button
+          onClick={copy}
+          className={`copy-btn flex items-center gap-1 ${copied ? "copied" : ""}`}
+        >
           {copied ? <Check size={11} /> : <Copy size={11} />}
           {copied ? "已复制" : "复制"}
         </button>
       </div>
-      <pre className="code-block-body hljs"><code className={`language-${lang}`}>{children ?? code}</code></pre>
+      <pre className="code-block-body hljs">
+        <code className={`language-${lang}`}>{children ?? code}</code>
+      </pre>
     </div>
   )
 }
@@ -401,15 +479,19 @@ function PatchView({ body, streaming }: { body: string; streaming?: boolean }) {
             <span className="flex items-center gap-1.5 text-[var(--text)]">
               <FileCode2 size={11} /> {f.path}
             </span>
-            <span>
-              {streaming ? "生成中" : status === "applied" ? "已应用" : "待批准"}
-            </span>
+            <span>{streaming ? "生成中" : status === "applied" ? "已应用" : "待批准"}</span>
           </div>
           <div className="diff-view-body">
             {f.rows.map((r, i) => (
               <div key={i} className={`diff-line diff-line-${r.type}`}>
                 <span className="gutter">
-                  {r.type === "add" ? "+" : r.type === "del" ? "-" : r.type === "hunk" || r.type === "meta" ? "" : " "}
+                  {r.type === "add"
+                    ? "+"
+                    : r.type === "del"
+                      ? "-"
+                      : r.type === "hunk" || r.type === "meta"
+                        ? ""
+                        : " "}
                   {r.oldNum || ""}
                 </span>
                 <span className="gutter">{r.newNum || ""}</span>
@@ -432,7 +514,11 @@ function PatchView({ body, streaming }: { body: string; streaming?: boolean }) {
           <button type="button" className="btn btn-ghost text-xs" disabled={busy} onClick={dismiss}>
             忽略
           </button>
-          {err && <span className="text-[11px] text-[var(--diff-del)] truncate max-w-[16rem]" title={err}>{err}</span>}
+          {err && (
+            <span className="text-[11px] text-[var(--diff-del)] truncate max-w-[16rem]" title={err}>
+              {err}
+            </span>
+          )}
         </div>
       )}
       {status === "applied" && (
