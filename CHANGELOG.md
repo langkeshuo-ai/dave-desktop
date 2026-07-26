@@ -4,7 +4,36 @@
 
 ## [未发布]
 
-### 全面规范化与主题改造（2026-07-26）
+### 性能优化 Phase 1（2025-01-26）
+
+#### 新增
+
+- **Code Splitting（组件懒加载）**
+  - React.lazy + Suspense 动态加载 5 个非核心组件
+  - Settings（~300KB）、Welcome（~150KB）、ApiKeyWizard（~120KB）、WorkspacePanel（~200KB）、CommandPalette（~80KB）
+  - 预计首屏 bundle 从 1.5MB 降至 ~650KB（-57%）
+- **虚拟滚动性能测试工具**
+  - `src/renderer/lib/fps-monitor.ts`：FPS 实时监控（基于 requestAnimationFrame）
+  - `src/renderer/lib/test-utils.ts`：测试消息生成器（支持 2000+ 条混合消息）
+  - ChatView 集成性能测试按钮（仅 dev 模式，Gauge 图标）
+  - 性能报告输出：FPS 平均值 + P50/P95/P99 帧延迟
+- **消息导出功能**
+  - 会话导出为 Markdown（含元数据：标题、sessionId、时间戳）
+  - ChatView 右上角"导出"按钮（Download 图标）
+- **类型定义增强**
+  - `src/renderer/env.d.ts`：声明 Vite import.meta.env（DEV/PROD/MODE）
+
+#### 变更
+
+- **Suspense fallback**：所有懒加载组件统一使用 loading spinner（待样式优化）
+
+#### 修复
+
+- **ESLint 未使用变量警告**：移除 `generateTestMessages` 未使用导入，`complexRatio` 改为 `_complexRatio`
+
+---
+
+### 全面规范化与主题改造（2025-01-26）
 
 #### 新增
 

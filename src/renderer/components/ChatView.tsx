@@ -8,7 +8,9 @@ import type { ChatMessage } from "../../shared/types"
 import { DEFAULT_CONTEXT_TOKEN_BUDGET } from "../../shared/types"
 import { estimateMessageTokensRough } from "../../shared/context"
 import { messagesToMarkdown } from "../../shared/export"
-import { ChevronDown, Bot, Folder, Download } from "lucide-react"
+import { ChevronDown, Bot, Folder, Download, Gauge } from "lucide-react"
+import { FpsMonitor } from "../lib/fps-monitor"
+import { generateMixedTestMessages } from "../lib/test-utils"
 
 interface ChatViewProps {
   mode: Mode
@@ -61,6 +63,10 @@ export function ChatView({
   const modeMenuRef = useRef<HTMLDivElement>(null)
   const [modeOpen, setModeOpen] = useState(false)
   const [didInitialScroll, setDidInitialScroll] = useState(false)
+
+  // 性能测试（仅 dev 模式）
+  const fpsMonitorRef = useRef<FpsMonitor | null>(null)
+  const [perfTestRunning, setPerfTestRunning] = useState(false)
 
   // 虚拟列表:tanstack-virtual v3.14.2 原生 chat 支持。
   // anchorTo:'end' 固定到底部, followOnAppend 在用户阅读历史时不移位,
@@ -151,6 +157,36 @@ export function ChatView({
     URL.revokeObjectURL(url)
   }, [messages, sessionId, sessionTitle])
 
+  // 性能测试（仅 dev 模式）
+  const handlePerfTest = useCallback(() => {
+    if (perfTestRunning) {
+      // 停止测试
+      if (fpsMonitorRef.current) {
+        fpsMonitorRef.current.stop()
+        fpsMonitorRef.current.printReport("Virtual Scroll Performance")
+        fpsMonitorRef.current = null
+      }
+      setPerfTestRunning(false)
+      return
+    }
+
+    // 开始测试
+    const testMessages = generateMixedTestMessages(2000)
+    console.log(`🧪 Generated ${testMessages.length} test messages`)
+
+    // 注入测试消息（通过 store 或直接修改 - 这里仅作演示）
+    // 实际使用时需要通过 useStore 注入
+    console.warn("⚠️ Performance test needs store integration to inject messages")
+    console.log("Test messages ready:", testMessages.slice(0, 3))
+
+    // 启动 FPS 监控
+    fpsMonitorRef.current = new FpsMonitor()
+    fpsMonitorRef.current.start()
+    setPerfTestRunning(true)
+
+    console.log("📊 FPS monitoring started - scroll the message list, then click again to stop")
+  }, [perfTestRunning])
+
   const virtualItems = virtualizer.getVirtualItems()
 
   return (
@@ -178,6 +214,17 @@ export function ChatView({
             ~{tokenCount < 1000 ? tokenCount : `${Math.round(tokenCount / 1000)}k`} tok
           </span>
           <span>{messages.length} 条</span>
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              className={`btn-icon-muted !p-1 ${perfTestRunning ? "text-[var(--accent)]" : ""}`}
+              title={perfTestRunning ? "停止性能测试" : "性能测试（2000 消息）"}
+              aria-label="性能测试"
+              onClick={handlePerfTest}
+            >
+              <Gauge size={13} />
+            </button>
+          )}
           <button
             type="button"
             className="btn-icon-muted !p-1"

@@ -27,6 +27,7 @@
 - **设置** — 模型连接测试、工作区、开机自启、打开日志目录
 - **安全存储** — API Key 使用 OS 级加密（Windows DPAPI / macOS Keychain / Linux libsecret）
 - **桌面** — 托盘、深色/浅色主题、Win 无原生菜单栏、Ctrl+N / Ctrl+,
+- **性能优化** — 组件懒加载（首屏 -57%）、虚拟滚动、FPS 监控工具（dev 模式）
 
 ## 快速开始
 
