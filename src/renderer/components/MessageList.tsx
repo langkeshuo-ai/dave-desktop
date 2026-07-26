@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, memo } from "react"
+import { useEffect, useMemo, useState, useCallback, memo, lazy, Suspense } from "react"
 import type { ChatMessage } from "../../shared/types"
 import { parsePatchForView } from "../../shared/patch"
 import {
@@ -13,17 +13,18 @@ import {
   RefreshCw,
   Square,
 } from "lucide-react"
-import ReactMarkdown from "react-markdown"
-import type { Pluggable, PluggableList } from "unified"
+import type { ReactVirtualizer, VirtualItem } from "@tanstack/react-virtual"
+import type { PluggableList } from "unified"
+
+// 只懒加载 ReactMarkdown 本体（减少首屏 ~150KB）
+// 插件必须静态导入（unified 插件不是 React 组件）
+const ReactMarkdown = lazy(() => import("react-markdown"))
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
-import type { ReactVirtualizer, VirtualItem } from "@tanstack/react-virtual"
 
-// rehype-sanitize 防御:即使将来引入 rehype-raw,LLM 输出的 <script>/<iframe> 等
-// 也会被白名单 schema 过滤掉;className 是 hljs 高亮必须保留的。
-// rehype-sanitize@6 工厂返回 (tree: Root) => Root,与 unified Plugin 签名不严格
-// 兼容(少 file/next 参数),这里用元组 + never 断言。
+// rehype-sanitize 白名单配置 — 防御 LLM 输出的 XSS 攻击
+// className 必须保留供代码高亮使用
 const sanitizeSchema = {
   ...defaultSchema,
   attributes: {
@@ -35,8 +36,8 @@ const sanitizeSchema = {
   },
 }
 
-// 统一一份白名单元组,渲染时直接复用,避免每次渲染重新构造。
-const rehypeSanitizePlugin: Pluggable = [rehypeSanitize as never, sanitizeSchema as never]
+// 统一白名单元组
+const rehypeSanitizePlugin = [rehypeSanitize as never, sanitizeSchema as never]
 
 interface MessageListProps {
   messages: ChatMessage[]
@@ -220,13 +221,19 @@ const MessageBubble = memo(function MessageBubble({
                 </span>
               </div>
             )}
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeSanitizePlugin, rehypeHighlight] as PluggableList}
-              components={{ pre: CodeBlockPre, code: InlineCodeRenderer }}
+            <Suspense
+              fallback={
+                <div className="text-sm opacity-60 whitespace-pre-wrap">{message.content}</div>
+              }
             >
-              {message.content || ""}
-            </ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeSanitizePlugin, rehypeHighlight] as PluggableList}
+                components={{ pre: CodeBlockPre, code: InlineCodeRenderer }}
+              >
+                {message.content || ""}
+              </ReactMarkdown>
+            </Suspense>
             {isStreaming && (
               <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />
             )}

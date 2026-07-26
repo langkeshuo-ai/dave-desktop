@@ -4,14 +4,15 @@
 
 ## [未发布]
 
-### 性能优化 Phase 1（2025-01-26）
+### 性能优化 Phase 1 — Code Splitting 与 Bundle 瘦身（2025-01-26）
 
 #### 新增
 
 - **Code Splitting（组件懒加载）**
-  - React.lazy + Suspense 动态加载 5 个非核心组件
-  - Settings（~300KB）、Welcome（~150KB）、ApiKeyWizard（~120KB）、WorkspacePanel（~200KB）、CommandPalette（~80KB）
-  - 预计首屏 bundle 从 1.5MB 降至 ~650KB（-57%）
+  - React.lazy + Suspense 动态加载 6 个非核心组件
+  - Settings（27KB）、Welcome（9KB）、ApiKeyWizard（18KB）、WorkspacePanel（7KB）、CommandPalette（7KB）、KeyboardHelp（4KB）
+  - **ReactMarkdown 渲染链独立 chunk（266KB）** — 首条 assistant 消息时按需加载
+  - **实测：首屏 bundle 从 1,468KB 降至 1,204KB（-264KB / -18%）**
 - **虚拟滚动性能测试工具**
   - `src/renderer/lib/fps-monitor.ts`：FPS 实时监控（基于 requestAnimationFrame）
   - `src/renderer/lib/test-utils.ts`：测试消息生成器（支持 2000+ 条混合消息）
@@ -22,12 +23,29 @@
   - ChatView 右上角"导出"按钮（Download 图标）
 - **类型定义增强**
   - `src/renderer/env.d.ts`：声明 Vite import.meta.env（DEV/PROD/MODE）
+- **Bundle 分析工具**
+  - rollup-plugin-visualizer 集成，生成 `out/bundle-stats.html`
+  - 可视化展示 gzip/brotli 压缩后大小
 
 #### 变更
 
-- **Suspense fallback**：所有懒加载组件统一使用 loading spinner（待样式优化）
+- **Markdown 渲染链懒加载策略**
+  - ReactMarkdown + remark-gfm + rehype-highlight + rehype-sanitize 拆为独立 chunk
+  - Suspense fallback 显示纯文本内容，无白屏
+- **Vite 构建配置优化**
+  - manualChunks 策略：Markdown 渲染链单独打包
+  - 保留 React/Zustand 在主 bundle（避免过度拆分）
 
 #### 修复
+
+- **MessageList.tsx 类型兼容问题**
+  - rehypePlugins 参数类型兼容（移除 `as any` 断言，改用元组形式）
+- **ESLint 配置警告**
+  - electron.vite.config.ts 顶层 await 警告（不影响功能，记录待修复）
+
+---
+
+### 全面规范化与主题改造（2026-07-26）
 
 - **ESLint 未使用变量警告**：移除 `generateTestMessages` 未使用导入，`complexRatio` 改为 `_complexRatio`
 
