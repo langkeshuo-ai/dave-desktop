@@ -21,7 +21,8 @@ export default defineConfig({
         // Explicitly externalize electron so require("electron") resolves to
         // the built-in module at runtime, NOT the node_modules/electron package
         // (which exports the path to the Electron binary, not the Electron API).
-        external: ["electron"],
+        // Also externalize electron-updater — dynamic require() in index.ts.
+        external: ["electron", "electron-updater"],
         output: {
           format: "cjs",
           // Pure-ESM deps (electron-store@11, conf@15) return
