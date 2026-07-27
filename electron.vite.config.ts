@@ -1,6 +1,7 @@
 import { defineConfig } from "electron-vite"
 import tailwind from "@tailwindcss/vite"
 import { visualizer } from "rollup-plugin-visualizer"
+import type { Plugin } from "vite"
 
 // Vite injects crossorigin="anonymous" on <script type="module"> and <link rel="stylesheet">
 // tags. Under Electron's file:// origin this is treated as cross-origin and refused by
@@ -67,7 +68,7 @@ export default defineConfig({
             open: false,
             gzipSize: true,
             brotliSize: true,
-          }) as any,
+          }) as Plugin,
         ],
       },
     },

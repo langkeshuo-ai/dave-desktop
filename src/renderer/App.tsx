@@ -3,6 +3,7 @@ import { ChatView } from "./components/ChatView"
 import { Sidebar } from "./components/Sidebar"
 import { StatusBar } from "./components/StatusBar"
 import { ApprovalDialog } from "./components/ApprovalDialog"
+import { LoadingOverlay } from "./components/LoadingSpinner"
 import { useStore } from "./stores/useStore"
 import type { DaveApi } from "../preload"
 import type { ChatStreamChunk, ChatStreamDone, ChatStreamError } from "../shared/types"
@@ -723,7 +724,7 @@ export default function App() {
       />
 
       {/* Settings Modal — reload workspace on close */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingOverlay />}>
         {settingsOpen && (
           <Settings
             onClose={handleSettingsClose}
@@ -737,7 +738,7 @@ export default function App() {
       </Suspense>
 
       {/* Command palette — Cmd+K */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingOverlay />}>
         <CommandPalette
           open={paletteOpen}
           onClose={() => setPaletteOpen(false)}
@@ -754,7 +755,7 @@ export default function App() {
       </Suspense>
 
       {/* Keyboard help — `?` 键 */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingOverlay />}>
         <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       </Suspense>
 
@@ -771,7 +772,7 @@ export default function App() {
       )}
 
       {/* Onboarding 流 —— 首启展示,完成 / 跳过即关。 */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingOverlay />}>
         {onboarding === "welcome" && (
           <Welcome
             onComplete={() => setOnboarding("apikey")}
