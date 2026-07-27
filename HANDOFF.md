@@ -49,7 +49,7 @@ e20c0a2 docs: 添加 0.2.0 版本优化提升路线图
 4bacbe1 refactor: 全面规范化与 Cursor 风格主题改造
 ```
 
-未提交（本会话末尾）：`LoadingSpinner.tsx`、`App.tsx` LoadingOverlay、`electron.vite.config.ts` Plugin 类型。
+已入库：`LoadingSpinner`/`LoadingOverlay`、`setMessages` 压测注入、最新 Windows 安装包（2026-07-27）。
 
 ## 3. 当前状态
 
@@ -63,7 +63,7 @@ e20c0a2 docs: 添加 0.2.0 版本优化提升路线图
 
 - **主 bundle 仍 ~1.2MB**，未达路线图 900KB 目标；大头是 React 生态 + highlight 相关（插件仍静态进主图，仅 ReactMarkdown 拆出）。
 - **虚拟滚动 2000 消息 >50fps**：工具有，**未做正式实测验收**（待确认）。
-- **性能测试按钮** 生成消息后**未自动注入 store**（仅 console 日志）— 需接 `useStore`。
+- **性能测试按钮** 已接 `useStore.setMessages` 注入 2000 条；**GUI 滚动 FPS 数值仍待人工点 Gauge 实测**。
 - **`npm run dev` 偶发**：Vite lockfile re-optimize 时 `Cannot read properties of undefined (reading 'join')`（exit 3）；renderer 仍可能起在 5173 — **待确认是否可忽略/复现**。
 - WorkspacePanel 仍 `fallback={null}`（侧栏，有意不挡布局）。
 - OPTIMIZATION_ROADMAP 中大量 checkbox 仍未勾（键盘增强、Sentry、CI、E2E 等）。
@@ -76,8 +76,8 @@ e20c0a2 docs: 添加 0.2.0 版本优化提升路线图
 
 ## 4. 下一步行动计划
 
-1. **立刻**：提交 LoadingSpinner/LoadingOverlay + Plugin 类型；`npm run verify`；可选 `npm run package:win` 刷新安装包。
-2. **压测验收**：把 `generateMixedTestMessages` 写入 store；dev 下 Gauge 测 2000 条 FPS，写入 PERFORMANCE_REPORT 实测表。
+1. **立刻**：`npm run dev`，开会话点 Gauge 注入 2000 条，滚动后停测，把 FPS 写入 PERFORMANCE_REPORT。
+2. **安装包**：已刷新 `dist/dave-desktop-win-x64-setup.exe` / portable（约 108MB，2026-07-27）。
 3. **继续瘦身**：分析 `out/bundle-stats.html`；评估 highlight 语言子集 / MessageList 进一步拆 chunk（注意 unified 插件不能 React.lazy）。
 4. **Sprint 2 UX**：Cmd+K 已有基础，补消息复制/编辑、滚动体验与快捷键文档一致性。
 5. **工程**：GitHub Actions CI；修 dev Vite 偶发；electron.vite 动态 import 警告是否可静态化（非阻塞）。
