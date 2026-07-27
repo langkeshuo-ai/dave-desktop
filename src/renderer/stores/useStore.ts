@@ -17,6 +17,8 @@ interface AppState {
   deleteSession: (id: string) => Promise<void>
   loadSession: (id: string) => Promise<void>
   addMessage: (msg: ChatMessage) => void
+  /** 整表替换 messages（dev 压测 / 导入用）。 */
+  setMessages: (msgs: ChatMessage[]) => void
   /** Append delta (default) or replace full content when replace=true. */
   appendStreamingContent: (delta: string) => void
   setStreamingContent: (content: string) => void
@@ -82,6 +84,15 @@ export const useStore = create<AppState>((set) => ({
 
   addMessage: (msg: ChatMessage) => {
     set((state) => ({ messages: [...state.messages, msg] }))
+  },
+
+  setMessages: (msgs: ChatMessage[]) => {
+    set({
+      messages: msgs,
+      streamingContent: "",
+      isStreaming: false,
+      error: null,
+    })
   },
 
   appendStreamingContent: (delta: string) => {

@@ -11,6 +11,7 @@ import { messagesToMarkdown } from "../../shared/export"
 import { ChevronDown, Bot, Folder, Download, Gauge } from "lucide-react"
 import { FpsMonitor } from "../lib/fps-monitor"
 import { generateMixedTestMessages } from "../lib/test-utils"
+import { useStore } from "../stores/useStore"
 
 interface ChatViewProps {
   mode: Mode
@@ -157,10 +158,9 @@ export function ChatView({
     URL.revokeObjectURL(url)
   }, [messages, sessionId, sessionTitle])
 
-  // 性能测试（仅 dev 模式）
+  // 性能测试（仅 dev 模式）：注入 2000 条到 store + FPS 监控
   const handlePerfTest = useCallback(() => {
     if (perfTestRunning) {
-      // 停止测试
       if (fpsMonitorRef.current) {
         fpsMonitorRef.current.stop()
         fpsMonitorRef.current.printReport("Virtual Scroll Performance")
@@ -170,22 +170,23 @@ export function ChatView({
       return
     }
 
-    // 开始测试
     const testMessages = generateMixedTestMessages(2000)
-    console.log(`🧪 Generated ${testMessages.length} test messages`)
+    useStore.getState().setMessages(testMessages)
+    setDidInitialScroll(false)
+    console.log(`Generated ${testMessages.length} test messages and injected into store`)
 
-    // 注入测试消息（通过 store 或直接修改 - 这里仅作演示）
-    // 实际使用时需要通过 useStore 注入
-    console.warn("⚠️ Performance test needs store integration to inject messages")
-    console.log("Test messages ready:", testMessages.slice(0, 3))
-
-    // 启动 FPS 监控
     fpsMonitorRef.current = new FpsMonitor()
     fpsMonitorRef.current.start()
     setPerfTestRunning(true)
-
-    console.log("📊 FPS monitoring started - scroll the message list, then click again to stop")
-  }, [perfTestRunning])
+    requestAnimationFrame(() => {
+      try {
+        virtualizer.scrollToEnd()
+      } catch {
+        /* virtualizer 可能尚未 ready */
+      }
+    })
+    console.log("FPS monitoring started — scroll the list, click Gauge again to stop")
+  }, [perfTestRunning, virtualizer])
 
   const virtualItems = virtualizer.getVirtualItems()
 
