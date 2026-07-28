@@ -9,8 +9,7 @@ import { DEFAULT_CONTEXT_TOKEN_BUDGET } from "../../shared/types"
 import { estimateMessageTokensRough } from "../../shared/context"
 import { messagesToMarkdown } from "../../shared/export"
 import { ChevronDown, Bot, Folder, Download, Gauge } from "lucide-react"
-import { FpsMonitor } from "../lib/fps-monitor"
-import { generateMixedTestMessages } from "../lib/test-utils"
+import type { FpsMonitor } from "../lib/fps-monitor"
 import { useStore } from "../stores/useStore"
 
 interface ChatViewProps {
@@ -41,7 +40,7 @@ const modeDesc: Record<Mode, string> = {
   ask: "只回答，不改文件",
   suggest: "出 diff，批准后写入",
   auto: "可读写文件，shell 需批准",
-  "full-auto": "读写 + shell；高危 shell 仍确认",
+  "full-auto": "自动读写文件；所有 shell 均需确认",
 }
 
 export function ChatView({
@@ -67,6 +66,12 @@ export function ChatView({
 
   // 性能测试（仅 dev 模式）
   const fpsMonitorRef = useRef<FpsMonitor | null>(null)
+  const perfOriginalMessagesRef = useRef<ChatMessage[] | null>(null)
+  const perfSessionIdRef = useRef<string | null | undefined>(null)
+  const currentSessionIdRef = useRef(sessionId)
+  currentSessionIdRef.current = sessionId
+  const perfStartingRef = useRef(false)
+  const mountedRef = useRef(true)
   const [perfTestRunning, setPerfTestRunning] = useState(false)
 
   // 虚拟列表:tanstack-virtual v3.14.2 原生 chat 支持。
@@ -158,35 +163,79 @@ export function ChatView({
     URL.revokeObjectURL(url)
   }, [messages, sessionId, sessionTitle])
 
-  // 性能测试（仅 dev 模式）：注入 2000 条到 store + FPS 监控
-  const handlePerfTest = useCallback(() => {
+  const stopPerfTest = useCallback(() => {
+    if (fpsMonitorRef.current) {
+      fpsMonitorRef.current.stop()
+      fpsMonitorRef.current.printReport("Virtual Scroll Performance")
+      fpsMonitorRef.current = null
+    }
+    if (perfOriginalMessagesRef.current && perfSessionIdRef.current === sessionId) {
+      useStore.getState().setMessages(perfOriginalMessagesRef.current)
+      setDidInitialScroll(false)
+    }
+    perfOriginalMessagesRef.current = null
+    perfSessionIdRef.current = null
+    perfStartingRef.current = false
+    setPerfTestRunning(false)
+  }, [sessionId])
+
+  // 性能测试仅在开发环境按需加载，生产构建不会包含生成器和 FPS 实现。
+  const handlePerfTest = useCallback(async () => {
+    if (!import.meta.env.DEV || perfStartingRef.current) return
     if (perfTestRunning) {
-      if (fpsMonitorRef.current) {
-        fpsMonitorRef.current.stop()
-        fpsMonitorRef.current.printReport("Virtual Scroll Performance")
-        fpsMonitorRef.current = null
-      }
-      setPerfTestRunning(false)
+      stopPerfTest()
       return
     }
 
-    const testMessages = generateMixedTestMessages(2000)
-    useStore.getState().setMessages(testMessages)
+    perfStartingRef.current = true
+    const startSessionId = sessionId
+    const { createVirtualScrollTest } = await import("../lib/performance-test")
+    if (!mountedRef.current || startSessionId !== currentSessionIdRef.current) {
+      perfStartingRef.current = false
+      return
+    }
+    const test = createVirtualScrollTest(2000)
+    perfOriginalMessagesRef.current = useStore.getState().messages
+    perfSessionIdRef.current = sessionId
+    useStore.getState().setMessages(test.messages)
     setDidInitialScroll(false)
-    console.log(`Generated ${testMessages.length} test messages and injected into store`)
 
-    fpsMonitorRef.current = new FpsMonitor()
-    fpsMonitorRef.current.start()
+    fpsMonitorRef.current = test.monitor
+    test.monitor.start()
+    perfStartingRef.current = false
     setPerfTestRunning(true)
-    requestAnimationFrame(() => {
-      try {
-        virtualizer.scrollToEnd()
-      } catch {
-        /* virtualizer 可能尚未 ready */
+    requestAnimationFrame(() => virtualizer.scrollToEnd())
+    console.log(`已注入 ${test.messages.length} 条测试消息；滚动列表后再次点击仪表盘查看报告`)
+  }, [perfTestRunning, sessionId, stopPerfTest, virtualizer])
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      perfStartingRef.current = false
+      if (fpsMonitorRef.current) {
+        fpsMonitorRef.current.stop()
+        fpsMonitorRef.current = null
       }
-    })
-    console.log("FPS monitoring started — scroll the list, click Gauge again to stop")
-  }, [perfTestRunning, virtualizer])
+      if (perfOriginalMessagesRef.current && perfSessionIdRef.current === sessionId) {
+        useStore.getState().setMessages(perfOriginalMessagesRef.current)
+      }
+      perfOriginalMessagesRef.current = null
+      perfSessionIdRef.current = null
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    if (!perfTestRunning || perfSessionIdRef.current === sessionId) return
+    if (fpsMonitorRef.current) {
+      fpsMonitorRef.current.stop()
+      fpsMonitorRef.current = null
+    }
+    perfOriginalMessagesRef.current = null
+    perfSessionIdRef.current = null
+    perfStartingRef.current = false
+    setPerfTestRunning(false)
+  }, [perfTestRunning, sessionId])
 
   const virtualItems = virtualizer.getVirtualItems()
 
@@ -221,7 +270,7 @@ export function ChatView({
               className={`btn-icon-muted !p-1 ${perfTestRunning ? "text-[var(--accent)]" : ""}`}
               title={perfTestRunning ? "停止性能测试" : "性能测试（2000 消息）"}
               aria-label="性能测试"
-              onClick={handlePerfTest}
+              onClick={() => void handlePerfTest()}
             >
               <Gauge size={13} />
             </button>

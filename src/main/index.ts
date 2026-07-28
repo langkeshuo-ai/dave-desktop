@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, globalShortcut } from "electron"
+import { app, BrowserWindow, Tray, Menu, globalShortcut, session } from "electron"
 import { join } from "node:path"
 import { existsSync, writeFileSync } from "node:fs"
 import { registerIpcHandlers } from "./ipc"
@@ -7,6 +7,7 @@ import { getStore } from "./store"
 import { setQuitting, isAppQuitting } from "./lifecycle"
 import { trackEvent } from "./telemetry-store"
 import { checkStartupBudget, COLD_WINDOW_BUDGET_MS } from "../shared/telemetry"
+import { isAllowedAppNavigation } from "../shared/navigation-policy"
 import log from "electron-log"
 import windowStateKeeper from "electron-window-state"
 import { initSecureStorage } from "./secure-storage"
@@ -77,6 +78,11 @@ let initialized = false
 if (!initialized) {
   initialized = true
 
+  // Electron smoke tests use an isolated userData directory so they never collide
+  // with a real Dave instance holding the single-instance lock.
+  const testUserData = process.env.DAVE_TEST_USER_DATA
+  if (testUserData) app.setPath("userData", testUserData)
+
   // Single-instance lock: secondary launches focus the existing window instead of
   // starting a second process — this is the standard Electron pattern (electron-reload /
   // VSCode / Slack all do this). Cheap, MIT-licensed, no extra deps required.
@@ -111,7 +117,7 @@ if (!initialized) {
     }
 
     // 初始化 safeStorage(OS 级加密),用于 API Key 等敏感字段的安全存储。
-    // 初始化失败不影响主流程,仅降级为明文存储。
+    // 初始化失败不影响非敏感功能，但 API Key 持久化会被明确拒绝。
     initSecureStorage().catch((err) => {
       log.warn(
         "initSecureStorage failed (non-fatal):",
@@ -120,6 +126,14 @@ if (!initialized) {
     })
 
     setupAppMenu()
+
+    // Dave does not need camera, microphone, geolocation, notifications, MIDI,
+    // clipboard-read, or other Chromium permissions. Deny by default in both the
+    // request and preflight paths so future renderer code cannot silently expand scope.
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+      callback(false)
+    })
+    session.defaultSession.setPermissionCheckHandler(() => false)
 
     registerIpcHandlers({
       getMainWindow: () => mainWindow,
@@ -132,13 +146,15 @@ if (!initialized) {
     })
 
     mainWindow = createWindow()
-    _tray = createTray(mainWindow, iconPath("ico") || iconPath("png"))
-    // Win has no native File menu — re-bind Cmd/Ctrl+N / , as focus-scoped shortcuts
-    // so they don't steal keys from other apps when Dave is in the background.
-    registerFocusScopedShortcuts()
+    if (!testUserData) {
+      _tray = createTray(mainWindow, iconPath("ico") || iconPath("png"))
+      // Win has no native File menu — re-bind Cmd/Ctrl+N / , as focus-scoped shortcuts
+      // so they don't steal keys from other apps when Dave is in the background.
+      registerFocusScopedShortcuts()
 
-    // 自动更新:仅在 packaged 生产构建中静默检查,失败不影响主流程。
-    setupAutoUpdater()
+      // 自动更新:仅在 packaged 生产构建中静默检查,失败不影响主流程。
+      setupAutoUpdater()
+    }
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -230,6 +246,16 @@ function ensureDefaultIcon(): void {
   writeFileSync(pngPath, buf)
 }
 
+const MAX_LOG_FIELD_LENGTH = 2_000
+
+function sanitizeLogField(value: string): string {
+  return value
+    .replace(/\b(sk-[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/g, "$1…[redacted]")
+    .replace(/(authorization\s*[:=]\s*(?:bearer\s+)?)[^\s,;]+/gi, "$1[redacted]")
+    .replace(/(api[-_ ]?key\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]")
+    .slice(0, MAX_LOG_FIELD_LENGTH)
+}
+
 function createWindow(): BrowserWindow {
   // Persist window size/position/maximized state across launches. electron-window-state
   // is the community standard (used by VSCode/Slack/Atom), MIT, ~50k weekly downloads.
@@ -251,13 +277,25 @@ function createWindow(): BrowserWindow {
     icon: iconPath("ico") || iconPath("png") || undefined,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
     },
   })
 
   winState.manage(win)
+
+  // Renderer content must stay on the app origin. Links are opened only through the
+  // validated open-link IPC path; arbitrary navigations and popup windows are denied.
+  win.webContents.on("will-navigate", (event, targetUrl) => {
+    if (isAllowedAppNavigation(targetUrl, win.webContents.getURL())) return
+    event.preventDefault()
+    log.warn("blocked renderer navigation:", sanitizeLogField(targetUrl))
+  })
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    log.warn("blocked renderer window.open:", sanitizeLogField(url))
+    return { action: "deny" }
+  })
 
   win.on("ready-to-show", () => {
     if (!isAppQuitting()) win.show()
@@ -273,7 +311,7 @@ function createWindow(): BrowserWindow {
   })
 
   win.on("close", (event) => {
-    if (!isAppQuitting()) {
+    if (!isAppQuitting() && !process.env.DAVE_TEST_USER_DATA) {
       event.preventDefault()
       win.hide()
     }
@@ -286,7 +324,7 @@ function createWindow(): BrowserWindow {
   // Capture renderer console + uncaught errors into electron-log so the user
   // can paste the real "渲染出错" stack from the log file instead of guessing.
   win.webContents.on("console-message", (_e, level, message, line, source) => {
-    const msg = `renderer[${line}] ${message} (${source})`
+    const msg = `renderer[${line}] ${sanitizeLogField(message)} (${sanitizeLogField(source)})`
     if (level >= 3) log.error(msg)
     else if (level === 2) log.warn(msg)
     else log.info(msg)
@@ -310,10 +348,17 @@ function createWindow(): BrowserWindow {
     }, 500)
   })
   win.webContents.on("preload-error", (_e, preloadPath, error) => {
-    log.error("preload-error in", preloadPath, ":", error)
+    log.error(
+      "preload-error in",
+      sanitizeLogField(preloadPath),
+      ":",
+      sanitizeLogField(error.message),
+    )
   })
   win.webContents.on("did-fail-load", (_e, code, desc, url, isMain) => {
-    log.error(`did-fail-load code=${code} desc=${desc} url=${url} isMain=${isMain}`)
+    log.error(
+      `did-fail-load code=${code} desc=${sanitizeLogField(desc)} url=${sanitizeLogField(url)} isMain=${isMain}`,
+    )
   })
 
   if (!app.isPackaged) {

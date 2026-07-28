@@ -5,7 +5,7 @@
 | 项       | 内容                                                                                         |
 | -------- | -------------------------------------------------------------------------------------------- |
 | 所在目录 | `C:\Users\C\dave客户端开发`                                                                  |
-| 技术栈   | Electron 42 + React 18 + TypeScript + Tailwind CSS                                           |
+| 技术栈   | Electron 42 + React 19 + TypeScript + Tailwind CSS                                           |
 | 构建工具 | electron-vite + electron-builder                                                             |
 | 打包输出 | NSIS (Windows) / DMG (macOS) / AppImage (Linux)                                              |
 | 状态     | 首次构建通过，可运行                                                                         |
@@ -31,7 +31,7 @@ Main Process (Electron)
 Preload (contextBridge)
   └── Secure API exposure
 
-Renderer (React 18)
+Renderer (React 19)
   ├── ChatView (streaming messages)
   ├── Sidebar (session management)
   ├── Settings (provider/model/key config)

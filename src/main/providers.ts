@@ -3,6 +3,7 @@
    ========================================================================= */
 
 import type { ChatMessage, ToolCall } from "../shared/types"
+import { fetchPublicHttps, normalizeCustomProviderBase } from "./provider-url-policy"
 import type { getStore } from "./store"
 
 type Store = ReturnType<typeof getStore>
@@ -17,7 +18,9 @@ export function resolveEndpoint(provider: string, store: Store): string {
     provider === "deepseek"
       ? "https://api.deepseek.com/v1"
       : provider === "custom"
-        ? (store.get("custom-host") as string) || "https://api.openai.com/v1"
+        ? normalizeCustomProviderBase(
+            (store.get("custom-host") as string) || "https://api.openai.com/v1",
+          )
         : "https://api.openai.com/v1"
   return `${base.replace(/\/$/, "")}/chat/completions`
 }
@@ -240,13 +243,18 @@ export async function probeProviderConnection(opts: {
       provider === "deepseek"
         ? "https://api.deepseek.com/v1"
         : provider === "custom"
-          ? (opts.customHost || "https://api.openai.com/v1").replace(/\/$/, "")
+          ? normalizeCustomProviderBase(opts.customHost || "https://api.openai.com/v1")
           : "https://api.openai.com/v1"
-    const res = await fetch(`${base}/models`, {
+    const probeUrl = `${base}/models`
+    const requestInit: RequestInit = {
       method: "GET",
       headers: buildHeaders(provider, key),
       signal: ctrl.signal,
-    })
+    }
+    const res =
+      provider === "custom"
+        ? await fetchPublicHttps(probeUrl, requestInit)
+        : await fetch(probeUrl, requestInit)
     const latencyMs = Date.now() - started
     if (!res.ok) {
       const body = await res.text().catch(() => "")

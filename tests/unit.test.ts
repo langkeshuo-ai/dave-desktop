@@ -25,8 +25,13 @@ import {
   resolveKey,
 } from "../src/main/providers"
 import { SessionRuntime } from "../src/main/session-runtime"
-import { needsApproval, getTool, toolDefsFor } from "../src/main/agent"
-import { assertInWorkspace } from "../src/main/agent"
+import {
+  needsApproval,
+  getTool,
+  toolDefsFor,
+  assertInWorkspace,
+  applyWorkspaceDiff,
+} from "../src/main/agent"
 import { filterCommands, type CommandItem } from "../src/shared/commands"
 import {
   computeFunnel,
@@ -40,6 +45,10 @@ import {
 } from "../src/shared/telemetry"
 import type { TelemetryEvent } from "../src/shared/telemetry"
 import type { ChatMessage } from "../src/shared/types"
+import { calculateFpsStats } from "../src/shared/fps-stats"
+import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
+import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
+import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
@@ -161,6 +170,49 @@ describe("patch (diff package + shared)", () => {
     const raw = "@@ patch\n--- a/f\n+++ b/f\n@@ -1 +1 @@\n-a\n+b\n"
     expect(normalizePatchBody(raw)).toContain("---")
     expect(normalizePatchBody(raw)).not.toMatch(/^@@ patch/)
+  })
+})
+
+describe("workspace patch transaction", () => {
+  it("precomputes all files before writing any change", async () => {
+    const workspace = mkdtempSync(join(tmpdir(), "dave-patch-"))
+    try {
+      writeFileSync(join(workspace, "first.txt"), "old-first\n")
+      writeFileSync(join(workspace, "second.txt"), "actual-second\n")
+      const first = createTwoFilesPatch("first.txt", "first.txt", "old-first\n", "new-first\n")
+      const invalidSecond = createTwoFilesPatch(
+        "second.txt",
+        "second.txt",
+        "expected-second\n",
+        "new-second\n",
+      )
+
+      await expect(applyWorkspaceDiff(workspace, `${first}\n${invalidSecond}`)).rejects.toThrow()
+      expect(
+        await import("node:fs/promises").then((fs) =>
+          fs.readFile(join(workspace, "first.txt"), "utf8"),
+        ),
+      ).toBe("old-first\n")
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
+
+  it("applies a valid multi-file patch", async () => {
+    const workspace = mkdtempSync(join(tmpdir(), "dave-patch-"))
+    try {
+      writeFileSync(join(workspace, "a.txt"), "a-old\n")
+      writeFileSync(join(workspace, "b.txt"), "b-old\n")
+      const patchA = createTwoFilesPatch("a.txt", "a.txt", "a-old\n", "a-new\n")
+      const patchB = createTwoFilesPatch("b.txt", "b.txt", "b-old\n", "b-new\n")
+      const result = await applyWorkspaceDiff(workspace, `${patchA}\n${patchB}`)
+      expect(result.ok).toBe(true)
+      const fs = await import("node:fs/promises")
+      expect(await fs.readFile(join(workspace, "a.txt"), "utf8")).toBe("a-new\n")
+      expect(await fs.readFile(join(workspace, "b.txt"), "utf8")).toBe("b-new\n")
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
   })
 })
 
@@ -428,7 +480,7 @@ describe("agent registry + approval matrix", () => {
     expect(needsApproval(read, "suggest")).toBe(false)
     expect(needsApproval(shell, "auto")).toBe(true)
     expect(needsApproval(write, "auto")).toBe(false)
-    expect(needsApproval(shell, "full-auto", { command: "echo hi" })).toBe(false)
+    expect(needsApproval(shell, "full-auto", { command: "echo hi" })).toBe(true)
     expect(needsApproval(shell, "full-auto", { command: "rm -rf ./x" })).toBe(true)
     expect(needsApproval(write, "full-auto")).toBe(false)
   })
@@ -457,6 +509,59 @@ describe("assertInWorkspace", () => {
 
   it("rejects empty workspace", async () => {
     await expect(assertInWorkspace("", "a.txt")).rejects.toThrow(/工作区未配置/)
+  })
+})
+
+describe("SSE parser", () => {
+  it("supports CRLF, comments, multiline data, and chunk boundaries", () => {
+    const parser = new SseParser()
+    expect(parser.push(': ping\r\ndata: {"a":\r\n')).toEqual([])
+    expect(parser.push("data: 1}\r\n\r\n")).toEqual([{ data: '{"a":\n1}' }])
+  })
+
+  it("flushes a final event without a blank terminator", () => {
+    const parser = new SseParser()
+    expect(parser.push("data: [DONE]", true)).toEqual([{ data: "[DONE]" }])
+  })
+
+  it("rejects oversized events", () => {
+    const parser = new SseParser()
+    expect(() => parser.push(`data: ${"x".repeat(MAX_SSE_EVENT_CHARS + 1)}`)).toThrow(/大小限制/)
+  })
+})
+
+describe("custom provider URL policy", () => {
+  it("accepts public HTTPS origins and normalizes trailing slash", () => {
+    expect(normalizeCustomProviderBase("https://api.example.com/v1/")).toBe(
+      "https://api.example.com/v1",
+    )
+  })
+
+  it("rejects plaintext, credentials, non-default ports, and local hosts", () => {
+    expect(() => normalizeCustomProviderBase("http://api.example.com/v1")).toThrow(/HTTPS/)
+    expect(() => normalizeCustomProviderBase("https://user:pass@api.example.com/v1")).toThrow(
+      /用户名或密码/,
+    )
+    expect(() => normalizeCustomProviderBase("https://api.example.com:8443/v1")).toThrow(/端口/)
+    expect(() => normalizeCustomProviderBase("https://localhost/v1")).toThrow(/本机/)
+  })
+
+  it("rejects private, loopback, link-local, metadata, and IPv6 local addresses", () => {
+    for (const host of [
+      "127.0.0.1",
+      "10.0.0.1",
+      "172.16.0.1",
+      "192.168.1.1",
+      "169.254.169.254",
+      "100.64.0.1",
+      "::1",
+      "fc00::1",
+      "fe80::1",
+    ]) {
+      expect(isPublicIpAddress(host), host).toBe(false)
+    }
+    expect(isPublicIpAddress("8.8.8.8")).toBe(true)
+    expect(isPublicIpAddress("2606:4700:4700::1111")).toBe(true)
   })
 })
 
@@ -869,6 +974,79 @@ describe("onboarding flow invariants", () => {
   })
 })
 
+describe("renderer navigation policy", () => {
+  it("allows only the current packaged file or current dev origin", () => {
+    expect(
+      isAllowedAppNavigation(
+        "file:///C:/Program%20Files/Dave/resources/app.asar/out/renderer/index.html",
+        "file:///C:/Program%20Files/Dave/resources/app.asar/out/renderer/index.html",
+      ),
+    ).toBe(true)
+    expect(isAllowedAppNavigation("http://localhost:5173/settings", "http://localhost:5173/")).toBe(
+      true,
+    )
+  })
+
+  it("blocks external origins, other files, and malformed URLs", () => {
+    expect(isAllowedAppNavigation("https://example.com", "http://localhost:5173/")).toBe(false)
+    expect(
+      isAllowedAppNavigation(
+        "file:///C:/Windows/System32/drivers/etc/hosts",
+        "file:///C:/app/index.html",
+      ),
+    ).toBe(false)
+    expect(isAllowedAppNavigation("not-a-url", "file:///C:/app/index.html")).toBe(false)
+  })
+})
+
+describe("virtual scroll FPS statistics", () => {
+  it("returns zeroed statistics for empty or invalid samples", () => {
+    expect(calculateFpsStats([])).toEqual({
+      avg: 0,
+      min: 0,
+      max: 0,
+      total: 0,
+      durationMs: 0,
+      p50FrameMs: 0,
+      p95FrameMs: 0,
+      p99FrameMs: 0,
+      over16Ms: 0,
+      over33Ms: 0,
+      over50Ms: 0,
+      stutterRate: 0,
+    })
+    expect(calculateFpsStats([0, -1, Number.NaN, Number.POSITIVE_INFINITY]).total).toBe(0)
+  })
+
+  it("calculates average FPS from total frames over total duration", () => {
+    const stats = calculateFpsStats([8, 24])
+    expect(stats.avg).toBeCloseTo(62.5)
+    expect(stats.avg).not.toBeCloseTo((1000 / 8 + 1000 / 24) / 2)
+    expect(stats.min).toBeCloseTo(1000 / 24)
+    expect(stats.max).toBe(125)
+  })
+
+  it("uses nearest-rank percentiles and counts slow frames", () => {
+    const samples = Array.from({ length: 20 }, (_, index) => index + 1)
+    const stats = calculateFpsStats(samples)
+    expect(stats.p50FrameMs).toBe(10)
+    expect(stats.p95FrameMs).toBe(19)
+    expect(stats.p99FrameMs).toBe(20)
+    expect(stats.over16Ms).toBe(4)
+    expect(stats.over33Ms).toBe(0)
+    expect(stats.over50Ms).toBe(0)
+    expect(stats.stutterRate).toBe(0)
+  })
+
+  it("reports stutter rate from frames slower than 33.3ms", () => {
+    const stats = calculateFpsStats([16, 34, 51, 10])
+    expect(stats.over16Ms).toBe(2)
+    expect(stats.over33Ms).toBe(2)
+    expect(stats.over50Ms).toBe(1)
+    expect(stats.stutterRate).toBe(50)
+  })
+})
+
 describe("startup performance budgets", () => {
   // 锁住产品规约里的三道预算:首启 60s、首问 5s、冷窗口 3s。
   // 主进程 ready-to-show / 渲染端 onChunk 第一帧分别用这些函数。
@@ -978,18 +1156,15 @@ describe("needsApproval — approval matrix edges", () => {
     expect(needsApproval(shellTool, "auto")).toBe(true)
   })
 
-  it("full-auto mode only asks for elevated shell", () => {
+  it("full-auto automatically mutates files but always asks for shell", () => {
     expect(needsApproval(readTool, "full-auto")).toBe(false)
     expect(needsApproval(writeTool, "full-auto")).toBe(false)
-    // 静默 shell 不需要审批
-    expect(needsApproval(shellTool, "full-auto", { command: "echo hi" })).toBe(false)
-    // 高危 shell 需要审批
+    expect(needsApproval(shellTool, "full-auto", { command: "echo hi" })).toBe(true)
     expect(needsApproval(shellTool, "full-auto", { command: "rm -rf ./tmp" })).toBe(true)
   })
 
-  it("full-auto shell without args.command treats as empty (no false-positive)", () => {
-    // 缺 command 时,isElevatedShellRisk("") === false,不应误触发审批
-    expect(needsApproval(shellTool, "full-auto", {})).toBe(false)
+  it("full-auto shell without args.command still requires approval", () => {
+    expect(needsApproval(shellTool, "full-auto", {})).toBe(true)
   })
 
   it("unknown mode falls back to approval (safe default)", () => {
@@ -1449,6 +1624,55 @@ describe("store secure helpers", () => {
     expect(await getSecure("theme")).toBe("night")
   })
 
+  it("setSecure refuses API key persistence when safeStorage is unavailable", async () => {
+    const storeData: Record<string, unknown> = {}
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: { isEncryptionAvailable: () => false },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { setSecure } = await import("../src/main/store")
+    await expect(setSecure("openai-api-key", "sk-secret")).rejects.toThrow(/安全存储不可用/)
+    expect(storeData["openai-api-key"]).toBeUndefined()
+  })
+
+  it("getSecure refuses legacy plaintext and unrecognized values", async () => {
+    const storeData: Record<string, unknown> = { "openai-api-key": "sk-legacy-plaintext" }
+    vi.doMock("electron", () => ({
+      app: { getPath: () => "/tmp" },
+      safeStorage: { isEncryptionAvailable: () => true },
+    }))
+    vi.doMock("electron-store", () => ({
+      __esModule: true,
+      default: class MockStore {
+        get(k: string) {
+          return storeData[k]
+        }
+        set(k: string, v: unknown) {
+          storeData[k] = v
+        }
+        delete(k: string) {
+          delete storeData[k]
+        }
+      },
+    }))
+    const { getSecure } = await import("../src/main/store")
+    expect(await getSecure("openai-api-key")).toBeNull()
+  })
+
   it("setSecure deletes key when value is empty", async () => {
     const storeData: Record<string, unknown> = { "openai-api-key": "old-enc" }
     vi.doMock("electron", () => ({
@@ -1486,40 +1710,45 @@ describe("validateSender — IPC origin validation", () => {
     vi.resetModules()
   })
 
-  it("allows all senders in dev mode (app not packaged)", async () => {
+  it("allows only the trusted main-window top frame in development", async () => {
     vi.doMock("electron", () => ({
       app: { isPackaged: false, getPath: () => "/tmp" },
-      BrowserWindow: { getAllWindows: () => [] },
     }))
     const { validateSender } = await import("../src/main/ipc")
-    // 任意 sender.id 在开发模式下都放行
-    expect(validateSender({ sender: { id: 999 } })).toBe(true)
-    expect(validateSender({ sender: { id: undefined } })).toBe(true)
+    const frame: { url: string; top?: unknown } = { url: "http://localhost:5173/" }
+    frame.top = frame
+    const main = { webContents: { id: 1 } } as never
+    expect(validateSender({ sender: { id: 1 }, senderFrame: frame }, main)).toBe(true)
+    expect(validateSender({ sender: { id: 2 }, senderFrame: frame }, main)).toBe(false)
+    expect(
+      validateSender(
+        { sender: { id: 1 }, senderFrame: { url: "http://evil.test/", top: undefined } },
+        main,
+      ),
+    ).toBe(false)
   })
 
-  it("rejects sender whose webContents.id is not in any window (production)", async () => {
+  it("requires a trusted packaged file URL and rejects missing or child frames", async () => {
     vi.doMock("electron", () => ({
       app: { isPackaged: true, getPath: () => "/tmp" },
-      BrowserWindow: {
-        getAllWindows: () => [{ webContents: { id: 1 } }, { webContents: { id: 2 } }],
-      },
     }))
     const { validateSender } = await import("../src/main/ipc")
-    // 已知窗口 id 放行
-    expect(validateSender({ sender: { id: 1 } })).toBe(true)
-    expect(validateSender({ sender: { id: 2 } })).toBe(true)
-    // 未知 id 拒绝
-    expect(validateSender({ sender: { id: 999 } })).toBe(false)
-    // undefined id 拒绝
-    expect(validateSender({ sender: { id: undefined } })).toBe(false)
-  })
-
-  it("rejects when no windows exist (production)", async () => {
-    vi.doMock("electron", () => ({
-      app: { isPackaged: true, getPath: () => "/tmp" },
-      BrowserWindow: { getAllWindows: () => [] },
-    }))
-    const { validateSender } = await import("../src/main/ipc")
-    expect(validateSender({ sender: { id: 1 } })).toBe(false)
+    const main = { webContents: { id: 1 } } as never
+    const top: { url: string; top?: unknown } = { url: "file:///app/out/renderer/index.html" }
+    top.top = top
+    expect(validateSender({ sender: { id: 1 }, senderFrame: top }, main)).toBe(true)
+    expect(validateSender({ sender: { id: 1 }, senderFrame: null }, main)).toBe(false)
+    expect(
+      validateSender(
+        {
+          sender: { id: 1 },
+          senderFrame: { url: "file:///app/frame.html", top: { url: "file:///app/index.html" } },
+        },
+        main,
+      ),
+    ).toBe(false)
+    const httpFrame: { url: string; top?: unknown } = { url: "https://example.com/" }
+    httpFrame.top = httpFrame
+    expect(validateSender({ sender: { id: 1 }, senderFrame: httpFrame }, main)).toBe(false)
   })
 })

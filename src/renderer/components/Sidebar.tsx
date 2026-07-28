@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Plus, Trash2, Clock, Search, Check, X } from "lucide-react"
 import type { Session } from "../stores/useStore"
 
@@ -24,6 +24,17 @@ export function Sidebar({
   const [query, setQuery] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState("")
+  const [version, setVersion] = useState("")
+
+  useEffect(() => {
+    let active = true
+    void window.dave.version().then((value) => {
+      if (active) setVersion(value || "")
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const formatDate = (ts: number) => {
     const d = new Date(ts)
@@ -212,7 +223,7 @@ export function Sidebar({
 
       <div className="px-3 py-1.5 border-t border-[var(--border)] flex items-center justify-between text-[10px] text-[var(--text-faint)]">
         <span>Dave Desktop</span>
-        <span>v0.1.0</span>
+        <span>{version ? `v${version}` : ""}</span>
       </div>
     </div>
   )

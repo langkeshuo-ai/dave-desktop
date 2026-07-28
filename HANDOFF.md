@@ -55,7 +55,7 @@ e20c0a2 docs: 添加 0.2.0 版本优化提升路线图
 
 ### 正常
 
-- `npm run typecheck` / `lint` / `test`（123）/ `build` 全绿。
+- `npm run verify` 已包含 format、lint、双 tsconfig、136 项测试、V8 coverage 与生产 build。
 - 生产 Windows 包：`dist/dave-desktop-win-x64-setup.exe`、`...-portable.exe`（约 108MB）。
 - 主题变量层与懒加载结构已进主分支（部分 LoadingOverlay 可能未 commit）。
 

@@ -4,6 +4,10 @@ node_modules/
 # Build output
 out/
 dist/
+dist-hardening/
+dist-final-hardening/
+dist-final-portable/
+coverage/
 
 # Electron runtime
 electron-binaries/

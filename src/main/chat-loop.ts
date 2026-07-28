@@ -6,6 +6,7 @@ import type { IpcMainInvokeEvent } from "electron"
 import log from "electron-log"
 import type { AgentMode, ChatMessage } from "../shared/types"
 import { clampToolOutput, truncateMessages } from "../shared/context"
+import { SseParser } from "../shared/sse-parser"
 import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 import {
   anthropicToMessage,
@@ -21,7 +22,10 @@ import {
 } from "./providers"
 import { autoTitleSession, getSessionMessages, saveSessionMessages } from "./session"
 import { sessionRuntime } from "./session-runtime"
+import { fetchPublicHttps } from "./provider-url-policy"
 import { getStore } from "./store"
+
+const partialBySession = new Map<string, string>()
 
 export function resolveApproval(sessionId: string, approved: boolean): void {
   sessionRuntime.resolveApproval(sessionId, approved)
@@ -31,9 +35,15 @@ export function abortSession(sessionId: string): void {
   sessionRuntime.abortSession(sessionId)
 }
 
-function fetchWithAbort(sessionId: string, url: string, init: RequestInit): Promise<Response> {
+function fetchWithAbort(
+  sessionId: string,
+  provider: string,
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
   const signal = sessionRuntime.beginAbortScope(sessionId)
-  return fetch(url, { ...init, signal })
+  const request = { ...init, signal }
+  return provider === "custom" ? fetchPublicHttps(url, request) : fetch(url, request)
 }
 
 /**
@@ -47,12 +57,15 @@ async function emitLocalStream(
 ): Promise<void> {
   if (!text) return
   const chunkSize = 24
+  let emitted = ""
   for (let i = 0; i < text.length; i += chunkSize) {
-    if (sessionRuntime.getSignal(sessionId)?.aborted) break
-    event.sender.send("chat-stream-chunk", {
-      content: text.slice(i, i + chunkSize),
-      sessionId,
-    })
+    if (sessionRuntime.getSignal(sessionId)?.aborted) {
+      throw new DOMException("aborted", "AbortError")
+    }
+    const content = text.slice(i, i + chunkSize)
+    emitted += content
+    partialBySession.set(sessionId, emitted)
+    event.sender.send("chat-stream-chunk", { content, sessionId })
     await new Promise((r) => setTimeout(r, 0))
   }
 }
@@ -65,7 +78,7 @@ async function streamFromProvider(
   headers: Record<string, string>,
   body: string,
 ): Promise<string> {
-  const response = await fetchWithAbort(sessionId, endpoint, {
+  const response = await fetchWithAbort(sessionId, provider, endpoint, {
     method: "POST",
     headers,
     body,
@@ -77,31 +90,28 @@ async function streamFromProvider(
   const reader = response.body?.getReader()
   if (!reader) throw new Error("无法读取响应流")
   const decoder = new TextDecoder()
-  let buffer = ""
+  const parser = new SseParser()
   let full = ""
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split("\n")
-    buffer = lines.pop() || ""
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed || !trimmed.startsWith("data: ")) continue
-      const data = trimmed.slice(6)
+  const consume = (events: Array<{ data: string }>) => {
+    for (const { data } of events) {
       if (data === "[DONE]") continue
       try {
-        const parsed = JSON.parse(data)
-        const content = extractDelta(provider, parsed)
-        if (content) {
-          full += content
-          event.sender.send("chat-stream-chunk", { content, sessionId })
-        }
+        const content = extractDelta(provider, JSON.parse(data))
+        if (!content) continue
+        full += content
+        partialBySession.set(sessionId, full)
+        event.sender.send("chat-stream-chunk", { content, sessionId })
       } catch {
-        /* partial */
+        log.warn("ignored malformed SSE data event")
       }
     }
   }
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    consume(parser.push(decoder.decode(value, { stream: true })))
+  }
+  consume(parser.push(decoder.decode(), true))
   return full
 }
 
@@ -114,11 +124,13 @@ function getSessionMode(): AgentMode {
 }
 
 function finishOk(event: IpcMainInvokeEvent, sessionId: string): void {
+  partialBySession.delete(sessionId)
   sessionRuntime.clearAbort(sessionId)
   event.sender.send("chat-stream-done", { sessionId })
 }
 
 function finishErr(event: IpcMainInvokeEvent, sessionId: string, error: string): void {
+  partialBySession.delete(sessionId)
   sessionRuntime.clearAbort(sessionId)
   event.sender.send("chat-stream-error", { error, sessionId })
 }
@@ -142,6 +154,7 @@ async function runAskMode(
     buildStreamBody(provider, model, messages),
   )
   messages.push({ role: "assistant", content: full })
+  partialBySession.delete(sessionId)
   saveSessionMessages(sessionId, messages)
   autoTitleSession(sessionId, messages)
   finishOk(event, sessionId)
@@ -182,7 +195,11 @@ async function runAgentLoop(
       throw new DOMException("aborted", "AbortError")
     }
     const body = buildAgentBody(provider, model, truncateMessages(messages), tools)
-    const resp = await fetchWithAbort(sessionId, endpoint, { method: "POST", headers, body })
+    const resp = await fetchWithAbort(sessionId, provider, endpoint, {
+      method: "POST",
+      headers,
+      body,
+    })
 
     if (!resp.ok) {
       const errBody = await resp.text().catch(() => "unknown error")
@@ -339,9 +356,13 @@ export async function handleChatStream(
 
   const messages = truncateMessages(getSessionMessages(sessionId))
   messages.push({ role: "user", content: message })
+  // Persist the user turn before network work so an invoke rejection or crash cannot
+  // silently discard what the user sent.
+  saveSessionMessages(sessionId, messages)
 
   const endpoint = resolveEndpoint(provider, store)
   const headers = buildHeaders(provider, key)
+  partialBySession.delete(sessionId)
 
   try {
     if (mode === "ask") {
@@ -360,14 +381,17 @@ export async function handleChatStream(
       headers,
     )
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
-      sessionRuntime.clearAbort(sessionId)
-      // aborted=true 让渲染端把 streamingContent 落为最后一条 assistant 消息,
-      // 否则用户中途点停止时正在打字的部分输出会被清空,体感丢消息。
-      event.sender.send("chat-stream-done", { sessionId, aborted: true })
-      return
-    }
-    if (err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message))) {
+    if (
+      (err instanceof DOMException && err.name === "AbortError") ||
+      (err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message)))
+    ) {
+      const partial = partialBySession.get(sessionId) || ""
+      partialBySession.delete(sessionId)
+      if (partial) {
+        const persisted = getSessionMessages(sessionId)
+        persisted.push({ role: "assistant", content: partial })
+        saveSessionMessages(sessionId, persisted)
+      }
       sessionRuntime.clearAbort(sessionId)
       event.sender.send("chat-stream-done", { sessionId, aborted: true })
       return

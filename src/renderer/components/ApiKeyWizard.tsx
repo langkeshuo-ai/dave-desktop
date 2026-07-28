@@ -272,7 +272,7 @@ export function ApiKeyWizard({ onClose, onCompleted }: ApiKeyWizardProps) {
                 粘贴 {PROVIDERS.find((p) => p.id === provider)?.name} Key
               </h2>
               <p className="text-[12px] text-[var(--text-dim)] mt-1 mb-4">
-                Key 只存本机 electron-store,不会上传。
+                Key 使用系统安全存储保存在本机，并会发送给所选 Provider 完成鉴权。
               </p>
               <div className="space-y-3">
                 <div className="relative">

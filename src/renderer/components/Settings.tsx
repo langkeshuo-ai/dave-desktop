@@ -63,6 +63,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
   const [probeBusy, setProbeBusy] = useState(false)
   const [probeMsg, setProbeMsg] = useState<string | null>(null)
   const [probeOk, setProbeOk] = useState<boolean | null>(null)
+  const [version, setVersion] = useState("")
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -101,18 +102,17 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
       }
       const w = (await window.dave.store.get("cwd")) || ""
       const ac = await window.dave.store.get("autoclear")
+      const appVersion = await window.dave.version()
       safeSet(() => {
         setCwd(w)
         setAutoclear(ac !== "false")
+        setVersion(appVersion || "")
       })
     }
     void load()
   }, [safeSet])
 
   const switchProvider = async (nextId: string) => {
-    await window.dave.store.set(`${provider}-api-key`, apiKey)
-    await window.dave.store.set(`${provider}-model`, model)
-
     safeSet(() => setProvider(nextId))
     const nextKey = (await window.dave.store.get(`${nextId}-api-key`)) || ""
     const nextModel = (await window.dave.store.get(`${nextId}-model`)) || ""
@@ -190,7 +190,8 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
     const next = !autoLaunchEnabled
     safeSet(() => setAutoLaunchEnabled(next))
     try {
-      await window.dave.autoLaunch.set(next)
+      const applied = await window.dave.autoLaunch.set(next)
+      safeSet(() => setAutoLaunchEnabled(applied ? next : !next))
     } catch {
       safeSet(() => setAutoLaunchEnabled(!next))
     }
@@ -331,7 +332,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                       <div>
                         <label className="field-label">备用 API Key</label>
                         <input
-                          type="text"
+                          type="password"
                           value={customApiKey}
                           onChange={(e) => setCustomApiKey(e.target.value)}
                           placeholder="可选"
@@ -364,7 +365,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                   <div className="p-2.5 bg-[var(--accent-soft)] border border-[var(--border)] rounded-md flex items-start gap-2">
                     <Shield size={13} className="text-[var(--accent)] shrink-0 mt-0.5" />
                     <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
-                      Key 仅本地加密存储，不上云。
+                      Key 使用系统安全存储保存在本机，并会发送给所选 Provider 鉴权。
                     </p>
                   </div>
                 </>
@@ -445,7 +446,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                         Dave Desktop
                       </div>
                       <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
-                        v0.1.0 · 本地 Agent
+                        {version ? `v${version}` : "版本读取中"} · 本地 Agent
                       </div>
                     </div>
                   </div>

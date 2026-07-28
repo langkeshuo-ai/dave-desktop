@@ -326,18 +326,9 @@ export default function App() {
     })
     const unsubDone = window.dave.chat.onDone((data: ChatStreamDone) => {
       if (data.sessionId !== currentSessionId) return
-      // 中途被中止(用户点停止 / iteration cap / abort)时,主进程不会再
-      // 把 streamingContent 落库,但部分输出已经在渲染端可见。
-      // 把它落为最后一条 assistant 消息,否则用户体感"打字打一半不见了"。
-      // 用 useStore.getState() 取最新 streamingContent,避免 effect 依赖它
-      // 导致每个 chunk 都重绑监听器(也避免闭包过期)。
-      if (data.aborted) {
-        const partial = useStore.getState().streamingContent
-        if (partial) {
-          addMessage({ role: "assistant", content: partial })
-          setStreamingContent("")
-        }
-      }
+      // 主进程会在发送 aborted done 前先持久化 partial；渲染端只清空临时态，
+      // 随后的 loadSession 读取单一事实源，避免本地 addMessage 被旧快照覆盖。
+      setStreamingContent("")
       setStreaming(false)
       if (data.sessionId) {
         // Reload messages + session list so autoTitle (first user line) appears in sidebar.
@@ -487,7 +478,16 @@ export default function App() {
       // 用 performance.now() 而非 Date.now(),精度到亚毫秒,且不受系统时钟跳变影响。
       ttfbStartedAtRef.current = typeof performance !== "undefined" ? performance.now() : Date.now()
 
-      void window.dave.chat.stream(content, sid)
+      void window.dave.chat.stream(content, sid).catch((err: unknown) => {
+        if (useStore.getState().currentSessionId !== sid) return
+        setStreaming(false)
+        setStreamingContent("")
+        const message = err instanceof Error ? err.message : String(err)
+        setError(message || "消息发送失败")
+        setStatus("error")
+        setStatusMsg("消息发送失败")
+        void loadSession(sid)
+      })
     },
     [
       currentSessionId,

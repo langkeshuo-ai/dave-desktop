@@ -14,7 +14,7 @@ npm run package:win  # electron-builder (NSIS + portable)
 
 ## Architecture
 
-**Electron 3-process model**: `src/main/` (Node), `src/preload/` (contextBridge), `src/renderer/` (React 18 + Tailwind 4 + Zustand 5). `src/shared/` is imported by all three layers — pure functions and types only.
+**Electron 3-process model**: `src/main/` (Node), `src/preload/` (contextBridge), `src/renderer/` (React 19 + Tailwind 4 + Zustand 5). `src/shared/` is imported by all three layers — pure functions and types only.
 
 ## Critical gotchas
 

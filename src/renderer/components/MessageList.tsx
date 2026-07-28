@@ -14,30 +14,10 @@ import {
   Square,
 } from "lucide-react"
 import type { ReactVirtualizer, VirtualItem } from "@tanstack/react-virtual"
-import type { PluggableList } from "unified"
 
-// 只懒加载 ReactMarkdown 本体（减少首屏 ~150KB）
-// 插件必须静态导入（unified 插件不是 React 组件）
-const ReactMarkdown = lazy(() => import("react-markdown"))
-import remarkGfm from "remark-gfm"
-import rehypeHighlight from "rehype-highlight"
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
-
-// rehype-sanitize 白名单配置 — 防御 LLM 输出的 XSS 攻击
-// className 必须保留供代码高亮使用
-const sanitizeSchema = {
-  ...defaultSchema,
-  attributes: {
-    ...defaultSchema.attributes,
-    code: [...(defaultSchema.attributes?.code ?? []), ["className"]],
-    span: [...(defaultSchema.attributes?.span ?? []), ["className"]],
-    pre: [...(defaultSchema.attributes?.pre ?? []), ["className"]],
-    div: [...(defaultSchema.attributes?.div ?? []), ["className"]],
-  },
-}
-
-// 统一白名单元组
-const rehypeSanitizePlugin = [rehypeSanitize as never, sanitizeSchema as never]
+const MarkdownContent = lazy(() =>
+  import("./MarkdownContent").then((module) => ({ default: module.MarkdownContent })),
+)
 
 interface MessageListProps {
   messages: ChatMessage[]
@@ -226,13 +206,7 @@ const MessageBubble = memo(function MessageBubble({
                 <div className="text-sm opacity-60 whitespace-pre-wrap">{message.content}</div>
               }
             >
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeSanitizePlugin, rehypeHighlight] as PluggableList}
-                components={{ pre: CodeBlockPre, code: InlineCodeRenderer }}
-              >
-                {message.content || ""}
-              </ReactMarkdown>
+              <MarkdownContent content={message.content || ""} />
             </Suspense>
             {isStreaming && (
               <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />
@@ -360,82 +334,6 @@ function ToolTrace({ message }: { message: ChatMessage }) {
       </div>
     </div>
   )
-}
-
-function CodeBlockPre({ children }: { children?: React.ReactNode }) {
-  const codeEl: unknown = Array.isArray(children)
-    ? children.find((c: unknown) => {
-        const candidate = c as { props?: { className?: string } }
-        return candidate?.props?.className?.startsWith("language-")
-      })
-    : (children as { props?: { className?: string } })?.props?.className?.startsWith("language-")
-      ? children
-      : null
-  const el = codeEl as { props?: { className?: string; children?: unknown } } | null
-  const className: string = el?.props?.className || ""
-  const lang = className.replace("language-", "").trim() || "text"
-  const raw = el?.props?.children ?? ""
-  const text =
-    typeof raw === "string" ? raw : Array.isArray(raw) ? raw.join("") : JSON.stringify(raw)
-
-  return (
-    <CodeBlock lang={lang} code={text}>
-      {codeEl as React.ReactNode}
-    </CodeBlock>
-  )
-}
-
-function CodeBlock({
-  lang,
-  code,
-  children,
-}: {
-  lang: string
-  code: string
-  children?: React.ReactNode
-}) {
-  const [copied, setCopied] = useState(false)
-  const copy = useCallback(() => {
-    // 与 MessageActions 保持一致:clipboard 写失败时静默,只更新本地 UI
-    // 反馈,避免在工具栏里冒红框影响后续操作。
-    void navigator.clipboard
-      .writeText(code)
-      .then(() => setCopied(true))
-      .catch(() => setCopied(false))
-  }, [code])
-
-  // 复制成功的视觉反馈(1.5s 自动撤销)。effect 内清理,避免组件卸载后
-  // 仍触发 setState 产生 "setState on unmounted" 警告 + 计时器泄漏。
-  // 与 MessageActions 用同一套模式,保证代码块和消息操作条行为一致。
-  useEffect(() => {
-    if (!copied) return
-    const t = setTimeout(() => setCopied(false), 1500)
-    return () => clearTimeout(t)
-  }, [copied])
-
-  return (
-    <div className="code-block">
-      <div className="code-block-header">
-        <span className="lang-tag flex items-center gap-1.5">
-          <FileCode2 size={11} /> {lang}
-        </span>
-        <button
-          onClick={copy}
-          className={`copy-btn flex items-center gap-1 ${copied ? "copied" : ""}`}
-        >
-          {copied ? <Check size={11} /> : <Copy size={11} />}
-          {copied ? "已复制" : "复制"}
-        </button>
-      </div>
-      <pre className="code-block-body hljs">
-        <code className={`language-${lang}`}>{children ?? code}</code>
-      </pre>
-    </div>
-  )
-}
-
-function InlineCodeRenderer({ children }: { children?: React.ReactNode }) {
-  return <code className="not-hljs">{children}</code>
 }
 
 function PatchView({ body, streaming }: { body: string; streaming?: boolean }) {

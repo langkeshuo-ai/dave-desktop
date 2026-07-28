@@ -8,20 +8,20 @@
 
 | 层       | 技术                                                                      |
 | -------- | ------------------------------------------------------------------------- |
-| 桌面框架 | Electron 42 + electron-vite 3 + electron-builder 26                       |
-| 前端     | React 18 + TypeScript 5.7 + Tailwind 4 + Zustand 5                        |
+| 桌面框架 | Electron 42 + electron-vite 5 + electron-builder 26                       |
+| 前端     | React 19 + TypeScript 5.8 + Tailwind 4 + Zustand 5                        |
 | Markdown | react-markdown 10 + remark-gfm 4 + rehype-highlight 7 + rehype-sanitize 6 |
 | 图标     | lucide-react 0.500                                                        |
 | 持久化   | electron-store 11 + electron-window-state 5 + safeStorage（API Key）      |
 | 日志     | electron-log 5                                                            |
-| 测试     | Vitest 4 + 123 单元测试                                                   |
+| 测试     | Vitest 3.2.6 + 136 单元测试                                               |
 | 代码质量 | ESLint 9 + Prettier + Husky + lint-staged                                 |
 | 字体     | -apple-system / Segoe UI（系统栈）+ JetBrains Mono（代码）                |
 
 ## 功能
 
 - **AI 多 provider 流式对话** — OpenAI / Anthropic / DeepSeek / 自定义（OpenAI 兼容）
-- **Agent 工具循环** — 9 工具 + 四种批准模式（full-auto 高危 shell 仍确认）
+- **Agent 工具循环** — 9 工具 + 四种批准模式（所有 shell 始终单独确认）
 - **会话** — 创建/切换/删除/搜索/重命名/自动标题/导出 Markdown
 - **工作区** — 文件树；点击插入 `@path`；patch 应用/忽略
 - **设置** — 模型连接测试、工作区、开机自启、打开日志目录

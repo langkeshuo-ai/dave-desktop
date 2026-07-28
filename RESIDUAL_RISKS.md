@@ -1,52 +1,50 @@
 # Residual Risks & Tech Debt Ledger
 
-> 更新: 2026-07-21  
-> 结论: **可改代码项已全部收口**；仅外部/硬件/采购项 DEFERRED。
+> 更新: 2026-07-27
+> 结论: 当前可由代码直接收口的性能与 Electron 边界问题已处理；真实图形性能、签名发布和跨平台验证仍需外部环境。
 
-## 目标 / 非目标（终态）
+## 当前已关闭
 
-```
-目标: Cursor/Codex 级本地 Agent 可用闭环 — 信任/生产力/UI/工程门禁
-非目标: 代码签名证书、MCP 全量、OS 级 shell 沙箱、mac/linux 真机打包
-```
+| ID               | 根因                                                             | 已实施方案                                                   | 验证                           |
+| ---------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------ |
+| VIRTUAL-LIST     | 长会话完整 DOM 渲染                                              | 接入 `@tanstack/react-virtual`，使用 chat anchor/follow 策略 | production build               |
+| BUNDLE-MARKDOWN  | Markdown 全链静态进入主包                                        | `MarkdownContent` 通过 React lazy 按需加载                   | bundle 产物检查                |
+| DEV-PERF-IN-PROD | 压测工具静态 import                                              | `import.meta.env.DEV` + 动态 import                          | production 主 chunk 无压测实现 |
+| FPS-MATH         | 对逐帧 FPS 求算术平均导致高估                                    | 以总帧数/总时长计算，报告 P50/P95/P99 与慢帧                 | `calculateFpsStats` 单测       |
+| PERF-STATE-RACE  | 压测覆盖消息、双击/卸载/切会话竞态                               | 快照恢复、启动锁、mounted/session guard、RAF 清理            | lint/typecheck/test            |
+| IPC-SENDER       | 部分 IPC 未统一验证来源                                          | 所有 preload 暴露 handler 均执行 `validateSender`            | typecheck/test                 |
+| NAVIGATION       | 未显式限制 renderer 导航/弹窗                                    | `will-navigate` 同源策略 + `setWindowOpenHandler` deny       | 导航策略单测                   |
+| MD-XSS           | Markdown HTML/高亮 class 边界                                    | `rehype-sanitize` schema 白名单                              | production build               |
+| VITEST-RUNNER    | Vitest 4.1.10 在当前环境 runner 初始化失败，3.2.4 又有已披露漏洞 | 固定到兼容且修复漏洞的 3.2.6                                 | 136 tests                      |
 
-## 开源优先决策
+既有已关闭项（摘要）：store key 白名单、API Key safeStorage、shell hard-deny/elevated 审批、patch 工作区边界、会话运行时清理、流式 abort partial 保留、ErrorBoundary、焦点恢复、键盘帮助、命令面板、消息操作、滚动到底按钮、遥测边界。
 
-| 能力          | 方案                                        | 决策                                            |
-| ------------- | ------------------------------------------- | ----------------------------------------------- |
-| 桌面壳/打包   | Electron + electron-vite + electron-builder | **复用**                                        |
-| 连接探测      | 原生 fetch                                  | **自研** 薄胶水                                 |
-| Diff          | npm `diff`                                  | **复用**                                        |
-| shell 策略    | 规则表 + elevated                           | **自研**（无成熟薄库）                          |
-| token 主进程  | js-tiktoken                                 | **复用**                                        |
-| token UI      | rough 估算                                  | **自研**（避免 6MB 进 renderer）                |
-| 自动更新      | electron-updater                            | **依赖已装 · 接线 DEFERRED**（需签名+Releases） |
-| 虚拟列表      | @tanstack/react-virtual                     | **已安装** ^3.14.7（待接入）                    |
-| Markdown 渲染 | react-markdown + rehype-highlight           | **复用**                                        |
-| Markdown 安全 | rehype-sanitize                             | **复用**（v6,需元组断言）                       |
+## 仍待外部或真实环境验证
 
-## 已关闭（可改代码）
+| ID               | 级别 | 状态与原因                                                                                      | 关闭条件                                                                         |
+| ---------------- | ---- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| FPS-REAL         | P1   | 2000 条混合消息的 Electron 真窗口滚动指标尚未采集；不能用 jsdom/Node 伪造                       | 在目标 Windows 机器记录 avg、P50/P95/P99、>16.7/>33.3/>50ms、卡顿率              |
+| UAT-E2E          | P1   | 当前只有 Node 单元/集成测试，无 Electron GUI 自动化                                             | 引入 Playwright Electron 或等价方案并覆盖首启、设置、会话、停止/再生成、性能入口 |
+| SIGNING          | P1   | Windows/macOS 发布未签名，取决于证书采购                                                        | 配置代码签名并验证 SmartScreen/Gatekeeper                                        |
+| UPDATE-RELEASE   | P1   | updater 已接线但缺签名与 GitHub Releases 发布策略                                               | 签名产物 + latest.yml + staged rollout                                           |
+| DEV-AUDIT        | P2   | 全依赖 audit 为 19 high + 1 moderate，均在 lint/打包开发链；npm 建议会危险降级 electron-builder | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar           |
+| CI               | P2   | 仓库暂无 GitHub Actions                                                                         | PR 上运行 `npm ci`、`npm run verify`、生产 audit、Windows package smoke          |
+| OS-SHELL-SANDBOX | P2   | 当前为策略层，不是 OS 隔离                                                                      | utilityProcess/Job Object/AppContainer 等系统隔离方案成熟并验证                  |
+| MAC-LINUX        | P3   | 本轮只有 Windows 环境                                                                           | macOS/Linux 真机构建与 smoke                                                     |
+| SESSION-DB       | P3   | electron-store 当前规模够用                                                                     | 数据量或事务需求触发后迁移 SQLite                                                |
 
-ESM-STORE-CTOR · WIN-MENU · SIDEBAR-BOT · SETTINGS-SIZE · SESSION-RESTORE · AUTOTITLE · SHORTCUTS · PROVIDER-PROBE · EMPTY-GATE · DIFF-APPLY · SESSION-SEARCH · FULLAUTO-SHELL · ARTIFACT-NAMES · AT-PATH · TOKEN-STATUS · SESSION-EXPORT · CUSTOM-KEY · EXPLORER-ASK · APPROVAL-KEYS · PACKAGE-AUTHOR · DOCS-SYNC · SHELL-C-FLAGS · APPROVAL-TIMEOUT · AGENT-LOOP-CAP · LISTENER-LEAK · RENDERER-CRASH-RELOAD · MD-XSS · MSG-ACTIONS · SCROLL-BOTTOM · PALETTE-CMDFK · SIDEBAR-KEYBOARD · KEYBOARD-HELP · ERROR-BOUNDER · FILTER-TESTS · COPY-CLEANUP · FOCUS-RESTORE · SESSION-RACE · STATUS-DECL · ONBOARDING-FUNNEL · TELEMETRY-DEDUP · LAZY-LOAD · TTFB-INSTRUMENTATION · FIRST-WINDOW-METRIC · IPC-KEY-WHITELIST · TITLE-LEN · MSG-MEMO · TOKEN-MEMO · A11Y-STATUS-ALERT · SCROLL-THRESHOLD · CSP-STRICT · STORE-KEYS-FILTER
+## 依赖审计口径
 
-## DEFERRED（有正当理由）
+- `npm audit --omit=dev`: **0 漏洞**。
+- `npm audit`: **20 项**（19 high、1 moderate），集中于 `electron-builder`、`eslint` 及其 `glob/minimatch/brace-expansion/tar` 传递链。
+- 不执行 `npm audit fix --force`：当前建议包含将 `electron-builder@26` 反向降级至 `22.14.13`，会扩大兼容性和维护风险。
 
-| ID                  | 原因                                                                    |
-| ------------------- | ----------------------------------------------------------------------- |
-| SIGN*               | 商业证书采购                                                            |
-| UPDATE*             | 需签名 + GitHub Releases 托管策略                                       |
-| OS-PACK             | 无 mac/linux 构建机                                                     |
-| MCP                 | 产品范围外                                                              |
-| SHELL-OS-SANDBOX    | 需 utilityProcess + OS 隔离                                             |
-| SESSION-DB          | 当前分 key store 够用                                                   |
-| CSP-CUSTOM-HOST     | API 在 main 进程 fetch，renderer CSP 不影响；仅若未来 renderer 直连再扩 |
-| VIRTUAL-LIST        | 当前 1k 消息以下无可见卡顿，达阈值时再引入                              |
-| EDITOR-AUTOCOMPLETE | 暂未评估用户需求；textarea + @-path 已覆盖主流程                        |
+## 发布门禁
 
-## 验证
-
-```
-npm run verify   # typecheck + test + build
+```bash
+npm run verify
+npm audit --omit=dev
 npm run package:win
-# smoke: Dave Desktop 窗口 · log 无 ElectronStore ctor
 ```
+
+此外必须完成 `tests/SELF_CHECK.md` 的目标 Windows 真机 UAT；未获得真实 FPS 与签名发布证据时，不得宣称这些风险已关闭。

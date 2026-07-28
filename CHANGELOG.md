@@ -4,6 +4,17 @@
 
 ## [未发布]
 
+### 端到端性能与安全加固（2026-07-27）
+
+- 完整 Markdown 渲染链迁入 `MarkdownContent` 懒加载边界；主 renderer chunk 从约 1,203.59KB 降至约 726.51KB，Markdown 按需 chunk 约 738.02KB。
+- 2000 条虚拟滚动压测工具改为 dev-only 动态加载，生产主包不再包含测试消息生成器和 FPS 监控实现。
+- FPS 统计改为总帧数/总时长模型，新增 frame time P50/P95/P99、慢帧分档与卡顿率；抽出 `calculateFpsStats` 并加入单元测试。
+- 修复压测消息恢复、快速双击、动态加载期间卸载、切换会话及 RAF 清理竞态。
+- 修复无语言 fenced code 的 text 回退，并保留 Markdown sanitize 高亮 class 白名单。
+- Vitest 固定为 3.2.6：规避 4.1.10 当前 runner 初始化回归，同时避开 3.2.4 已披露漏洞。
+- Electron 主窗口新增跨源导航与 popup 拦截；全部 preload IPC handler 统一 sender 校验，补充 URL、通知及 auto-launch 输入边界。
+- 自动化测试增至 129 项；生产依赖审计为 0 漏洞。全依赖开发工具链遗留 19 high + 1 moderate，已记录在风险台账，拒绝危险强制降级修复。
+
 ### 性能优化 Phase 1 — Code Splitting 与 Bundle 瘦身（2025-01-26）
 
 #### 新增

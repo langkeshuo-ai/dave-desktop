@@ -15,11 +15,38 @@ const stripCrossorigin = () => ({
   },
 })
 
+const devCspConnect = () => ({
+  name: "dev-csp-connect",
+  apply: "serve" as const,
+  transformIndexHtml(html: string) {
+    return html.replace(
+      "connect-src 'self';",
+      "connect-src 'self' http://localhost:5173 ws://localhost:5173;",
+    )
+  },
+})
+
+// The repository package is ESM for build tooling, while Electron main/preload
+// bundles are intentionally CommonJS. Give each generated bundle its own package
+// scope so an unpackaged production build behaves exactly like app.asar, whose
+// root metadata is rewritten to CommonJS by electron-builder.
+const cjsPackageScope = (name: string): Plugin => ({
+  name: `cjs-package-scope-${name}`,
+  generateBundle() {
+    this.emitFile({
+      type: "asset",
+      fileName: "package.json",
+      source: '{"type":"commonjs"}\n',
+    })
+  },
+})
+
 export default defineConfig({
   main: {
     build: {
       rollupOptions: {
         input: { index: "src/main/index.ts" },
+        plugins: [cjsPackageScope("main")],
         // Explicitly externalize electron so require("electron") resolves to
         // the built-in module at runtime, NOT the node_modules/electron package
         // (which exports the path to the Electron binary, not the Electron API).
@@ -41,6 +68,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: { index: "src/preload/index.ts" },
+        plugins: [cjsPackageScope("preload")],
         // Same reasoning as main — sandbox preload scripts must resolve
         // require("electron") to the built-in module, not the npm package.
         external: ["electron"],
@@ -54,10 +82,12 @@ export default defineConfig({
   },
   renderer: {
     root: "src/renderer",
-    plugins: [tailwind(), stripCrossorigin()],
+    plugins: [tailwind(), stripCrossorigin(), devCspConnect()],
     build: {
       outDir: "out/renderer",
-      emptyOutDir: true,
+      // Non-destructive builds: hashed assets are overwritten/referenced by the new index.
+      // Release packaging uses a fresh output directory, so stale local dev assets are inert.
+      emptyOutDir: false,
       sourcemap: true,
       modulePreload: { polyfill: false },
       rollupOptions: {

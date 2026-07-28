@@ -13,7 +13,7 @@
 ```bash
 npm install           # 依赖完整
 npm run typecheck     # 双 tsconfig 全绿(渲染器 + Node)
-npm run test          # vitest 全部通过(目前 63 用例)
+npm run test          # vitest 全部通过(目前 129 用例)
 npm run build         # electron-vite build 成功,懒加载分包齐全
 ```
 
@@ -22,7 +22,7 @@ npm run build         # electron-vite build 成功,懒加载分包齐全
 - `out/main/index.js` (CJS bundle, 包含主进程逻辑)
 - `out/preload/index.js` (preload bridge)
 - `out/renderer/index.html` + 多个 `assets/*.js` (懒加载分包)
-- 关键分包存在:`Welcome-*.js`、`ApiKeyWizard-*.js`、`Settings-*.js`、`CommandPalette-*.js`、`KeyboardHelp-*.js`、`WorkspacePanel-*.js`
+- 关键分包存在:`Welcome-*.js`、`ApiKeyWizard-*.js`、`Settings-*.js`、`CommandPalette-*.js`、`KeyboardHelp-*.js`、`WorkspacePanel-*.js`、`MarkdownContent-*.js`
 
 ---
 
@@ -93,18 +93,21 @@ npm run build         # electron-vite build 成功,懒加载分包齐全
 
 ## 5. 性能与稳定性盲测
 
-| 步  | 操作                                       | 期望                                             | ✅/❌ |
-| --- | ------------------------------------------ | ------------------------------------------------ | ----- |
-| 1   | `Ctrl+Shift+I` 打开 DevTools               | 渲染端 React DevTools 正常加载                   | ☐     |
-| 2   | DevTools Console 无红色 error(可允许 warn) | 干净                                             | ☐     |
-| 3   | DevTools Network 拉到第一次 cold start     | 看到 `Welcome-*.js` / `Settings-*.js` 懒加载分包 | ☐     |
-| 4   | 主界面 cold start 后输入首条消息           | "正在生成" 状态出现,token 流式输出               | ☐     |
-| 5   | 关闭并重新打开(配置未变)                   | 跳过欢迎页,直接进主界面                          | ☐     |
-| 6   | 关掉后再启动 7 天后                        | 7 日回访计数 +1                                  | ☐     |
-| 7   | 用 settings → 关于 → "清空统计"            | 计数全部归零                                     | ☐     |
-| 8   | 删除一条会话                               | 该会话从侧栏消失(不留死会话)                     | ☐     |
-| 9   | 删除后重启                                 | 不会再次出现该会话,且 `sessionRuntime` 不爆内存  | ☐     |
-| 10  | 输入超长消息(>10K 字符)                    | 渲染端 80K token 截断兜底,无白屏                 | ☐     |
+| 步  | 操作                                          | 期望                                             | ✅/❌ |
+| --- | --------------------------------------------- | ------------------------------------------------ | ----- |
+| 1   | `Ctrl+Shift+I` 打开 DevTools                  | 渲染端 React DevTools 正常加载                   | ☐     |
+| 2   | DevTools Console 无红色 error(可允许 warn)    | 干净                                             | ☐     |
+| 3   | DevTools Network 拉到第一次 cold start        | 看到 `Welcome-*.js` / `Settings-*.js` 懒加载分包 | ☐     |
+| 4   | 主界面 cold start 后输入首条消息              | "正在生成" 状态出现,token 流式输出               | ☐     |
+| 5   | 关闭并重新打开(配置未变)                      | 跳过欢迎页,直接进主界面                          | ☐     |
+| 6   | 关掉后再启动 7 天后                           | 7 日回访计数 +1                                  | ☐     |
+| 7   | 用 settings → 关于 → "清空统计"               | 计数全部归零                                     | ☐     |
+| 8   | 删除一条会话                                  | 该会话从侧栏消失(不留死会话)                     | ☐     |
+| 9   | 删除后重启                                    | 不会再次出现该会话,且 `sessionRuntime` 不爆内存  | ☐     |
+| 10  | 输入超长消息(>10K 字符)                       | 渲染端 80K token 截断兜底,无白屏                 | ☐     |
+| 11  | 开发模式点击“2000 条性能测试”并连续快速点两次 | 只启动一个监控器；停止后恢复原会话消息           | ☐     |
+| 12  | 性能测试中切换会话再停止                      | 不把旧会话快照写回新会话                         | ☐     |
+| 13  | 滚动 2000 条混合消息至少 20 秒                | 记录 avg、P50/P95/P99、慢帧与卡顿率，无白屏      | ☐     |
 
 ### 5.1 性能预算实测(产品规约)
 
@@ -197,7 +200,7 @@ npm run build         # electron-vite build 成功,懒加载分包齐全
 
 ## 7. 通过标准
 
-- **自动化部分**:`npm run verify` 全绿(typecheck + 63 测试 + build)。
+- **自动化部分**:`npm run verify` 全绿(lint + 双 tsconfig + 129 测试 + build)。
 - **人工盲测部分**:第 2-5 节所有 ☐ 全部 ✅。如有任何 ❌,**必须**修复后重新过一遍。
 - **录屏部分**:6.1-6.4 录屏均能正常完成,且无 console error / panic / 白屏。
 

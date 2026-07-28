@@ -9,12 +9,12 @@
 
 Dave Desktop 的内核由四层构成，每层职责明确、可独立替换：
 
-| 层                   | 实现                                                                     | 职责                                                                                                        |
-| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| 主进程（Main）       | Electron 42 + Node + TypeScript                                          | 窗口管理、单实例锁、IPC 路由、AI API 调用、SSE 流式解析、会话持久化、系统托盘、开机自启动；Win 隐藏原生菜单 |
-| Preload              | `@electron-toolkit/preload` + contextBridge                              | 安全桥接 — `contextIsolation: true` + `nodeIntegration: false`，仅暴露白名单 API 到 `window.dave`           |
-| 渲染进程（Renderer） | React 18 + Tailwind 4 + react-markdown + rehype-highlight + lucide-react | UI 渲染、状态管理（Zustand）、Markdown GFM + 代码高亮 + unified-diff 视图                                   |
-| 持久化               | `electron-store`（机器派生密钥加密）+ `electron-window-state`            | 设置加密、窗口状态、会话消息                                                                                |
+| 层                   | 实现                                                                                      | 职责                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 主进程（Main）       | Electron 42 + Node + TypeScript                                                           | 窗口管理、单实例锁、IPC 路由、AI API 调用、SSE 流式解析、会话持久化、系统托盘、开机自启动；Win 隐藏原生菜单 |
+| Preload              | `@electron-toolkit/preload` + contextBridge                                               | 安全桥接 — `contextIsolation: true` + `nodeIntegration: false`，仅暴露白名单 API 到 `window.dave`           |
+| 渲染进程（Renderer） | React 19 + Tailwind 4 + react-markdown + rehype-highlight + lucide-react                  | UI 渲染、状态管理（Zustand）、Markdown GFM + 代码高亮 + unified-diff 视图                                   |
+| 持久化               | `electron-store`（配置/会话）+ Electron `safeStorage`（API Key）+ `electron-window-state` | 设置加密、窗口状态、会话消息                                                                                |
 
 ### 内核不是 Bun.compile CLI
 
@@ -65,12 +65,12 @@ Anthropic 分支独立处理：不同 schema（`messages` 不含 `system` role �
 
 ### 四种批准模式（Codex 风格）
 
-| 模式        | 行为                                           |
-| ----------- | ---------------------------------------------- |
-| `ask`       | 纯流式对话，不跑工具                           |
-| `suggest`   | 可建议 diff / 变更；写入与 shell 需批准        |
-| `auto`      | 可自动读写文件；shell 需批准                   |
-| `full-auto` | 读写 + shell 默认可跑；**高危 shell 仍弹批准** |
+| 模式        | 行为                                      |
+| ----------- | ----------------------------------------- |
+| `ask`       | 纯流式对话，不跑工具                      |
+| `suggest`   | 可建议 diff / 变更；写入与 shell 需批准   |
+| `auto`      | 可自动读写文件；shell 需批准              |
+| `full-auto` | 自动读写文件；**所有 shell 始终单独批准** |
 
 > 四种模式均已接通主进程 agent 循环（`chat-loop` + 9 工具 + 批准对话框 + unified-diff）。
 

@@ -2,19 +2,19 @@
 
 **版本**: 0.1.0 → 0.2.0-dev  
 **优化周期**: Phase 1 完成  
-**测试日期**: 2025-01-26
+**测试日期**: 2026-07-27
 
 ---
 
 ## 一、优化目标回顾
 
-| 指标                  | 基线 (0.1.0) | 目标 (0.2.0) | 实际达成             |
-| --------------------- | ------------ | ------------ | -------------------- |
-| 首屏 bundle           | 1.5MB        | <900KB       | **✅ 1.20MB (-20%)** |
-| 非核心组件懒加载      | 否           | 是           | **✅ 6个组件完成**   |
-| ReactMarkdown 懒加载  | 否           | 是           | **✅ 266KB chunk**   |
-| 虚拟滚动压测工具      | 无           | 有           | **✅ 完成**          |
-| 2000 消息滚动帧率目标 | 未测试       | >50fps       | **待实测**           |
+| 指标                  | 基线 (0.1.0) | 目标 (0.2.0) | 实际达成                |
+| --------------------- | ------------ | ------------ | ----------------------- |
+| 首屏 bundle           | 1.5MB        | <900KB       | **✅ 约726.51KB**       |
+| 非核心组件懒加载      | 否           | 是           | **✅ 7个边界完成**      |
+| ReactMarkdown 懒加载  | 否           | 是           | **✅ 约738.02KB chunk** |
+| 虚拟滚动压测工具      | 无           | 有           | **✅ dev-only 完成**    |
+| 2000 消息滚动帧率目标 | 未测试       | >50fps       | **待目标机实测**        |
 
 ---
 
@@ -22,20 +22,15 @@
 
 ### 2.0 实测 Bundle 构成（rollup-plugin-visualizer 分析）
 
-**最终构建产物**（2026-07-26 实测）:
+**最终构建产物**（2026-07-27 实测）:
 
-| Chunk             | 大小        | 说明                                     |
-| ----------------- | ----------- | ---------------------------------------- |
-| index (主 bundle) | 1,203.59 KB | React + 应用核心 + lucide + virtual      |
-| index (Markdown)  | 265.76 KB   | **ReactMarkdown 懒加载 chunk（新拆出）** |
-| Settings          | 27.76 KB    | 懒加载                                   |
-| ApiKeyWizard      | 18.04 KB    | 懒加载                                   |
-| Welcome           | 9.08 KB     | 懒加载                                   |
-| WorkspacePanel    | 7.37 KB     | 懒加载                                   |
-| CommandPalette    | 6.76 KB     | 懒加载                                   |
-| KeyboardHelp      | 4.24 KB     | 懒加载                                   |
+| Chunk                   | 大小         | 说明                                      |
+| ----------------------- | ------------ | ----------------------------------------- |
+| index (主 renderer)     | 约726.51 KB  | React + 应用核心 + lucide + virtual       |
+| MarkdownContent（按需） | 约738.02 KB  | ReactMarkdown + remark/rehype + highlight |
+| 其他非核心组件          | 独立小 chunk | Settings、Welcome、Wizard、面板等         |
 
-**优化成果**: 主 bundle 从 1,468KB → 1,204KB（**-264KB / -18%**）。
+**优化成果**: 主 bundle 从 1,203.59KB → 约726.51KB（**-477.08KB / -39.6%**）。
 Markdown 渲染链（react-markdown + remark + rehype + highlight.js）被拆为独立
 chunk，首屏无消息时不加载；首条 assistant 消息渲染时按需拉取，Suspense
 fallback 期间以纯文本显示内容（无白屏）。
@@ -53,16 +48,16 @@ fallback 期间以纯文本显示内容（无白屏）。
 
 **优化组件清单**:
 
-| 组件                      | 预估大小 | 实际大小  | 加载时机                     | 优先级 |
-| ------------------------- | -------- | --------- | ---------------------------- | ------ |
-| **ReactMarkdown 渲染链*** | N/A      | **266KB** | **首条 assistant 消息触发**  | **P0** |
-| Settings                  | ~300KB   | 27.76KB   | 用户点击设置按钮             | P0     |
-| ApiKeyWizard              | ~120KB   | 18.04KB   | 首启或 API Key 缺失          | P0     |
-| Welcome                   | ~150KB   | 9.08KB    | 首次启动检测                 | P0     |
-| WorkspacePanel            | ~200KB   | 7.37KB    | 用户展开工作区面板           | P1     |
-| CommandPalette            | ~80KB    | 6.76KB    | 用户按 Cmd/Ctrl+K            | P1     |
-| KeyboardHelp              | N/A      | 4.24KB    | 用户按 ?                     | P1     |
-| **首屏减少总计**          | ~850KB   | **339KB** | **实际主 bundle 降至 1.2MB** | -      |
+| 组件                      | 预估大小 | 实际大小       | 加载时机                     | 优先级 |
+| ------------------------- | -------- | -------------- | ---------------------------- | ------ |
+| **ReactMarkdown 渲染链*** | N/A      | **约738KB**    | **首条 assistant 消息触发**  | **P0** |
+| Settings                  | ~300KB   | 27.76KB        | 用户点击设置按钮             | P0     |
+| ApiKeyWizard              | ~120KB   | 18.04KB        | 首启或 API Key 缺失          | P0     |
+| Welcome                   | ~150KB   | 9.08KB         | 首次启动检测                 | P0     |
+| WorkspacePanel            | ~200KB   | 7.37KB         | 用户展开工作区面板           | P1     |
+| CommandPalette            | ~80KB    | 6.76KB         | 用户按 Cmd/Ctrl+K            | P1     |
+| KeyboardHelp              | N/A      | 4.24KB         | 用户按 ?                     | P1     |
+| **主包优化结果**          | ~1.20MB  | **约726.51KB** | **完整 Markdown 链按需加载** | -      |
 
 \* ReactMarkdown 渲染链包含: react-markdown, remark-gfm, rehype-highlight, rehype-sanitize, unified 等
 
@@ -101,8 +96,8 @@ const rehypeHighlight = lazy(() => import("rehype-highlight").then((m) => ({ def
 
 - ✅ TypeScript 编译通过（零错误）
 - ✅ ESLint 检查通过（1个 warning，electron.vite.config.ts，不影响功能）
-- ✅ 单元测试通过（123/123）
-- ✅ 生产构建成功（主 bundle 1.2MB，Markdown chunk 266KB）
+- ✅ 单元测试通过（136/136）
+- ✅ 生产构建成功（主 renderer 约726.51KB，Markdown 按需 chunk 约738.02KB）
 - ✅ **实测首屏 bundle 减少 264KB（-18%）**
 
 ---
@@ -130,15 +125,7 @@ const rehypeHighlight = lazy(() => import("rehype-highlight").then((m) => ({ def
 3. 点击 ChatView 右上角"性能测试"按钮（仪表盘图标）
 4. 自动生成 2000 条测试消息 + 启动 FPS 监控
 5. 手动滚动消息列表，模拟真实用户操作
-6. 再次点击按钮停止，控制台输出性能报告：
-   ```
-   === Virtual Scroll Performance Report ===
-   Total Frames: 1234
-   FPS (avg): 58.2
-   Frame Time P50: 16.8ms
-   Frame Time P95: 24.3ms
-   Frame Time P99: 31.2ms
-   ```
+6. 再次点击按钮停止，控制台输出 `Duration`、`Frames`、`Average FPS`、FPS range、P50/P95/P99、`>16.7/>33.3/>50ms` 慢帧和卡顿率。报告中的具体数值必须来自目标 Windows 真机，本文件不预填模拟结果。
 
 **压测消息生成策略**:
 
@@ -150,7 +137,8 @@ const rehypeHighlight = lazy(() => import("rehype-highlight").then((m) => ({ def
 
 **当前限制**:
 
-- ⚠️ 测试消息生成后需手动注入到 store（当前仅打印到控制台）
+- ✅ 开发模式按钮自动注入 2000 条混合消息；停止、卸载或切换会话时按会话快照安全恢复
+- ✅ 压测实现通过 dev-only 动态 import 从生产 bundle 消除
 - ⚠️ 需要增加 E2E 自动化测试，自动注入消息并测量滚动性能
 
 ---
@@ -307,13 +295,13 @@ test("2000 消息滚动性能", async ({ page }) => {
 
 ### 5.1 当前限制
 
-| 问题                        | 影响       | 缓解方案                                        |
-| --------------------------- | ---------- | ----------------------------------------------- |
-| 测试消息手动注入            | 开发体验差 | 优先实现自动注入到 store                        |
-| 无 E2E 自动化压测           | 回归风险   | 下一阶段引入 Playwright                         |
-| Suspense fallback 无样式    | 用户体验   | 增加 loading spinner 样式                       |
-| Markdown 懒加载首次渲染延迟 | 用户体验   | **已缓解：fallback 显示纯文本，无白屏**         |
-| 主 bundle 仍 1.2MB          | 性能       | 下一步: Worker threads / 流式 diff / 冷启动优化 |
+| 问题                        | 影响     | 缓解方案                                                       |
+| --------------------------- | -------- | -------------------------------------------------------------- |
+| 测试消息注入与恢复          | 已关闭   | dev-only 自动注入，按会话快照恢复                              |
+| 无 E2E 自动化压测           | 回归风险 | 下一阶段引入 Playwright                                        |
+| Suspense fallback 无样式    | 用户体验 | 增加 loading spinner 样式                                      |
+| Markdown 懒加载首次渲染延迟 | 用户体验 | **已缓解：fallback 显示纯文本，无白屏**                        |
+| Markdown 按需 chunk 约738KB | 性能     | 保留 sanitize/highlight 功能；后续按真实加载频率评估更轻高亮器 |
 
 ### 5.2 后续优化方向
 
@@ -344,11 +332,11 @@ test("2000 消息滚动性能", async ({ page }) => {
 **已完成**:
 
 - ✅ Code splitting 实现（6 个组件懒加载）
-- ✅ **ReactMarkdown 渲染链懒加载（266KB chunk，首屏 -18%）**
+- ✅ **完整 ReactMarkdown 渲染链懒加载（约738.02KB chunk，主包较1,203.59KB下降约39.6%）**
 - ✅ FPS 监控工具（FpsMonitor）
 - ✅ 测试消息生成器（2000 条混合消息）
 - ✅ Dev 模式性能测试按钮
-- ✅ **生产构建验证完成（主 bundle 1.2MB）**
+- ✅ **生产构建验证完成（主 renderer 约726.51KB）**
 
 **待完成（本周）**:
 

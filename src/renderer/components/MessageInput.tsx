@@ -86,7 +86,7 @@ export function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={
             mode === "full-auto"
-              ? "描述任务… 将自动读写文件与执行 shell"
+              ? "描述任务… 自动读写文件，shell 仍需批准"
               : mode === "auto"
                 ? "描述任务… 可读写文件，shell 需批准"
                 : mode === "suggest"

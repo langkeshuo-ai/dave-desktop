@@ -40,17 +40,47 @@ type Deps = {
   showWindow: () => void
 }
 
+type SenderEvent = {
+  sender: { id?: number; getURL?: () => string }
+  senderFrame?: { url?: string; top?: unknown } | null
+}
+
 // Idempotency guard — electron-vite CJS-shim can re-run this module.
 let registered = false
+let trustedMainWindow: (() => BrowserWindow | null) | null = null
 
-/** 校验 IPC sender 是否来自主窗口的渲染进程。
- *  防止其他窗口或子进程绕过白名单发送 IPC 消息。
- *  仅在生产构建中启用严格校验,开发模式允许 localhost 调试连接。 */
-export function validateSender(event: { sender: { id?: number } }): boolean {
-  if (!app.isPackaged) return true // 开发模式放行(DevTools 等调试连接)
-  const win = BrowserWindow.getAllWindows().find((w) => w.webContents.id === event.sender.id)
-  if (!win) {
-    log.warn("IPC sender validation failed: sender webContents.id not found in any window")
+function isTrustedRendererUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    if (app.isPackaged) return parsed.protocol === "file:"
+    return (
+      parsed.protocol === "file:" ||
+      (parsed.protocol === "http:" && parsed.hostname === "localhost" && parsed.port === "5173")
+    )
+  } catch {
+    return false
+  }
+}
+
+/** 仅允许唯一主窗口的顶层可信 frame 调用高权限 IPC。 */
+export function validateSender(
+  event: SenderEvent,
+  trustedWindowOverride?: Pick<BrowserWindow, "webContents">,
+): boolean {
+  const main = trustedWindowOverride ?? trustedMainWindow?.()
+  if (!main || event.sender.id !== main.webContents.id) {
+    log.warn("IPC sender validation failed: sender is not the trusted main window")
+    return false
+  }
+
+  const frame = event.senderFrame
+  if (!frame || (frame.top !== undefined && frame.top !== frame)) {
+    log.warn("IPC sender validation failed: sender is not the top frame")
+    return false
+  }
+  const frameUrl = frame.url || event.sender.getURL?.() || ""
+  if (!isTrustedRendererUrl(frameUrl)) {
+    log.warn("IPC sender validation failed: untrusted renderer URL")
     return false
   }
   return true
@@ -62,6 +92,7 @@ export function registerIpcHandlers(deps: Deps) {
     return
   }
   registered = true
+  trustedMainWindow = deps.getMainWindow
 
   ipcMain.handle("store-get", async (event, key: string) => {
     if (!validateSender(event)) return null
@@ -88,19 +119,22 @@ export function registerIpcHandlers(deps: Deps) {
     getStore().delete(key)
   })
 
-  ipcMain.handle("store-keys", () => {
+  ipcMain.handle("store-keys", (event) => {
+    if (!validateSender(event)) return []
     const s = getStore() as { store: Record<string, unknown> }
     // 只返回白名单内的 key,避免泄露 API key 名称等敏感字段名。
     return Object.keys(s.store).filter((k) => isAllowedStoreKey(k))
   })
 
-  ipcMain.handle("show-window", () => {
+  ipcMain.handle("show-window", (event) => {
+    if (!validateSender(event)) return
     deps.showWindow()
   })
 
   ipcMain.handle(
     "open-directory-picker",
-    async (_event, opts?: { title?: string; defaultPath?: string }) => {
+    async (event, opts?: { title?: string; defaultPath?: string }) => {
+      if (!validateSender(event)) return null
       const result = await dialog.showOpenDialog({
         properties: ["openDirectory", "createDirectory"],
         title: opts?.title ?? "选择文件夹",
@@ -113,7 +147,8 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle(
     "open-file-picker",
-    async (_event, opts?: { title?: string; extensions?: string[] }) => {
+    async (event, opts?: { title?: string; extensions?: string[] }) => {
+      if (!validateSender(event)) return null
       const result = await dialog.showOpenDialog({
         properties: ["openFile"],
         title: opts?.title ?? "选择文件",
@@ -127,7 +162,9 @@ export function registerIpcHandlers(deps: Deps) {
     },
   )
 
-  ipcMain.handle("open-link", (_event, url: string) => {
+  ipcMain.handle("open-link", (event, url: string) => {
+    if (!validateSender(event)) return
+    if (typeof url !== "string" || url.length > 2048) throw new Error("Invalid URL")
     try {
       const u = new URL(url)
       if (u.protocol !== "http:" && u.protocol !== "https:") {
@@ -139,22 +176,31 @@ export function registerIpcHandlers(deps: Deps) {
     void shell.openExternal(url)
   })
 
-  ipcMain.handle("show-notification", (_event, title: string, body?: string) => {
+  ipcMain.handle("show-notification", (event, title: string, body?: string) => {
+    if (!validateSender(event)) return false
+    if (typeof title !== "string" || title.length === 0 || title.length > 128) return false
+    if (body !== undefined && (typeof body !== "string" || body.length > 1024)) return false
     if (!Notification.isSupported()) return false
     new Notification({ title, body }).show()
     return true
   })
 
-  ipcMain.handle("get-platform", () => process.platform)
-  ipcMain.handle("get-version", () => app.getVersion())
+  ipcMain.handle("get-platform", (event) => (validateSender(event) ? process.platform : null))
+  ipcMain.handle("get-version", (event) => (validateSender(event) ? app.getVersion() : null))
 
-  ipcMain.handle("open-settings", () => {
+  ipcMain.handle("open-settings", (event) => {
+    if (!validateSender(event)) return
     const win = deps.getMainWindow()
     if (win) win.webContents.send("menu-action", "open-settings")
   })
 
-  ipcMain.handle("auto-launch-get", () => autoLaunch.isEnabled())
-  ipcMain.handle("auto-launch-set", (_event, enabled: boolean) => autoLaunch.setEnabled(enabled))
+  ipcMain.handle("auto-launch-get", (event) =>
+    validateSender(event) ? autoLaunch.isEnabled() : false,
+  )
+  ipcMain.handle("auto-launch-set", (event, enabled: boolean) => {
+    if (!validateSender(event) || typeof enabled !== "boolean") return false
+    return autoLaunch.setEnabled(enabled)
+  })
 
   ipcMain.handle("chat-approve", (event, sessionId: string, approved: boolean) => {
     if (!validateSender(event)) return
@@ -183,12 +229,12 @@ export function registerIpcHandlers(deps: Deps) {
     }
   })
 
-  ipcMain.handle("session-list", () => getSessionList())
+  ipcMain.handle("session-list", (event) => (validateSender(event) ? getSessionList() : []))
   ipcMain.handle("session-get", (event, sessionId: string) => {
     if (!validateSender(event)) return null
     return getSession(sessionId)
   })
-  ipcMain.handle("session-create", () => createSession())
+  ipcMain.handle("session-create", (event) => (validateSender(event) ? createSession() : null))
   ipcMain.handle("session-delete", (event, sessionId: string) => {
     if (!validateSender(event)) return
     deleteSession(sessionId)
@@ -228,7 +274,8 @@ export function registerIpcHandlers(deps: Deps) {
     return { ok: result.ok, output: result.output, paths: result.paths ?? [] }
   })
 
-  ipcMain.handle("open-log-dir", async () => {
+  ipcMain.handle("open-log-dir", async (event) => {
+    if (!validateSender(event)) return null
     const dir = app.getPath("userData")
     await shell.openPath(dir)
     return dir
@@ -236,7 +283,8 @@ export function registerIpcHandlers(deps: Deps) {
 
   // ---- 本地遥测(无第三方,只存 electron-store) ------------------------
   // 设计:fire-and-forget,失败静默;不在主路径上阻塞业务。
-  ipcMain.handle("telemetry-emit", (_event, name: string, props?: Record<string, string>) => {
+  ipcMain.handle("telemetry-emit", (event, name: string, props?: Record<string, string>) => {
+    if (!validateSender(event)) return
     // 入参校验:name 必须是已知事件名(白名单),防止渲染端被注入撑爆 store。
     if (typeof name !== "string" || name.length === 0 || name.length > 64) return
     if (!isKnownTelemetryEvent(name)) return
@@ -250,10 +298,15 @@ export function registerIpcHandlers(deps: Deps) {
     }
     trackEvent(name, props)
   })
-  ipcMain.handle("telemetry-funnel", () => getFunnelSnapshot())
-  ipcMain.handle("telemetry-events", () => readEvents())
-  ipcMain.handle("telemetry-clear", () => {
+  ipcMain.handle("telemetry-funnel", (event) =>
+    validateSender(event) ? getFunnelSnapshot() : null,
+  )
+  ipcMain.handle("telemetry-events", (event) => (validateSender(event) ? readEvents() : []))
+  ipcMain.handle("telemetry-clear", (event) => {
+    if (!validateSender(event)) return
     clearEvents()
   })
-  ipcMain.handle("telemetry-is-first-run", () => isFirstRun())
+  ipcMain.handle("telemetry-is-first-run", (event) =>
+    validateSender(event) ? isFirstRun() : false,
+  )
 }

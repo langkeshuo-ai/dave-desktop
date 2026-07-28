@@ -12,7 +12,7 @@ import { join, resolve, isAbsolute, relative, dirname, sep } from "node:path"
 import { execa } from "execa"
 import { parseUnifiedPatch, applyPatchToText } from "../shared/patch"
 import { clampToolOutput } from "../shared/context"
-import { deniedShellReason, isElevatedShellRisk } from "../shared/shell-policy"
+import { deniedShellReason } from "../shared/shell-policy"
 import { MAX_READ_FILE_CHARS } from "../shared/types"
 import type { AgentMode } from "../shared/types"
 import type { FileTreeNode } from "../shared/workspace"
@@ -128,26 +128,53 @@ async function toolProposePatch(workspace: string, args: { diff: string }): Prom
 
 async function toolApplyPatch(workspace: string, args: { diff: string }): Promise<ToolResult> {
   const files = parseUnifiedPatch(args.diff)
-  const touched: string[] = []
-  for (const f of files) {
-    const abs = await assertInWorkspace(workspace, f.path)
-    const isNew = !existsSync(abs)
-    if (isNew) {
-      await mkdir(dirname(abs), { recursive: true })
-      const applied = applyPatchToText("", f.structured)
-      await writeFile(abs, applied, "utf8")
-    } else {
-      const original = await readFile(abs, "utf8")
-      const applied = applyPatchToText(original, f.structured)
-      await writeFile(abs, applied, "utf8")
-    }
-    touched.push(abs)
+  const planned = await Promise.all(
+    files.map(async (file) => {
+      const abs = await assertInWorkspace(workspace, file.path)
+      const existed = existsSync(abs)
+      const original = existed ? await readFile(abs, "utf8") : ""
+      const applied = applyPatchToText(original, file.structured)
+      return { abs, existed, original, applied }
+    }),
+  )
+  const uniquePaths = new Set(planned.map((item) => item.abs))
+  if (uniquePaths.size !== planned.length) {
+    throw new Error("同一 Patch 不得重复修改同一文件")
   }
+
+  const committed: typeof planned = []
+  try {
+    for (const item of planned) {
+      await mkdir(dirname(item.abs), { recursive: true })
+      // 在写入前登记，确保 writeFile 自身发生部分写入后抛错时，
+      // 当前文件也会进入回滚，而不是只恢复此前成功的文件。
+      committed.push(item)
+      await writeFile(item.abs, item.applied, "utf8")
+    }
+  } catch (commitError) {
+    const rollbackErrors: string[] = []
+    for (const item of committed.reverse()) {
+      try {
+        if (item.existed) await writeFile(item.abs, item.original, "utf8")
+        else if (existsSync(item.abs)) await rm(item.abs, { force: true })
+      } catch (rollbackError) {
+        rollbackErrors.push(
+          `${item.abs}: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+        )
+      }
+    }
+    const message = commitError instanceof Error ? commitError.message : String(commitError)
+    if (rollbackErrors.length > 0) {
+      throw new Error(`Patch 提交失败：${message}；回滚不完整：${rollbackErrors.join("；")}`)
+    }
+    throw new Error(`Patch 提交失败，已回滚：${message}`)
+  }
+
+  const touched = planned.map((item) => item.abs)
   return {
     name: "apply_patch",
     ok: true,
-    output: `已应用 ${touched.length} 个文件\n${touched.join("\n")}`,
-    // Surface the same diff so renderer can show what was applied.
+    output: `已原子应用 ${touched.length} 个文件\n${touched.join("\n")}`,
     patch: args.diff,
     paths: touched,
   }
@@ -498,23 +525,20 @@ export function getTool(name: string): ToolSpec | undefined {
  * - ask: no tools advertised in loop; if called, no approval UI
  * - suggest: mutating + shell need OK
  * - auto: shell needs OK
- * - full-auto: normally none, EXCEPT elevated-risk shell still needs OK
+ * - full-auto: file mutations run automatically; every shell-capable tool still needs OK
+ *
+ * A workspace cwd is not an OS sandbox. Until shell execution has a real process,
+ * filesystem, and network sandbox, no mode may silently execute shell-capable tools.
  */
 export function needsApproval(
   tool: ToolSpec,
   mode: AgentMode,
-  args?: Record<string, unknown>,
+  _args?: Record<string, unknown>,
 ): boolean {
   if (mode === "ask") return false
-  if (mode === "suggest") return tool.mutates || tool.isShell
-  if (mode === "auto") return tool.isShell
-  if (mode === "full-auto") {
-    if (tool.isShell) {
-      const cmd = String(args?.command ?? "")
-      return isElevatedShellRisk(cmd)
-    }
-    return false
-  }
+  if (tool.isShell) return true
+  if (mode === "suggest") return tool.mutates
+  if (mode === "auto" || mode === "full-auto") return false
   return true
 }
 

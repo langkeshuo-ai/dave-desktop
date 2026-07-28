@@ -34,7 +34,7 @@ export async function initSecureStorage(): Promise<void> {
 
   available = safeStorage.isEncryptionAvailable()
   if (!available) {
-    log.warn("secure-storage: NOT available — secrets will be stored in plain text")
+    log.error("secure-storage: NOT available — refusing to persist secrets")
     return
   }
 

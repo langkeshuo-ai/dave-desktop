@@ -231,5 +231,19 @@
 | 自动更新接线                                | electron-updater@6.0.0 已依赖, 需 GitHub Releases + 签名                       | **DEFERRED** 签名证书未采购                      |
 | 安全: CSP 强化                              | 补充 object-src 'none', frame-src 'none', base-uri 'self'                      | **已实施**                                       |
 | 安全: IPC store-keys 泄露                   | 仅返回白名单内 key, 避免 API key 名泄露                                        | **已实施**                                       |
-| 安全: 加密存储                              | Electron safeStorage (DPAPI/Keychain) 替代 XOR KDF                             | **DEFERRED** 当前 XOR 已够用, safeStorage 需迁移 |
-| 安全: IPC sender 校验                       | 验证 event.sender 来源                                                         | **DEFERRED** contextIsolation 已开启, 低风险     |     |
+| 安全: 加密存储                              | Electron safeStorage (DPAPI/Keychain) 替代 XOR KDF                             | **已实施**，API Key 走 OS 级安全存储             |
+| 安全: IPC sender 校验                       | Electron 原生 `event.sender` + BrowserWindow 校验，无需引入额外依赖            | **已实施**，所有 preload handler 统一校验        |
+
+## 续 · 2026-07-27 性能、E2E 与安全治理检索
+
+| 需求              | 候选与成熟度检查                                                           | 决策                                                                            |
+| ----------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 聊天虚拟列表      | `@tanstack/react-virtual`（MIT，活跃维护，官方文档含安装/API/示例）        | **继续复用**，已接入 chat anchor/follow 策略                                    |
+| Electron E2E      | Playwright Electron experimental API（Apache-2.0，持续活跃，官方示例完整） | **推荐后续接入**；当前尚未把 GUI UAT 自动化，不虚构通过                         |
+| Markdown 安全     | `rehype-sanitize`（MIT，unified 生态，文档与 schema 示例完整）             | **继续复用**，自定义 schema 仅放行高亮 class                                    |
+| Markdown 高亮     | `rehype-highlight`/highlight.js（BSD-3-Clause，成熟、文档完整）            | **保留**；约738KB按需 chunk 可接受，真实加载数据不足前不换库                    |
+| FPS 指标          | 浏览器 `requestAnimationFrame` + 纯统计函数                                | **自研薄层**；避免为少量 frame-time 算法新增依赖，已单测数学模型                |
+| Electron 导航防护 | Electron 官方 `will-navigate` / `setWindowOpenHandler`                     | **复用平台原生 API**，无需第三方包                                              |
+| 依赖漏洞治理      | npm audit + Dependabot/Renovate 候选                                       | **生产 audit 作为门禁**；开发链 20 项等待上游安全兼容版本，不执行危险 `--force` |
+
+说明：旧表中的“最近更新”或下载量是历史快照，不能替代发布时重新核验。对新增第三方依赖仍执行“过去 6 个月至少 3 次更新、安装/API/示例文档、宽松许可证”的三项门槛；本轮代码改动优先复用现有依赖与 Electron 原生能力，未引入新的运行时包。

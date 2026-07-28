@@ -50,6 +50,7 @@ let store: ElectronStore | null = null
 
 // API key 前缀 — 所有以 -api-key 结尾的 store key 走 safeStorage 加密存储。
 const API_KEY_SUFFIX = "-api-key"
+const SECURE_VALUE_PREFIX = "safe-storage:v1:"
 
 export function getStore(): ElectronStore {
   if (!store) {
@@ -81,19 +82,34 @@ export async function getSecure(key: string): Promise<string | null> {
   if (!isApiKey(key)) {
     return (getStore().get(key) as string) ?? null
   }
-  // API Key:读 hex 密文 → 解密
-  const hex = getStore().get(key) as string | undefined
-  if (!hex) return null
+  const stored = getStore().get(key) as string | undefined
+  if (!stored) return null
+  if (!stored.startsWith(SECURE_VALUE_PREFIX)) {
+    log.error(`secure-storage: refusing legacy plaintext or unrecognized value for ${key}`)
+    return null
+  }
+
+  await ensureSecure()
   if (!secureAvail()) {
-    // 降级:直接返回(可能是旧版明文或「无加密」模式)
-    return hex
+    log.error(`secure-storage: unavailable while reading ${key}`)
+    return null
+  }
+
+  const cipherHex = stored.slice(SECURE_VALUE_PREFIX.length)
+  if (!cipherHex || !/^[0-9a-f]+$/i.test(cipherHex) || cipherHex.length % 2 !== 0) {
+    log.error(`secure-storage: invalid encrypted envelope for ${key}`)
+    return null
   }
   try {
-    const plain = await secureDecrypt(hex)
+    const plain = await secureDecrypt(cipherHex)
+    if (!plain) log.error(`secure-storage: decrypt failed for ${key}`)
     return plain
-  } catch {
-    // 解密失败:返回 hex 本身(兼容旧版明文存储)
-    return hex
+  } catch (error) {
+    log.error(
+      `secure-storage: decrypt threw for ${key}:`,
+      error instanceof Error ? error.message : String(error),
+    )
+    return null
   }
 }
 
@@ -107,18 +123,16 @@ export async function setSecure(key: string, value: string): Promise<void> {
     getStore().delete(key)
     return
   }
-  // 先触发 ensureSecure() 填充 _isAvail(内部会 initSecureStorage),
-  // 否则 secureAvail() 雽 false 直接降级存明文。
+  // 先触发 ensureSecure() 填充 _isAvail（内部会 initSecureStorage），
+  // 否则无法判断系统安全存储是否可用；不可用时必须拒绝持久化。
   await ensureSecure()
-  if (secureAvail()) {
-    const hex = await secureEncrypt(value)
-    if (hex) {
-      getStore().set(key, hex)
-      log.info(`secure-storage: encrypted ${key}`)
-      return
-    }
-    log.warn(`secure-storage: encrypt failed for ${key}, storing plain text`)
+  if (!secureAvail()) {
+    throw new Error("系统安全存储不可用，已拒绝保存 API Key")
   }
-  // 降级:明文存储(开发环境或无加密支持)
-  getStore().set(key, value)
+  const hex = await secureEncrypt(value)
+  if (!hex) {
+    throw new Error("API Key 加密失败，未保存")
+  }
+  getStore().set(key, `${SECURE_VALUE_PREFIX}${hex}`)
+  log.info(`secure-storage: encrypted ${key}`)
 }

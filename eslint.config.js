@@ -39,10 +39,10 @@ export default tseslint.config(
   },
   {
     // 配置文件与测试文件不需要 type-checked
-    files: ["*.config.{js,ts}", "tests/**/*.ts", "src/main/**/*.ts"],
+    files: ["*.config.{js,ts}", "tests/**/*.{ts,js,mjs}", "src/main/**/*.ts"],
     ...tseslint.configs.disableTypeChecked,
   },
   {
-    ignores: ["out/", "dist/", "node_modules/", "legacy/", ".vscode/", ".claude/"],
+    ignores: ["out/", "dist/", "coverage/", "node_modules/", "legacy/", ".vscode/", ".claude/"],
   },
 )

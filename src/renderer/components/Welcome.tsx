@@ -23,7 +23,7 @@ const SCREENS = [
     subtitle: "AI Agent 直接住在你的电脑里",
     bullets: [
       "四种批准模式,精确控制 AI 能做什么",
-      "读、写、搜索、跑 shell 全部走统一 diff 审阅",
+      "文件修改可审阅；Shell 始终单独确认，工作目录不等于系统沙箱",
       "光白 Cursor 风格 UI · 浅/夜双主题 · 键盘优先",
     ],
     icon: Bot,
@@ -33,10 +33,10 @@ const SCREENS = [
     title: "数据透明",
     subtitle: "这些信息会去哪",
     bullets: [
-      "你粘贴的 API Key · 永远只存本机 electron-store",
-      "代码片段 · 直接 HTTPS 走你选的 Provider,不经第三方",
+      "API Key 使用系统安全存储保存在本机，并发送给你选择的 Provider 鉴权",
+      "代码片段 · 直接 HTTPS 走你选的 Provider,不经额外中转",
       "使用统计 · 全部本地留存,可随时在设置中清空",
-      "没有内置埋点 / 远程上报 / 上传凭据",
+      "没有内置远程埋点；对话内容会按请求发送给所选 Provider",
     ],
     icon: Shield,
   },

@@ -6,13 +6,27 @@ import { ulid } from "ulid"
 import { getStore } from "./store"
 import { sessionRuntime } from "./session-runtime"
 import type { ChatMessage, Session } from "../shared/types"
+import log from "electron-log"
+
+function recoverCorruptJson(key: string, raw: string, error: unknown): void {
+  const backupKey = `corrupt-backup-${key}-${Date.now()}`
+  getStore().set(backupKey, raw)
+  getStore().delete(key)
+  log.error(
+    `session persistence: corrupt JSON moved to ${backupKey}:`,
+    error instanceof Error ? error.message : String(error),
+  )
+}
 
 export function getSessionList(): Session[] {
   const raw = getStore().get("session-list") as string | undefined
   if (!raw) return []
   try {
-    return JSON.parse(raw) as Session[]
-  } catch {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) throw new Error("session-list must be an array")
+    return parsed as Session[]
+  } catch (error) {
+    recoverCorruptJson("session-list", raw, error)
     return []
   }
 }
@@ -24,9 +38,13 @@ export function saveSessionList(sessions: Session[]): void {
 export function getSessionMessages(sessionId: string): ChatMessage[] {
   const raw = getStore().get(`session-messages-${sessionId}`) as string | undefined
   if (!raw) return []
+  const key = `session-messages-${sessionId}`
   try {
-    return JSON.parse(raw) as ChatMessage[]
-  } catch {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) throw new Error("session messages must be an array")
+    return parsed as ChatMessage[]
+  } catch (error) {
+    recoverCorruptJson(key, raw, error)
     return []
   }
 }

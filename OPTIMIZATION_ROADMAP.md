@@ -14,12 +14,12 @@
 
 **方案**:
 
-- [ ] **Code splitting** — React.lazy + Suspense 动态加载非核心组件
+- [x] **Code splitting** — React.lazy + Suspense 动态加载非核心组件（含完整 Markdown 渲染链）
   - Settings: 300KB（仅设置时加载）
   - Welcome: 150KB（首次启动后不再需要）
   - WorkspacePanel: 200KB（按需展开）
   - 预期减少首屏 bundle 至 850KB（-43%）
-- [ ] **虚拟滚动压测** — MessageList 在 1000+ 消息会话的性能验证
+- [x] **虚拟滚动与压测入口** — MessageList 已接入虚拟列表并提供 2000 条开发压测；真实 Windows FPS 仍按 `RESIDUAL_RISKS.md` 验收
   - 当前用 @tanstack/react-virtual，需确认大数据集渲染帧率 >50fps
   - 增加 e2e 性能测试：生成 2000 条消息，测量滚动流畅度
 - [ ] **Markdown 解析优化** — ReactMarkdown 在流式时每个 chunk 触发重解析
@@ -63,11 +63,11 @@
 
 **缺失**:
 
-- [ ] **全局快捷键** — Cmd/Ctrl+K 命令面板（快速跳转会话 / 新建 / 设置）
+- [x] **全局快捷键** — Cmd/Ctrl+K 命令面板（快速跳转会话 / 新建 / 设置）
 - [ ] **会话切换** — Cmd/Ctrl+1~9 快速切换最近会话
 - [ ] **消息导航** — Cmd/Ctrl+↑/↓ 跳转到上一条/下一条 assistant 消息
 - [ ] **停止生成** — Esc 停止流式（当前只能点按钮）
-- [ ] **键盘帮助** — ? 打开快捷键面板
+- [x] **键盘帮助** — ? 打开快捷键面板
 
 **实现**:
 
@@ -81,11 +81,11 @@
 
 **缺失**:
 
-- [ ] **复制消息** — 每条消息 hover 显示"复制"按钮
+- [x] **复制消息** — 每条消息 hover / focus-within 显示操作按钮
 - [ ] **编辑历史消息** — 用户消息支持点击编辑 + 重新生成
 - [ ] **消息搜索** — 侧栏增加搜索框，高亮匹配结果
 - [ ] **导出会话** — 支持导出为 Markdown / JSON / PDF
-- [ ] **滚动到底按钮** — 长会话时离开底部自动显示"回到底部"
+- [x] **滚动到底按钮** — 长会话离开底部显示按钮，仅在 atBottom 时跟随 streaming
 
 **实现**:
 
@@ -183,7 +183,7 @@ performance.measure("cold-start", "electron-ready", "window-shown")
 
 **方案**:
 
-- [ ] **IPC 通道白名单** — 每个 handler 声明允许的来源窗口类型（main / settings）
+- [x] **IPC 来源校验** — 所有 preload 暴露 handler 统一校验 sender；单窗口架构暂不区分窗口类型
 - [ ] **请求签名** — preload 生成 HMAC 签名，main 验证（防 replay attack）
 - [ ] **速率限制** — 敏感操作（store-set / chat-stream）限制每秒调用次数
 
@@ -203,7 +203,7 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 **方案**:
 
 - [ ] **CSP 增强** — Content-Security-Policy meta 标签禁止 inline script / eval
-- [ ] **链接安全** — 外部链接强制用 `shell.openExternal`，拦截 `javascript:` / `data:` 协议
+- [x] **链接与导航安全** — 外链仅 `shell.openExternal` 的 http(s)，主窗口拒绝跨源导航和 popup
 - [ ] **文件下载校验** — Agent 下载文件前检查 MIME type / 文件签名
 
 **实现**:
@@ -325,15 +325,15 @@ jobs:
 
 ## 七、成功指标
 
-| 指标          | 当前      | 目标 0.2.0      |
-| ------------- | --------- | --------------- |
-| 冷启动时间    | ~3s       | <1.5s           |
-| 首屏 bundle   | 1.5MB     | <900KB          |
-| 1000 消息滚动 | 未测试    | >50fps          |
-| 单元测试覆盖  | 123 tests | >150 tests      |
-| E2E 测试      | 0         | >10 scenarios   |
-| 崩溃率        | 未知      | <0.1%           |
-| 日志可观测性  | 文本日志  | 结构化 + 可查询 |
+| 指标          | 当前                         | 目标 0.2.0      |
+| ------------- | ---------------------------- | --------------- |
+| 冷启动时间    | ~3s                          | <1.5s           |
+| 首屏 bundle   | 1.5MB                        | <900KB          |
+| 1000 消息滚动 | 未测试                       | >50fps          |
+| 单元测试覆盖  | 136 tests + V8 coverage 门禁 | >150 tests      |
+| E2E 测试      | 0                            | >10 scenarios   |
+| 崩溃率        | 未知                         | <0.1%           |
+| 日志可观测性  | 文本日志                     | 结构化 + 可查询 |
 
 ---
 
