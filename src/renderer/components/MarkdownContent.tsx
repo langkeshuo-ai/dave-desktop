@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { memo, useCallback, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { Check, Copy, FileCode2 } from "lucide-react"
 import type { PluggableList } from "unified"
@@ -21,7 +21,8 @@ const sanitizeSchema = {
 
 const rehypeSanitizePlugin = [rehypeSanitize as never, sanitizeSchema as never]
 
-export function MarkdownContent({ content }: { content: string }) {
+// memo：同 content 跳过重解析；流式场景由上层 throttle 控制 content 更新频率。
+export const MarkdownContent = memo(function MarkdownContent({ content }: { content: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -31,7 +32,7 @@ export function MarkdownContent({ content }: { content: string }) {
       {content}
     </ReactMarkdown>
   )
-}
+})
 
 function CodeBlockPre({ children }: { children?: ReactNode }) {
   const codeEl: unknown = Array.isArray(children)

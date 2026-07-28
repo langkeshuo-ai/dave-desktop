@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, useCallback, memo, lazy, Suspense } from "react"
+import { useEffect, useMemo, useState, useCallback, memo, lazy, Suspense, useRef } from "react"
 import type { ChatMessage } from "../../shared/types"
 import { parsePatchForView } from "../../shared/patch"
+import { shouldUpdateMarkdown } from "../../shared/markdown-throttle"
 import {
   Bot,
   User,
@@ -192,39 +193,87 @@ const MessageBubble = memo(function MessageBubble({
         ) : kind === "patch" ? (
           <PatchView body={message.content} streaming={isStreaming} />
         ) : (
-          <div className="msg-bubble assistant markdown-content">
-            {message.tool_calls && message.tool_calls.length > 0 && (
-              <div className="tool-trace mb-2">
-                <span className="tool-trace-title">附带工具</span>
-                <span className="tool-trace-names">
-                  {message.tool_calls.map((tc) => tc.function.name).join(" · ")}
-                </span>
-              </div>
-            )}
-            <Suspense
-              fallback={
-                <div className="text-sm opacity-60 whitespace-pre-wrap">{message.content}</div>
-              }
-            >
-              <MarkdownContent content={message.content || ""} />
-            </Suspense>
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />
-            )}
-            <MessageActions
-              isStreaming={!!isStreaming}
-              isLastAssistant={!!isLastAssistant}
-              content={message.content || ""}
-              lastUserContent={lastUserContent ?? null}
-              onStop={onStop}
-              onRegenerate={onRegenerate}
-            />
-          </div>
+          <AssistantMarkdownBubble
+            message={message}
+            isStreaming={!!isStreaming}
+            isLastAssistant={!!isLastAssistant}
+            lastUserContent={lastUserContent ?? null}
+            onStop={onStop}
+            onRegenerate={onRegenerate}
+          />
         )}
       </div>
     </div>
   )
 })
+
+/** 流式 Markdown 节流气泡 — hooks 独立组件，避免 MessageBubble 早退违反 hooks 规则。 */
+function AssistantMarkdownBubble({
+  message,
+  isStreaming,
+  isLastAssistant,
+  lastUserContent,
+  onStop,
+  onRegenerate,
+}: {
+  message: ChatMessage
+  isStreaming: boolean
+  isLastAssistant: boolean
+  lastUserContent: string | null
+  onStop?: () => void
+  onRegenerate?: (userContent: string) => void
+}) {
+  const rawContent = message.content || ""
+  const [renderContent, setRenderContent] = useState(rawContent)
+  const lastRenderAtRef = useRef(0)
+  useEffect(() => {
+    const decision = shouldUpdateMarkdown(
+      isStreaming,
+      typeof performance !== "undefined"
+        ? performance.now() - lastRenderAtRef.current
+        : Number.POSITIVE_INFINITY,
+    )
+    if (decision.updateNow) {
+      lastRenderAtRef.current = typeof performance !== "undefined" ? performance.now() : Date.now()
+      setRenderContent(rawContent)
+      return
+    }
+    const t = window.setTimeout(() => {
+      lastRenderAtRef.current = typeof performance !== "undefined" ? performance.now() : Date.now()
+      setRenderContent(rawContent)
+    }, decision.delayMs)
+    return () => window.clearTimeout(t)
+  }, [rawContent, isStreaming])
+
+  return (
+    <div className="msg-bubble assistant markdown-content">
+      {message.tool_calls && message.tool_calls.length > 0 && (
+        <div className="tool-trace mb-2">
+          <span className="tool-trace-title">附带工具</span>
+          <span className="tool-trace-names">
+            {message.tool_calls.map((tc) => tc.function.name).join(" · ")}
+          </span>
+        </div>
+      )}
+      <Suspense
+        fallback={<div className="text-sm opacity-60 whitespace-pre-wrap">{renderContent}</div>}
+      >
+        <MarkdownContent content={renderContent} />
+      </Suspense>
+      {isStreaming && (
+        <span className="inline-block w-1.5 h-3.5 bg-[var(--accent)] ml-0.5 align-middle animate-pulse" />
+      )}
+      <MessageActions
+        isStreaming={isStreaming}
+        isLastAssistant={isLastAssistant}
+        content={rawContent}
+        lastUserContent={lastUserContent}
+        onStop={onStop}
+        onRegenerate={onRegenerate}
+      />
+    </div>
+  )
+}
 
 /** 内联操作条:复制 / 重新生成 / 停止。复制是本地能力,其余委托上层。 */
 function MessageActions({

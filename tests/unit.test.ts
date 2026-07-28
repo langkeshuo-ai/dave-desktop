@@ -46,6 +46,8 @@ import {
 import type { TelemetryEvent } from "../src/shared/telemetry"
 import type { ChatMessage } from "../src/shared/types"
 import { calculateFpsStats } from "../src/shared/fps-stats"
+import { createRateLimiter } from "../src/shared/rate-limit"
+import { shouldUpdateMarkdown } from "../src/shared/markdown-throttle"
 import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
 import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
@@ -1750,5 +1752,58 @@ describe("validateSender — IPC origin validation", () => {
     const httpFrame: { url: string; top?: unknown } = { url: "https://example.com/" }
     httpFrame.top = httpFrame
     expect(validateSender({ sender: { id: 1 }, senderFrame: httpFrame }, main)).toBe(false)
+  })
+})
+
+// =====================================================================
+// rate-limit — 敏感 IPC 滑动窗口
+// =====================================================================
+describe("createRateLimiter", () => {
+  it("allows up to max calls then blocks within the window", () => {
+    const t = 1_000
+    const limiter = createRateLimiter({ max: 3, windowMs: 1_000, now: () => t })
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.allow()).toBe(false)
+    expect(limiter.used()).toBe(3)
+  })
+
+  it("slides the window so old hits expire", () => {
+    let t = 0
+    const limiter = createRateLimiter({ max: 2, windowMs: 100, now: () => t })
+    expect(limiter.allow()).toBe(true)
+    t = 50
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.allow()).toBe(false)
+    t = 101
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.used()).toBe(2)
+  })
+
+  it("reset clears the window", () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 1_000, now: () => 0 })
+    expect(limiter.allow()).toBe(true)
+    expect(limiter.allow()).toBe(false)
+    limiter.reset()
+    expect(limiter.allow()).toBe(true)
+  })
+})
+
+// =====================================================================
+// markdown-throttle — 流式解析节流决策
+// =====================================================================
+describe("shouldUpdateMarkdown", () => {
+  it("always updates immediately when not streaming", () => {
+    expect(shouldUpdateMarkdown(false, 0)).toEqual({ updateNow: true, delayMs: 0 })
+  })
+
+  it("updates immediately when elapsed exceeds interval while streaming", () => {
+    expect(shouldUpdateMarkdown(true, 120, 120)).toEqual({ updateNow: true, delayMs: 0 })
+    expect(shouldUpdateMarkdown(true, 200, 120)).toEqual({ updateNow: true, delayMs: 0 })
+  })
+
+  it("defers when streaming and elapsed is under interval", () => {
+    expect(shouldUpdateMarkdown(true, 40, 120)).toEqual({ updateNow: false, delayMs: 80 })
   })
 })

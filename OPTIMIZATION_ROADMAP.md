@@ -22,9 +22,9 @@
 - [x] **虚拟滚动与压测入口** — MessageList 已接入虚拟列表并提供 2000 条开发压测；真实 Windows FPS 仍按 `RESIDUAL_RISKS.md` 验收
   - 当前用 @tanstack/react-virtual，需确认大数据集渲染帧率 >50fps
   - 增加 e2e 性能测试：生成 2000 条消息，测量滚动流畅度
-- [ ] **Markdown 解析优化** — ReactMarkdown 在流式时每个 chunk 触发重解析
-  - 考虑 memo 包裹 + 内容 hash 校验跳过相同内容重渲染
-  - 或引入 `react-markdown-preview`（预编译方案）
+- [x] **Markdown 解析优化** — ReactMarkdown 在流式时每个 chunk 触发重解析
+  - `MarkdownContent` memo + 流式 120ms 节流（`shouldUpdateMarkdown`）
+  - 历史消息靠 MessageBubble memo 跳过重解析
 
 **成功标准**:
 
@@ -64,9 +64,9 @@
 **缺失**:
 
 - [x] **全局快捷键** — Cmd/Ctrl+K 命令面板（快速跳转会话 / 新建 / 设置）
-- [ ] **会话切换** — Cmd/Ctrl+1~9 快速切换最近会话
+- [x] **会话切换** — Cmd/Ctrl+1~9 快速切换最近会话（另有 Alt+↑/↓）
 - [ ] **消息导航** — Cmd/Ctrl+↑/↓ 跳转到上一条/下一条 assistant 消息
-- [ ] **停止生成** — Esc 停止流式（当前只能点按钮）
+- [x] **停止生成** — Esc 停止流式（弹窗优先关闭；无弹窗且流式中则 abort）
 - [x] **键盘帮助** — ? 打开快捷键面板
 
 **实现**:
@@ -83,8 +83,8 @@
 
 - [x] **复制消息** — 每条消息 hover / focus-within 显示操作按钮
 - [ ] **编辑历史消息** — 用户消息支持点击编辑 + 重新生成
-- [ ] **消息搜索** — 侧栏增加搜索框，高亮匹配结果
-- [ ] **导出会话** — 支持导出为 Markdown / JSON / PDF
+- [x] **消息搜索** — 侧栏会话标题搜索（消息全文搜索仍待）
+- [x] **导出会话** — Markdown 导出已落地；JSON / PDF 仍待
 - [x] **滚动到底按钮** — 长会话离开底部显示按钮，仅在 atBottom 时跟随 streaming
 
 **实现**:
@@ -185,7 +185,7 @@ performance.measure("cold-start", "electron-ready", "window-shown")
 
 - [x] **IPC 来源校验** — 所有 preload 暴露 handler 统一校验 sender；单窗口架构暂不区分窗口类型
 - [ ] **请求签名** — preload 生成 HMAC 签名，main 验证（防 replay attack）
-- [ ] **速率限制** — 敏感操作（store-set / chat-stream）限制每秒调用次数
+- [x] **速率限制** — 敏感操作（store-set / chat-stream / apply-patch）滑动窗口限流
 
 **实现**:
 
@@ -202,7 +202,7 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 
 **方案**:
 
-- [ ] **CSP 增强** — Content-Security-Policy meta 标签禁止 inline script / eval
+- [x] **CSP 增强** — Content-Security-Policy meta 禁止 unsafe-eval；electron smoke 断言
 - [x] **链接与导航安全** — 外链仅 `shell.openExternal` 的 http(s)，主窗口拒绝跨源导航和 popup
 - [ ] **文件下载校验** — Agent 下载文件前检查 MIME type / 文件签名
 
@@ -226,10 +226,9 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 
 **方案**:
 
-- [ ] **Playwright E2E** — 覆盖关键流程
-  - 首次启动 → Welcome → API Key 配置 → 发送消息 → 收到回复
-  - Agent 模式 → 批准工具 → 查看 patch → 应用
-  - 会话切换 → 删除 → 导出
+- [x] **Playwright E2E 基线** — `npm run test:electron`：窗口/CSP/React 挂载/快捷键帮助
+  - 仍待：首次启动 → Welcome → API Key → 发消息 → 回复
+  - 仍待：Agent 批准 / patch 应用 / 会话 CRUD 全链路
 - [ ] **视觉回归测试** — Playwright 截图对比（主题 / 组件样式）
 
 **实现**:
@@ -246,7 +245,7 @@ npm install -D @playwright/test playwright-electron
 
 **方案**:
 
-- [ ] **GitHub Actions** — PR 触发 lint + typecheck + test + build
+- [x] **GitHub Actions** — `.github/workflows/ci.yml`：verify + audit(omit=dev) + electron smoke
 - [ ] **自动发布** — tag 推送触发打包 + 上传 GitHub Releases
 - [ ] **更新服务器** — electron-updater 对接 GitHub Releases（latest.yml）
 
@@ -330,8 +329,8 @@ jobs:
 | 冷启动时间    | ~3s                          | <1.5s           |
 | 首屏 bundle   | 1.5MB                        | <900KB          |
 | 1000 消息滚动 | 未测试                       | >50fps          |
-| 单元测试覆盖  | 136 tests + V8 coverage 门禁 | >150 tests      |
-| E2E 测试      | 0                            | >10 scenarios   |
+| 单元测试覆盖  | 144 tests + V8 coverage 门禁 | >150 tests      |
+| E2E 测试      | electron smoke 基线          | >10 scenarios   |
 | 崩溃率        | 未知                         | <0.1%           |
 | 日志可观测性  | 文本日志                     | 结构化 + 可查询 |
 

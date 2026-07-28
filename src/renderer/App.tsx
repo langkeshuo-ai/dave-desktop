@@ -236,21 +236,62 @@ export default function App() {
 
   // 全局快捷键:
   //  - Cmd/Ctrl+K        → 命令面板 toggle
+  //  - Cmd/Ctrl+N        → 新建会话
+  //  - Cmd/Ctrl+,        → 设置
+  //  - Cmd/Ctrl+1..9     → 跳转最近第 N 个会话
+  //  - Esc               → 关弹窗；无弹窗且流式中则停止生成
   //  - Alt+Up/Down       → 上一/下一会话(在侧栏可见时启用)
   // 只在不在输入态(不在 textarea/contenteditable)时拦截,避免与正文编辑冲突。
   // 用 ref 拿到最新的 callbacks,避免 effect 依赖频繁变化导致重绑。
-  const cbsRef = useRef<{ handleSelectSession: (id: string) => void; sidebarOpen: boolean }>({
+  const cbsRef = useRef<{
+    handleSelectSession: (id: string) => void
+    handleNewSession: () => void
+    handleAbort: () => void
+    sidebarOpen: boolean
+    paletteOpen: boolean
+    helpOpen: boolean
+    settingsOpen: boolean
+    hasApproval: boolean
+    isStreaming: boolean
+  }>({
     handleSelectSession: (_: string) => {},
+    handleNewSession: () => {},
+    handleAbort: () => {},
     sidebarOpen: true,
+    paletteOpen: false,
+    helpOpen: false,
+    settingsOpen: false,
+    hasApproval: false,
+    isStreaming: false,
   })
+  // handleAbort 在下方定义；此处先用 ref 占位，后续 effect 会同步最新实现。
+  const handleAbortRef = useRef<() => void>(() => {})
   useEffect(() => {
     cbsRef.current = {
       handleSelectSession: (id: string) => {
         void handleSelectSession(id)
       },
+      handleNewSession: () => {
+        void handleNewSession()
+      },
+      handleAbort: () => handleAbortRef.current(),
       sidebarOpen,
+      paletteOpen,
+      helpOpen,
+      settingsOpen,
+      hasApproval: approval !== null,
+      isStreaming,
     }
-  }, [handleSelectSession, sidebarOpen])
+  }, [
+    handleSelectSession,
+    handleNewSession,
+    sidebarOpen,
+    paletteOpen,
+    helpOpen,
+    settingsOpen,
+    approval,
+    isStreaming,
+  ])
   useEffect(() => {
     const isEditable = (el: EventTarget | null): boolean => {
       if (!(el instanceof HTMLElement)) return false
@@ -264,11 +305,60 @@ export default function App() {
       // keyCode === 229 是 Chromium IME 合成期的兼容值(老测试稳定)。
       // 修复:之前遗漏此处,会与 Welcome / ApiKeyWizard 里的 Enter/←→ 冲突。
       if (e.isComposing || e.keyCode === 229) return
+      const mod = e.metaKey || e.ctrlKey
       // Cmd/Ctrl+K 总是拦截(命令面板是顶级 UI)
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (mod && e.key.toLowerCase() === "k") {
         e.preventDefault()
         track("palette_opened", { via: "shortcut" })
         setPaletteOpen((v) => !v)
+        return
+      }
+      // Cmd/Ctrl+N 新建会话（输入框内也允许，与常见 IDE 一致）
+      if (mod && e.key.toLowerCase() === "n") {
+        e.preventDefault()
+        cbsRef.current.handleNewSession()
+        return
+      }
+      // Cmd/Ctrl+, 打开设置
+      if (mod && e.key === ",") {
+        e.preventDefault()
+        track("settings_opened", { via: "shortcut" })
+        setSettingsOpen(true)
+        return
+      }
+      // Cmd/Ctrl+1..9 跳转会话列表第 N 项
+      if (mod && e.key >= "1" && e.key <= "9") {
+        e.preventDefault()
+        const list = useStore.getState().sessions
+        const target = list[Number(e.key) - 1]
+        if (target) void cbsRef.current.handleSelectSession(target.id)
+        return
+      }
+      // Esc：弹窗优先关闭；否则流式中停止生成（输入框内也生效，方便打断）
+      if (e.key === "Escape") {
+        const s = cbsRef.current
+        if (s.paletteOpen) {
+          e.preventDefault()
+          setPaletteOpen(false)
+          return
+        }
+        if (s.helpOpen) {
+          e.preventDefault()
+          setHelpOpen(false)
+          return
+        }
+        if (s.settingsOpen) {
+          e.preventDefault()
+          setSettingsOpen(false)
+          return
+        }
+        // 批准对话框由自身 capture 处理，这里不抢
+        if (s.hasApproval) return
+        if (s.isStreaming) {
+          e.preventDefault()
+          s.handleAbort()
+          return
+        }
         return
       }
       if (isEditable(e.target)) return
@@ -412,6 +502,7 @@ export default function App() {
       void window.dave.chat.abort(currentSessionId)
     }
   }, [currentSessionId])
+  handleAbortRef.current = handleAbort
 
   const handleSendMessage = useCallback(
     async (content: string) => {

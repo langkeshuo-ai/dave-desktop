@@ -23,7 +23,13 @@ import {
 } from "./telemetry-store"
 import { TELEMETRY_EVENT_NAMES, type TelemetryEventName } from "../shared/telemetry"
 import { isAllowedStoreKey, sanitizeSessionTitle, STORE_VALUE_MAX } from "../shared/store-policy"
+import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
 import { getSecure, setSecure } from "./store"
+
+// 敏感 IPC 滑动窗口限流：防渲染端被注入后高频刷 store / 开流 / 写盘。
+const storeSetLimiter = createRateLimiter(SENSITIVE_IPC_LIMIT)
+const chatStreamLimiter = createRateLimiter(SENSITIVE_IPC_LIMIT)
+const applyPatchLimiter = createRateLimiter({ max: 10, windowMs: 1000 })
 
 // 白名单 Set:O(1) 查找,防止渲染端注入未知事件名。
 const TELEMETRY_NAME_SET: Set<string> = new Set(TELEMETRY_EVENT_NAMES)
@@ -106,6 +112,10 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("store-set", async (event, key: string, value: string) => {
     if (!validateSender(event)) return
+    if (!storeSetLimiter.allow()) {
+      log.warn("IPC rate limited: store-set")
+      return
+    }
     // 白名单 + 长度校验:value 上限 STORE_VALUE_MAX,防止渲染端写超长字符串撑爆 store 文件。
     if (!isAllowedStoreKey(key)) return
     if (typeof value !== "string" || value.length > STORE_VALUE_MAX) return
@@ -209,6 +219,10 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("chat-stream", async (event, message: string, sessionId: string) => {
     if (!validateSender(event)) return
+    if (!chatStreamLimiter.allow()) {
+      log.warn("IPC rate limited: chat-stream")
+      return
+    }
     await handleChatStream(event, message, sessionId)
   })
 
@@ -267,6 +281,10 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("workspace-apply-patch", async (event, diff: string) => {
     if (!validateSender(event)) return null
+    if (!applyPatchLimiter.allow()) {
+      log.warn("IPC rate limited: workspace-apply-patch")
+      return { ok: false, output: "操作过于频繁，请稍后再试", paths: [] }
+    }
     const workspace = (getStore().get("cwd") as string) || ""
     if (!workspace) throw new Error("工作区未配置")
     if (!diff?.trim()) throw new Error("空 diff")
