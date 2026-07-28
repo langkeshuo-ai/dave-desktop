@@ -8,7 +8,12 @@ import type { ChatMessage } from "../../shared/types"
 import { DEFAULT_CONTEXT_TOKEN_BUDGET } from "../../shared/types"
 import { estimateMessageTokensRough } from "../../shared/context"
 import { messagesToMarkdown } from "../../shared/export"
-import { ChevronDown, Bot, Folder, Download, Gauge } from "lucide-react"
+import {
+  findAdjacentAssistantIndex,
+  findMessageMatchIndices,
+  stepMatchIndex,
+} from "../../shared/message-search"
+import { ChevronDown, Bot, Folder, Download, Gauge, Search, X, ChevronUp } from "lucide-react"
 import type { FpsMonitor } from "../lib/fps-monitor"
 import { useStore } from "../stores/useStore"
 
@@ -63,8 +68,13 @@ export function ChatView({
 }: ChatViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const modeMenuRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [modeOpen, setModeOpen] = useState(false)
   const [didInitialScroll, setDidInitialScroll] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null)
+  const [navCursor, setNavCursor] = useState<number | null>(null)
 
   // 性能测试（仅 dev 模式）
   const fpsMonitorRef = useRef<FpsMonitor | null>(null)
@@ -241,6 +251,124 @@ export function ChatView({
 
   const virtualItems = virtualizer.getVirtualItems()
 
+  const searchHits = useMemo(
+    () => findMessageMatchIndices(messages, searchQuery),
+    [messages, searchQuery],
+  )
+  const searchHitSet = useMemo(() => new Set(searchHits), [searchHits])
+
+  const scrollToMessage = useCallback(
+    (index: number) => {
+      virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" })
+    },
+    [virtualizer],
+  )
+
+  const goToSearchMatch = useCallback(
+    (delta: 1 | -1) => {
+      const next = stepMatchIndex(searchHits, activeSearchIndex, delta)
+      if (next == null) return
+      setActiveSearchIndex(next)
+      setNavCursor(next)
+      scrollToMessage(next)
+    },
+    [searchHits, activeSearchIndex, scrollToMessage],
+  )
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true)
+    requestAnimationFrame(() => searchInputRef.current?.focus())
+  }, [])
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false)
+    setSearchQuery("")
+    setActiveSearchIndex(null)
+  }, [])
+
+  // 查询变化时定位到第一处命中
+  useEffect(() => {
+    if (!searchOpen) return
+    if (searchHits.length === 0) {
+      setActiveSearchIndex(null)
+      return
+    }
+    setActiveSearchIndex((prev) => {
+      if (prev != null && searchHits.includes(prev)) return prev
+      const first = searchHits[0]
+      if (first == null) return null
+      requestAnimationFrame(() => scrollToMessage(first))
+      return first
+    })
+  }, [searchHits, searchOpen, scrollToMessage])
+
+  // 会话切换时清搜索
+  useEffect(() => {
+    closeSearch()
+    setNavCursor(null)
+  }, [sessionId, closeSearch])
+
+  // Ctrl+F 搜索；Ctrl+↑/↓ 跳转 assistant 消息
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229) return
+      const mod = e.metaKey || e.ctrlKey
+      if (mod && e.key.toLowerCase() === "f") {
+        e.preventDefault()
+        if (searchOpen) {
+          searchInputRef.current?.focus()
+          searchInputRef.current?.select()
+        } else {
+          openSearch()
+        }
+        return
+      }
+      if (searchOpen && e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        closeSearch()
+        return
+      }
+      if (searchOpen && e.key === "Enter" && !e.shiftKey) {
+        // 搜索框内 Enter 在 onKeyDown 处理；此处兜底全局
+        if (document.activeElement === searchInputRef.current) return
+        e.preventDefault()
+        goToSearchMatch(e.shiftKey ? -1 : 1)
+        return
+      }
+      // Ctrl+↑/↓：上/下一条 assistant（输入框内不抢，除非同时按了 mod 且用户明确导航）
+      if (mod && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        const target = e.target
+        if (
+          target instanceof HTMLElement &&
+          (target.tagName === "TEXTAREA" || target.tagName === "INPUT") &&
+          target !== searchInputRef.current
+        ) {
+          // 允许在 composer 里用 Ctrl+箭头导航历史 assistant
+        }
+        e.preventDefault()
+        const dir = e.key === "ArrowUp" ? -1 : 1
+        const from = navCursor ?? activeSearchIndex ?? (dir === -1 ? messages.length : -1)
+        const next = findAdjacentAssistantIndex(messages, from, dir)
+        if (next == null) return
+        setNavCursor(next)
+        setActiveSearchIndex(next)
+        scrollToMessage(next)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [
+    searchOpen,
+    openSearch,
+    closeSearch,
+    goToSearchMatch,
+    navCursor,
+    activeSearchIndex,
+    messages,
+    scrollToMessage,
+  ])
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="relative flex items-center justify-between px-3 py-1.5 border-b border-[var(--border)] bg-[var(--bg-panel)]">
@@ -266,6 +394,16 @@ export function ChatView({
             ~{tokenCount < 1000 ? tokenCount : `${Math.round(tokenCount / 1000)}k`} tok
           </span>
           <span>{messages.length} 条</span>
+          <button
+            type="button"
+            className={`btn-icon-muted !p-1 ${searchOpen ? "text-[var(--accent)]" : ""}`}
+            title="搜索消息 (Ctrl+F)"
+            aria-label="搜索消息"
+            aria-pressed={searchOpen}
+            onClick={() => (searchOpen ? closeSearch() : openSearch())}
+          >
+            <Search size={13} />
+          </button>
           {import.meta.env.DEV && (
             <button
               type="button"
@@ -327,6 +465,75 @@ export function ChatView({
         )}
       </div>
 
+      {searchOpen && (
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--bg-sunk)]"
+          role="search"
+          aria-label="消息全文搜索"
+        >
+          <Search size={12} className="text-[var(--text-faint)] shrink-0" />
+          <input
+            ref={searchInputRef}
+            type="search"
+            className="input flex-1 !py-1 !text-xs"
+            placeholder="搜索当前会话消息…"
+            value={searchQuery}
+            aria-label="搜索关键词"
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                goToSearchMatch(e.shiftKey ? -1 : 1)
+              }
+              if (e.key === "Escape") {
+                e.preventDefault()
+                closeSearch()
+              }
+            }}
+          />
+          <span className="text-[10px] text-[var(--text-dim)] tabular-nums shrink-0 min-w-[3.5rem] text-right">
+            {searchQuery.trim()
+              ? searchHits.length === 0
+                ? "无匹配"
+                : `${
+                    (searchHits.indexOf(activeSearchIndex ?? -1) >= 0
+                      ? searchHits.indexOf(activeSearchIndex!)
+                      : 0) + 1
+                  }/${searchHits.length}`
+              : "—"}
+          </span>
+          <button
+            type="button"
+            className="btn-icon-muted !p-1"
+            title="上一处 (Shift+Enter)"
+            aria-label="上一处匹配"
+            disabled={searchHits.length === 0}
+            onClick={() => goToSearchMatch(-1)}
+          >
+            <ChevronUp size={13} />
+          </button>
+          <button
+            type="button"
+            className="btn-icon-muted !p-1"
+            title="下一处 (Enter)"
+            aria-label="下一处匹配"
+            disabled={searchHits.length === 0}
+            onClick={() => goToSearchMatch(1)}
+          >
+            <ChevronDown size={13} />
+          </button>
+          <button
+            type="button"
+            className="btn-icon-muted !p-1"
+            title="关闭搜索"
+            aria-label="关闭搜索"
+            onClick={closeSearch}
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-[var(--bg)] relative">
         {messages.length === 0 && !isStreaming ? (
           <div className="flex flex-col items-center px-6 py-10 h-full overflow-y-auto">
@@ -371,6 +578,8 @@ export function ChatView({
               onStop={onAbort}
               onRegenerate={onRegenerate}
               onEditUserMessage={onEditUserMessage}
+              searchHitIndices={searchOpen ? searchHitSet : undefined}
+              activeSearchIndex={searchOpen || navCursor != null ? activeSearchIndex : null}
               virtualItems={virtualItems}
               virtualizer={virtualizer}
             />

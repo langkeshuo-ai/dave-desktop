@@ -53,6 +53,11 @@ import {
   planRegenerate,
   sanitizeMessagesForReplace,
 } from "../src/shared/session-edit"
+import {
+  findAdjacentAssistantIndex,
+  findMessageMatchIndices,
+  stepMatchIndex,
+} from "../src/shared/message-search"
 import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
 import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
@@ -1855,5 +1860,45 @@ describe("session-edit helpers", () => {
     expect(sanitizeMessagesForReplace([{ role: "user", content: "ok" }])).toEqual([
       { role: "user", content: "ok" },
     ])
+  })
+})
+
+// =====================================================================
+// message-search — 全文搜索 / assistant 导航
+// =====================================================================
+describe("message-search helpers", () => {
+  const msgs = [
+    { role: "user", content: "如何优化 React 性能" },
+    { role: "assistant", content: "可以用 memo 与虚拟列表" },
+    { role: "user", content: "还有呢" },
+    { role: "assistant", content: "Code splitting 也很关键" },
+    { role: "tool", content: "read_file ok" },
+  ]
+
+  it("findMessageMatchIndices is case-insensitive and ordered", () => {
+    expect(findMessageMatchIndices(msgs, "react")).toEqual([0])
+    expect(findMessageMatchIndices(msgs, "MEMO")).toEqual([1])
+    expect(findMessageMatchIndices(msgs, "关键")).toEqual([3])
+    expect(findMessageMatchIndices(msgs, "")).toEqual([])
+    expect(findMessageMatchIndices(msgs, "   ")).toEqual([])
+    expect(findMessageMatchIndices(msgs, "不存在的词")).toEqual([])
+  })
+
+  it("stepMatchIndex walks circularly", () => {
+    const hits = [0, 3]
+    expect(stepMatchIndex(hits, null, 1)).toBe(0)
+    expect(stepMatchIndex(hits, 0, 1)).toBe(3)
+    expect(stepMatchIndex(hits, 3, 1)).toBe(0)
+    expect(stepMatchIndex(hits, 3, -1)).toBe(0)
+    expect(stepMatchIndex([], null, 1)).toBeNull()
+  })
+
+  it("findAdjacentAssistantIndex skips non-assistant roles", () => {
+    expect(findAdjacentAssistantIndex(msgs, -1, 1)).toBe(1)
+    expect(findAdjacentAssistantIndex(msgs, 1, 1)).toBe(3)
+    expect(findAdjacentAssistantIndex(msgs, 3, 1)).toBeNull()
+    expect(findAdjacentAssistantIndex(msgs, 5, -1)).toBe(3)
+    expect(findAdjacentAssistantIndex(msgs, 3, -1)).toBe(1)
+    expect(findAdjacentAssistantIndex(msgs, 1, -1)).toBeNull()
   })
 })

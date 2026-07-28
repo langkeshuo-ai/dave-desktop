@@ -1256,6 +1256,17 @@ pre,
   color: var(--diff-del);
 }
 
+/* 会话内全文搜索命中高亮 */
+.msg-search-hit {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+  border-radius: var(--radius);
+}
+.msg-search-active {
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+  border-radius: var(--radius);
+}
+
 /* =========================================
    Composer
    ========================================= */

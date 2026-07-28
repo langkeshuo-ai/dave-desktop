@@ -72,7 +72,7 @@ Markdown chunk        → ≈ 738.13 KB
 | DEV-AUDIT      | P2   | `npm audit` 开发链仍有 high；`omit=dev` 为 0             |
 | CI 远端        | P2   | workflow 已入库，**远端 runner 首次绿灯待确认**          |
 | 消息编辑       | —    | **已完成**（就地编辑 + 截断 + 再生成）                   |
-| 消息全文搜索   | P2   | 仅会话标题搜索                                           |
+| 消息全文搜索   | —    | **已完成**（Ctrl+F 会话内全文 + 命中高亮/上下跳转）      |
 | Worker/冷启动  | P2   | 主进程 worker、lazy require 启动优化未做                 |
 | MAC-LINUX      | P3   | 仅 Windows 环境                                          |
 
@@ -86,7 +86,7 @@ Markdown chunk        → ≈ 738.13 KB
 
 1. **立刻（人工 2 分钟）**：`npm run dev` → Gauge 注入 2000 条 → 滚动采 FPS → 写入 `PERFORMANCE_REPORT.md`。
 2. **E2E**：有 API Key 后加真实发消息/流式/编辑 GUI 断言；Agent 批准链路。
-3. **UX**：消息全文搜索（评估 Fuse.js MIT）；消息导航 Ctrl+↑/↓。
+3. **UX**：其余小增强（如消息内关键词 mark 高亮）；Fuse 模糊搜索非必需。
 4. **工程**：观察 CI 远端绿灯；可选 package:win smoke。
 5. **发布**：证书 + latest.yml。
 

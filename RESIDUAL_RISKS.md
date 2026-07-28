@@ -21,6 +21,7 @@
 | KBD-STOP         | 只能点按钮停止流式                                               | Esc 停止；Ctrl+1-9 / Ctrl+N / Ctrl+, 快捷键                  | electron smoke + 帮助面板      |
 | CI-BASELINE      | 无自动化门禁                                                     | `.github/workflows/ci.yml` verify + smoke                    | workflow 文件入库              |
 | MSG-EDIT         | 无法编辑历史 user 再生成                                         | `session-edit` + `session-replace-messages` + 就地编辑 UI    | unit + verify + smoke          |
+| MSG-SEARCH       | 仅侧栏标题搜索，会话内无法全文定位                               | `message-search` + Ctrl+F 条 + 命中高亮 + Ctrl+↑/↓ 导航      | unit + verify + smoke          |
 
 既有已关闭项（摘要）：store key 白名单、API Key safeStorage、shell hard-deny/elevated 审批、patch 工作区边界、会话运行时清理、流式 abort partial 保留、ErrorBoundary、焦点恢复、键盘帮助、命令面板、消息操作、滚动到底按钮、遥测边界。
 

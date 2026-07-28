@@ -99,12 +99,19 @@ try {
   if (await exportBtn.count()) {
     const disabled = await exportBtn.isDisabled()
     if (!disabled) {
-      // 允许已有历史消息的情况；至少按钮存在
       process.stdout.write("export button present (enabled)\n")
     } else {
       process.stdout.write("export button present (disabled on empty)\n")
     }
   }
+
+  // 消息搜索：Ctrl+F 打开搜索条
+  await window.keyboard.press("Control+F")
+  const searchBox = window.getByRole("searchbox", { name: "搜索关键词" })
+  await searchBox.waitFor({ state: "visible", timeout: 5_000 })
+  await searchBox.fill("dave")
+  await window.keyboard.press("Escape")
+  await searchBox.waitFor({ state: "hidden", timeout: 5_000 })
 
   process.stdout.write(`Electron smoke passed: ${title}\n`)
 } finally {

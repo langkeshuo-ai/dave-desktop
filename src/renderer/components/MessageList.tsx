@@ -29,6 +29,10 @@ interface MessageListProps {
   onRegenerate?: (userContent: string) => void
   /** 编辑第 index 条 user 消息并以新内容重新生成。 */
   onEditUserMessage?: (index: number, newContent: string) => void
+  /** 全文搜索命中下标 */
+  searchHitIndices?: ReadonlySet<number>
+  /** 当前激活的搜索命中 */
+  activeSearchIndex?: number | null
   virtualItems: VirtualItem[]
   virtualizer: ReactVirtualizer<HTMLDivElement, Element>
 }
@@ -48,6 +52,8 @@ export function MessageList({
   onStop,
   onRegenerate,
   onEditUserMessage,
+  searchHitIndices,
+  activeSearchIndex,
   virtualItems,
   virtualizer,
 }: MessageListProps) {
@@ -106,13 +112,17 @@ export function MessageList({
         const isLastAssistant =
           !isLast && virtualItem.index === messages.length - 1 && msg.role === "assistant"
         const messageIndex = isLast ? -1 : virtualItem.index
+        const isHit = !isLast && !!searchHitIndices?.has(virtualItem.index)
+        const isActiveHit = !isLast && activeSearchIndex === virtualItem.index
 
         return (
           <div
             key={virtualItem.key}
             ref={virtualizer.measureElement}
             data-index={virtualItem.index}
-            className="px-3 py-2"
+            data-search-hit={isHit ? "1" : undefined}
+            data-search-active={isActiveHit ? "1" : undefined}
+            className={`px-3 py-2 ${isActiveHit ? "msg-search-active" : isHit ? "msg-search-hit" : ""}`}
             style={{
               position: "absolute",
               top: 0,
