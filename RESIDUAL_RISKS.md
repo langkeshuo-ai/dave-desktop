@@ -20,6 +20,7 @@
 | MD-STREAM-CPU    | 流式每个 chunk 全量重解析 Markdown                               | memo + 120ms 节流（`shouldUpdateMarkdown`）                  | unit + production build        |
 | KBD-STOP         | 只能点按钮停止流式                                               | Esc 停止；Ctrl+1-9 / Ctrl+N / Ctrl+, 快捷键                  | electron smoke + 帮助面板      |
 | CI-BASELINE      | 无自动化门禁                                                     | `.github/workflows/ci.yml` verify + smoke                    | workflow 文件入库              |
+| MSG-EDIT         | 无法编辑历史 user 再生成                                         | `session-edit` + `session-replace-messages` + 就地编辑 UI    | unit + verify + smoke          |
 
 既有已关闭项（摘要）：store key 白名单、API Key safeStorage、shell hard-deny/elevated 审批、patch 工作区边界、会话运行时清理、流式 abort partial 保留、ErrorBoundary、焦点恢复、键盘帮助、命令面板、消息操作、滚动到底按钮、遥测边界。
 
@@ -28,7 +29,7 @@
 | ID               | 级别 | 状态与原因                                                                                      | 关闭条件                                                               |
 | ---------------- | ---- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | FPS-REAL         | P1   | 2000 条混合消息的 Electron 真窗口滚动指标尚未采集；不能用 jsdom/Node 伪造                       | 在目标 Windows 机器记录 avg、P50/P95/P99、>16.7/>33.3/>50ms、卡顿率    |
-| UAT-E2E          | P1   | 已有 Playwright Electron smoke（窗口/CSP/挂载/快捷键帮助）；完整业务 UAT 仍缺                   | 覆盖首启、设置、会话、停止/再生成、性能入口；CI 稳定绿                 |
+| UAT-E2E          | P1   | smoke 已覆盖 CSP/帮助/命令面板/设置/新建会话/导出；真实流式与 Agent 批准仍缺                    | 覆盖发消息、编辑再生成、Agent 批准；CI 稳定绿                          |
 | SIGNING          | P1   | Windows/macOS 发布未签名，取决于证书采购                                                        | 配置代码签名并验证 SmartScreen/Gatekeeper                              |
 | UPDATE-RELEASE   | P1   | updater 已接线但缺签名与 GitHub Releases 发布策略                                               | 签名产物 + latest.yml + staged rollout                                 |
 | DEV-AUDIT        | P2   | 全依赖 audit 为 19 high + 1 moderate，均在 lint/打包开发链；npm 建议会危险降级 electron-builder | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar |

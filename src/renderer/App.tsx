@@ -595,17 +595,51 @@ export default function App() {
     ],
   )
 
-  // 重新生成:复用最后一条 user 消息触发流式。Abort 是无侵入的安全网
-  // (避免用户在生成中再点 regenerate 产生双流)。
+  // 重新生成：截断末条 user 之后的回复，再以同一 user 内容发流，避免历史重复堆叠。
   const handleRegenerate = useCallback(
-    (userContent: string) => {
-      if (!userContent.trim() || isStreaming) return
-      if (currentSessionId) {
-        void window.dave.chat.abort(currentSessionId)
-      }
-      void handleSendMessage(userContent)
+    (_userContent: string) => {
+      if (isStreaming) return
+      void (async () => {
+        const { planRegenerate } = await import("../shared/session-edit")
+        const sid = useStore.getState().currentSessionId
+        if (!sid) return
+        const plan = planRegenerate(useStore.getState().messages)
+        if (!plan || !plan.userContent.trim()) return
+        void window.dave.chat.abort(sid)
+        const ok = await window.dave.session.replaceMessages(sid, plan.prefix)
+        if (!ok) return
+        useStore.getState().setMessages(plan.prefix)
+        setStreamingContent("")
+        setError(null)
+        void handleSendMessage(plan.userContent)
+      })()
     },
-    [currentSessionId, isStreaming, handleSendMessage],
+    [isStreaming, handleSendMessage, setStreamingContent, setError],
+  )
+
+  // 编辑历史 user 消息：截断该条及之后，再以新内容重新生成。
+  const handleEditUserMessage = useCallback(
+    (index: number, newContent: string) => {
+      if (isStreaming) return
+      const trimmed = newContent.trim()
+      if (!trimmed) return
+      void (async () => {
+        const { messagesBeforeUserEdit } = await import("../shared/session-edit")
+        const sid = useStore.getState().currentSessionId
+        if (!sid) return
+        const prefix = messagesBeforeUserEdit(useStore.getState().messages, index)
+        if (!prefix) return
+        void window.dave.chat.abort(sid)
+        const ok = await window.dave.session.replaceMessages(sid, prefix)
+        if (!ok) return
+        useStore.getState().setMessages(prefix)
+        setStreamingContent("")
+        setError(null)
+        track("message_edited", { idx: String(index), len: String(trimmed.length) })
+        void handleSendMessage(trimmed)
+      })()
+    },
+    [isStreaming, handleSendMessage, setStreamingContent, setError],
   )
 
   const handleDeleteSession = useCallback(
@@ -773,6 +807,7 @@ export default function App() {
               onSendMessage={(msg) => void handleSendMessage(msg)}
               onAbort={handleAbort}
               onRegenerate={(msg) => void handleRegenerate(msg)}
+              onEditUserMessage={(idx, content) => handleEditUserMessage(idx, content)}
               workspace={workspace}
               sessionId={currentSessionId}
               sessionTitle={currentTitle}

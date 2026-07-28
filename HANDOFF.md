@@ -24,23 +24,24 @@
 
 ### 本轮（2026-07-29）新增
 
-| 项                 | 位置                                                  | 说明                                           |
-| ------------------ | ----------------------------------------------------- | ---------------------------------------------- |
-| IPC 滑动窗口限流   | `src/shared/rate-limit.ts` + `src/main/ipc.ts`        | store-set / chat-stream 30/s；apply-patch 10/s |
-| 流式 Markdown 节流 | `src/shared/markdown-throttle.ts` + `MessageList.tsx` | 流式 120ms 更新；结束立刻对齐                  |
-| Markdown memo      | `MarkdownContent.tsx`                                 | 同 content 跳过重解析                          |
-| 快捷键增强         | `App.tsx` + `KeyboardHelp.tsx`                        | Esc 停流；Ctrl+1-9 切会话；Ctrl+N / Ctrl+,     |
-| GitHub Actions CI  | `.github/workflows/ci.yml`                            | verify + audit(omit=dev) + electron smoke      |
-| E2E smoke 扩展     | `tests/electron-smoke.mjs`                            | CSP 断言、React 挂载、`?` 帮助面板开/关        |
-| 单测               | `tests/unit.test.ts`                                  | rate-limit + markdown-throttle；**144** 项全绿 |
+| 项                 | 位置                                               | 说明                                         |
+| ------------------ | -------------------------------------------------- | -------------------------------------------- |
+| IPC 滑动窗口限流   | `src/shared/rate-limit.ts` + `ipc.ts`              | store-set/chat-stream 30/s；apply-patch 10/s |
+| 流式 Markdown 节流 | `markdown-throttle.ts` + `MessageList`             | 流式 120ms + memo                            |
+| 快捷键             | `App.tsx`                                          | Esc 停流；Ctrl+1-9；Ctrl+N / Ctrl+,          |
+| CI                 | `.github/workflows/ci.yml`                         | verify + audit + smoke                       |
+| **用户消息编辑**   | `session-edit.ts` + `session-replace-messages` IPC | 就地编辑 → 截断后续 → 重新生成               |
+| **再生成截断**     | `planRegenerate` + `replaceMessages`               | 不再重复堆叠 user 轮次                       |
+| E2E smoke          | `tests/electron-smoke.mjs`                         | CSP/帮助/命令面板/设置/新建会话/导出         |
+| 单测               | `tests/unit.test.ts`                               | **147** 项全绿                               |
 
 ### 验证结果（本轮实测）
 
 ```
-npm run verify     → 全绿（format/lint/typecheck/144 tests+coverage/build）
-npm run test:electron → Electron smoke passed: Dave Desktop
-主 bundle         → out/renderer/assets/index-*.js ≈ 730.37 KB
-Markdown chunk    → ≈ 738.13 KB
+npm run verify        → 全绿（147 tests + coverage + build）
+node tests/electron-smoke.mjs → Electron smoke passed
+主 bundle             → ≈ 736.60 KB
+Markdown chunk        → ≈ 738.13 KB
 ```
 
 ### 重要决策
@@ -70,7 +71,7 @@ Markdown chunk    → ≈ 738.13 KB
 | UPDATE-RELEASE | P1   | updater 已接线，缺签名 + Releases 策略                   |
 | DEV-AUDIT      | P2   | `npm audit` 开发链仍有 high；`omit=dev` 为 0             |
 | CI 远端        | P2   | workflow 已入库，**远端 runner 首次绿灯待确认**          |
-| 消息编辑       | P2   | 用户消息就地编辑 + 再生成未做                            |
+| 消息编辑       | —    | **已完成**（就地编辑 + 截断 + 再生成）                   |
 | 消息全文搜索   | P2   | 仅会话标题搜索                                           |
 | Worker/冷启动  | P2   | 主进程 worker、lazy require 启动优化未做                 |
 | MAC-LINUX      | P3   | 仅 Windows 环境                                          |
@@ -83,11 +84,11 @@ Markdown chunk    → ≈ 738.13 KB
 
 ## 4. 下一步行动计划
 
-1. **立刻（人工 2 分钟）**：`npm run dev` → 开会话 → 点 Gauge 注入 2000 条 → 滚动 → 停测 → 把 avg/P50/P95/P99 写入 `PERFORMANCE_REPORT.md`，关闭 FPS-REAL。
-2. **E2E 深化**：在 smoke 上加「新建会话 / 打开设置 / 导出按钮可见」等无 API Key 场景；有 Key 后再加流式。
-3. **UX**：用户消息编辑 + 再生成；消息全文搜索（可评估 Fuse.js，MIT）。
-4. **工程**：观察 GitHub Actions 首次远端结果；可选 `package:win` smoke job。
-5. **发布**：证书采购后签名 + latest.yml；勿在无签名时宣称自动更新可用。
+1. **立刻（人工 2 分钟）**：`npm run dev` → Gauge 注入 2000 条 → 滚动采 FPS → 写入 `PERFORMANCE_REPORT.md`。
+2. **E2E**：有 API Key 后加真实发消息/流式/编辑 GUI 断言；Agent 批准链路。
+3. **UX**：消息全文搜索（评估 Fuse.js MIT）；消息导航 Ctrl+↑/↓。
+4. **工程**：观察 CI 远端绿灯；可选 package:win smoke。
+5. **发布**：证书 + latest.yml。
 
 **验证口令**：
 
@@ -131,15 +132,14 @@ npm audit --omit=dev
 ### 本轮关键文件清单
 
 ```
-src/shared/rate-limit.ts                 (新)
-src/shared/markdown-throttle.ts          (新)
-.github/workflows/ci.yml                 (新)
-src/main/ipc.ts                          (限流)
-src/renderer/App.tsx                     (快捷键)
-src/renderer/components/MessageList.tsx  (流式节流)
-src/renderer/components/MarkdownContent.tsx (memo)
-src/renderer/components/KeyboardHelp.tsx
-tests/unit.test.ts
-tests/electron-smoke.mjs
+src/shared/rate-limit.ts / markdown-throttle.ts / session-edit.ts
+.github/workflows/ci.yml
+src/main/ipc.ts / session.ts
+src/preload/index.ts                     (replaceMessages)
+src/renderer/App.tsx                     (edit/regenerate 截断)
+src/renderer/components/MessageList.tsx  (UserMessageBubble 编辑)
+src/renderer/components/ChatView.tsx
+src/shared/telemetry.ts                  (message_edited)
+tests/unit.test.ts / electron-smoke.mjs
 HANDOFF.md / RESIDUAL_RISKS.md / OPTIMIZATION_ROADMAP.md
 ```

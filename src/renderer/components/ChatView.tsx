@@ -22,6 +22,7 @@ interface ChatViewProps {
   onSendMessage: (content: string) => void
   onAbort: () => void
   onRegenerate?: (userContent: string) => void
+  onEditUserMessage?: (index: number, newContent: string) => void
   workspace?: string
   sessionId?: string | null
   sessionTitle?: string
@@ -53,6 +54,7 @@ export function ChatView({
   onSendMessage,
   onAbort,
   onRegenerate,
+  onEditUserMessage,
   workspace = "",
   sessionId,
   sessionTitle,
@@ -368,6 +370,7 @@ export function ChatView({
               isStreaming={isStreaming}
               onStop={onAbort}
               onRegenerate={onRegenerate}
+              onEditUserMessage={onEditUserMessage}
               virtualItems={virtualItems}
               virtualizer={virtualizer}
             />

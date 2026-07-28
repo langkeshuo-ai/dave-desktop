@@ -13,6 +13,7 @@ import {
   ChevronRight,
   RefreshCw,
   Square,
+  Pencil,
 } from "lucide-react"
 import type { ReactVirtualizer, VirtualItem } from "@tanstack/react-virtual"
 
@@ -26,6 +27,8 @@ interface MessageListProps {
   isStreaming: boolean
   onStop?: () => void
   onRegenerate?: (userContent: string) => void
+  /** 编辑第 index 条 user 消息并以新内容重新生成。 */
+  onEditUserMessage?: (index: number, newContent: string) => void
   virtualItems: VirtualItem[]
   virtualizer: ReactVirtualizer<HTMLDivElement, Element>
 }
@@ -44,6 +47,7 @@ export function MessageList({
   isStreaming,
   onStop,
   onRegenerate,
+  onEditUserMessage,
   virtualItems,
   virtualizer,
 }: MessageListProps) {
@@ -101,6 +105,7 @@ export function MessageList({
 
         const isLastAssistant =
           !isLast && virtualItem.index === messages.length - 1 && msg.role === "assistant"
+        const messageIndex = isLast ? -1 : virtualItem.index
 
         return (
           <div
@@ -118,11 +123,14 @@ export function MessageList({
           >
             <MessageBubble
               message={msg}
+              messageIndex={messageIndex}
               isStreaming={isLast && isStreaming}
               isLastAssistant={isLastAssistant}
               lastUserContent={lastUser}
+              canEdit={!isStreaming && !isLast && msg.role === "user"}
               onStop={onStop}
               onRegenerate={onRegenerate}
+              onEditUserMessage={onEditUserMessage}
             />
           </div>
         )
@@ -138,18 +146,24 @@ export function MessageList({
 // 变化 / 回调引用变化时才重渲染。
 const MessageBubble = memo(function MessageBubble({
   message,
+  messageIndex,
   isStreaming,
   isLastAssistant,
   lastUserContent,
+  canEdit,
   onStop,
   onRegenerate,
+  onEditUserMessage,
 }: {
   message: ChatMessage
+  messageIndex: number
   isStreaming?: boolean
   isLastAssistant?: boolean
   lastUserContent?: string | null
+  canEdit?: boolean
   onStop?: () => void
   onRegenerate?: (userContent: string) => void
+  onEditUserMessage?: (index: number, newContent: string) => void
 }) {
   if (message.role === "tool") {
     return <ToolTrace message={message} />
@@ -189,7 +203,12 @@ const MessageBubble = memo(function MessageBubble({
       </div>
       <div className={`msg-body ${isUser ? "user" : ""}`}>
         {isUser ? (
-          <div className="msg-bubble user whitespace-pre-wrap break-words">{message.content}</div>
+          <UserMessageBubble
+            content={message.content || ""}
+            messageIndex={messageIndex}
+            canEdit={!!canEdit && !!onEditUserMessage}
+            onEditUserMessage={onEditUserMessage}
+          />
         ) : kind === "patch" ? (
           <PatchView body={message.content} streaming={isStreaming} />
         ) : (
@@ -206,6 +225,113 @@ const MessageBubble = memo(function MessageBubble({
     </div>
   )
 })
+
+/** 用户消息：支持就地编辑并截断后续重新生成。 */
+function UserMessageBubble({
+  content,
+  messageIndex,
+  canEdit,
+  onEditUserMessage,
+}: {
+  content: string
+  messageIndex: number
+  canEdit: boolean
+  onEditUserMessage?: (index: number, newContent: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(content)
+  const areaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (!editing) setDraft(content)
+  }, [content, editing])
+
+  useEffect(() => {
+    if (!editing) return
+    const el = areaRef.current
+    if (!el) return
+    el.focus()
+    el.style.height = "auto"
+    el.style.height = Math.min(el.scrollHeight, 240) + "px"
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [editing])
+
+  const commit = useCallback(() => {
+    const next = draft.trim()
+    if (!next || !onEditUserMessage) return
+    if (next === content.trim()) {
+      setEditing(false)
+      return
+    }
+    onEditUserMessage(messageIndex, next)
+    setEditing(false)
+  }, [draft, content, messageIndex, onEditUserMessage])
+
+  if (editing) {
+    return (
+      <div className="msg-bubble user w-full space-y-2">
+        <textarea
+          ref={areaRef}
+          className="input w-full !text-sm !py-2 min-h-[4rem] resize-y"
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            const el = e.target
+            el.style.height = "auto"
+            el.style.height = Math.min(el.scrollHeight, 240) + "px"
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault()
+              setEditing(false)
+              setDraft(content)
+            }
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              commit()
+            }
+          }}
+          aria-label="编辑消息"
+        />
+        <div className="flex items-center gap-2">
+          <button type="button" className="btn text-xs" onClick={commit} disabled={!draft.trim()}>
+            保存并重新生成
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost text-xs"
+            onClick={() => {
+              setEditing(false)
+              setDraft(content)
+            }}
+          >
+            取消
+          </button>
+          <span className="text-[10px] text-[var(--text-faint)]">Ctrl+Enter 保存 · Esc 取消</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="msg-bubble user relative group/user-msg">
+      <div className="whitespace-pre-wrap break-words">{content}</div>
+      {canEdit && (
+        <div className="msg-actions">
+          <button
+            type="button"
+            className="btn-icon-muted"
+            title="编辑并重新生成"
+            aria-label="编辑消息"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 /** 流式 Markdown 节流气泡 — hooks 独立组件，避免 MessageBubble 早退违反 hooks 规则。 */
 function AssistantMarkdownBubble({

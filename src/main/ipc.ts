@@ -12,6 +12,7 @@ import {
   deleteSession,
   getSession,
   getSessionList,
+  replaceSessionMessages,
   updateSessionTitle,
 } from "./session"
 import {
@@ -24,6 +25,7 @@ import {
 import { TELEMETRY_EVENT_NAMES, type TelemetryEventName } from "../shared/telemetry"
 import { isAllowedStoreKey, sanitizeSessionTitle, STORE_VALUE_MAX } from "../shared/store-policy"
 import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
+import { sanitizeMessagesForReplace } from "../shared/session-edit"
 import { getSecure, setSecure } from "./store"
 
 // 敏感 IPC 滑动窗口限流：防渲染端被注入后高频刷 store / 开流 / 写盘。
@@ -260,6 +262,23 @@ export function registerIpcHandlers(deps: Deps) {
     const safe = sanitizeSessionTitle(title)
     if (safe === null) return
     updateSessionTitle(sessionId, safe)
+  })
+
+  // 编辑/再生成：渲染端截断后整表写回。限流 + 结构校验防注入撑爆 store。
+  ipcMain.handle("session-replace-messages", (event, sessionId: string, messages: unknown) => {
+    if (!validateSender(event)) return false
+    if (typeof sessionId !== "string" || sessionId.length === 0 || sessionId.length > 128) {
+      return false
+    }
+    if (!storeSetLimiter.allow()) {
+      log.warn("IPC rate limited: session-replace-messages")
+      return false
+    }
+    const safe = sanitizeMessagesForReplace(messages)
+    if (safe === null) return false
+    // 截断前先 abort，避免旧流把 partial 写回覆盖
+    abortSession(sessionId)
+    return replaceSessionMessages(sessionId, safe)
   })
 
   ipcMain.handle(

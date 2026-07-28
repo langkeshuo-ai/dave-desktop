@@ -48,6 +48,11 @@ import type { ChatMessage } from "../src/shared/types"
 import { calculateFpsStats } from "../src/shared/fps-stats"
 import { createRateLimiter } from "../src/shared/rate-limit"
 import { shouldUpdateMarkdown } from "../src/shared/markdown-throttle"
+import {
+  messagesBeforeUserEdit,
+  planRegenerate,
+  sanitizeMessagesForReplace,
+} from "../src/shared/session-edit"
 import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
 import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
@@ -1805,5 +1810,50 @@ describe("shouldUpdateMarkdown", () => {
 
   it("defers when streaming and elapsed is under interval", () => {
     expect(shouldUpdateMarkdown(true, 40, 120)).toEqual({ updateNow: false, delayMs: 80 })
+  })
+})
+
+// =====================================================================
+// session-edit — 编辑 / 再生成截断
+// =====================================================================
+describe("session-edit helpers", () => {
+  const sample: ChatMessage[] = [
+    { role: "user", content: "q1" },
+    { role: "assistant", content: "a1" },
+    { role: "user", content: "q2" },
+    { role: "assistant", content: "a2" },
+  ]
+
+  it("messagesBeforeUserEdit keeps prefix before the edited user turn", () => {
+    expect(messagesBeforeUserEdit(sample, 2)).toEqual([
+      { role: "user", content: "q1" },
+      { role: "assistant", content: "a1" },
+    ])
+    expect(messagesBeforeUserEdit(sample, 0)).toEqual([])
+    expect(messagesBeforeUserEdit(sample, 1)).toBeNull()
+    expect(messagesBeforeUserEdit(sample, 99)).toBeNull()
+  })
+
+  it("planRegenerate finds last user and drops trailing replies", () => {
+    const plan = planRegenerate(sample)
+    expect(plan).toEqual({
+      prefix: [
+        { role: "user", content: "q1" },
+        { role: "assistant", content: "a1" },
+      ],
+      userContent: "q2",
+      userIndex: 2,
+    })
+    expect(planRegenerate([])).toBeNull()
+    expect(planRegenerate([{ role: "assistant", content: "only" }])).toBeNull()
+  })
+
+  it("sanitizeMessagesForReplace rejects malformed payloads", () => {
+    expect(sanitizeMessagesForReplace(null)).toBeNull()
+    expect(sanitizeMessagesForReplace([{ role: "hacker", content: "x" }])).toBeNull()
+    expect(sanitizeMessagesForReplace([{ role: "user", content: 1 }])).toBeNull()
+    expect(sanitizeMessagesForReplace([{ role: "user", content: "ok" }])).toEqual([
+      { role: "user", content: "ok" },
+    ])
   })
 })

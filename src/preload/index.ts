@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron"
 import type {
+  ChatMessage,
   FilePickerResult,
   Session,
   SessionData,
@@ -107,6 +108,9 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke("session-delete", id) as Promise<void>,
     updateTitle: (id: string, title: string) =>
       ipcRenderer.invoke("session-update-title", id, title) as Promise<void>,
+    /** 编辑/再生成截断后整表写回会话消息。 */
+    replaceMessages: (id: string, messages: ChatMessage[]) =>
+      ipcRenderer.invoke("session-replace-messages", id, messages) as Promise<boolean>,
   },
 
   provider: {

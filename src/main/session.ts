@@ -53,6 +53,22 @@ export function saveSessionMessages(sessionId: string, messages: ChatMessage[]):
   getStore().set(`session-messages-${sessionId}`, JSON.stringify(messages))
 }
 
+/**
+ * 整表替换会话消息（编辑/再生成截断用）。
+ * 调用方需已 abort 该 session 的 inflight 流。
+ */
+export function replaceSessionMessages(sessionId: string, messages: ChatMessage[]): boolean {
+  const list = getSessionList()
+  if (!list.some((s) => s.id === sessionId)) return false
+  saveSessionMessages(sessionId, messages)
+  const session = list.find((s) => s.id === sessionId)
+  if (session) {
+    session.updatedAt = Date.now()
+    saveSessionList(list)
+  }
+  return true
+}
+
 export function getSession(sessionId: string): {
   session: Session | null
   messages: ChatMessage[]

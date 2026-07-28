@@ -82,7 +82,7 @@
 **缺失**:
 
 - [x] **复制消息** — 每条消息 hover / focus-within 显示操作按钮
-- [ ] **编辑历史消息** — 用户消息支持点击编辑 + 重新生成
+- [x] **编辑历史消息** — 用户消息就地编辑 + 截断后续 + 重新生成（`session-replace-messages`）
 - [x] **消息搜索** — 侧栏会话标题搜索（消息全文搜索仍待）
 - [x] **导出会话** — Markdown 导出已落地；JSON / PDF 仍待
 - [x] **滚动到底按钮** — 长会话离开底部显示按钮，仅在 atBottom 时跟随 streaming
@@ -226,9 +226,9 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 
 **方案**:
 
-- [x] **Playwright E2E 基线** — `npm run test:electron`：窗口/CSP/React 挂载/快捷键帮助
-  - 仍待：首次启动 → Welcome → API Key → 发消息 → 回复
-  - 仍待：Agent 批准 / patch 应用 / 会话 CRUD 全链路
+- [x] **Playwright E2E 基线** — `npm run test:electron`：CSP/挂载/帮助/命令面板/设置/新建会话/导出
+  - 仍待：API Key 后真实发消息 → 流式回复
+  - 仍待：Agent 批准 / patch 应用 / 编辑消息 GUI 断言
 - [ ] **视觉回归测试** — Playwright 截图对比（主题 / 组件样式）
 
 **实现**:

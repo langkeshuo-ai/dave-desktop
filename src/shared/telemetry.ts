@@ -38,6 +38,7 @@ export type TelemetryEventName =
   | "template_clicked"
   | "first_message_sent"
   | "message_sent"
+  | "message_edited"
   | "approval_granted"
   | "approval_denied"
   | "aborted"
@@ -76,6 +77,7 @@ export const TELEMETRY_EVENT_NAMES = [
   "template_clicked",
   "first_message_sent",
   "message_sent",
+  "message_edited",
   "approval_granted",
   "approval_denied",
   "aborted",
