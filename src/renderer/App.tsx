@@ -695,36 +695,36 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
-      {/* Title Bar — Cursor custom (dark even in light mode) */}
+      {/* Title Bar — clean light design */}
       <header className="titlebar shrink-0">
         {/* Left cluster: sidebar toggle + logo */}
-        <div className="flex items-center gap-2 px-2 no-drag">
+        <div className="flex items-center gap-1.5 px-2 no-drag">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="btn-icon"
+            className="btn-icon-muted"
             title={sidebarOpen ? "收起侧栏" : "展开侧栏"}
             aria-label="切换侧栏"
           >
             <PanelLeft size={16} />
           </button>
           <div className="flex items-center gap-1.5 px-1.5">
-            <div className="w-4 h-4 rounded bg-[var(--accent)] flex items-center justify-center">
+            <div className="w-4 h-4 rounded-[6px] bg-[var(--accent)] flex items-center justify-center">
               <Bot size={11} className="text-white" />
             </div>
-            <span className="text-xs text-white font-medium">Dave</span>
-            <span className="text-[10px] text-[var(--text-on-inverse-dim)] ml-1">Desktop</span>
+            <span className="text-xs font-semibold text-[var(--text-strong)]">Dave</span>
+            <span className="text-[10px] text-[var(--text-dim)]">Desktop</span>
           </div>
         </div>
 
         {/* Center: drag region (window movable) */}
         <div className="drag-region flex items-center justify-center">
-          <span className="text-[11px] text-[var(--text-on-inverse-dim)]">
+          <span className="text-[11px] text-[var(--text-dim)]">
             {currentSessionId ? "会话" : "—"}
           </span>
         </div>
 
         {/* Right cluster: new session + workspace + theme + settings */}
-        <div className="flex items-center gap-1 px-2 no-drag">
+        <div className="flex items-center gap-0.5 px-2 no-drag">
           <button
             onClick={() => void handleNewSession()}
             className="btn-icon"

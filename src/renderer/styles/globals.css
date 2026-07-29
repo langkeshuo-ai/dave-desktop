@@ -1,55 +1,52 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   Dave Desktop — Cursor-inspired professional theme
+   Dave Desktop — Clean, Light-first Professional Theme
    =========================================================================
-   Design principles (Cursor style):
-     1. Dark-first slate foundation (#0F1117 base, #171A23 raised)
-     2. Single vivid accent at high saturation (#5B8CFF blue glow)
-     3. Semantic colors remain distinct (success/danger/warning)
-     4. Minimal surface steps: base → panel → sunk (3 levels max)
-     5. Text hierarchy: strong → default → dim → faint (4 levels)
-     6. Night mode is default; light mode as override (inverted from legacy)
+   Design principles (Apple/Linear-style):
+     1. Light-first: default is clean white, dark mode is the override
+     2. Single vivid accent (#0071E3 Apple-blue for buttons/links)
+     3. Three surface levels: white → light-gray → subtle-gray
+     4. Text hierarchy: black → dark-gray → mid-gray → light-gray (4 levels)
+     5. Generous whitespace, larger font, cleaner borders
+     6. No dark components in light mode — pure white and soft gray only
      7. All color values via CSS variables — no hardcoded hex in components
 
    ---------------------------------------------------------------------------
-   Color palette (dark-first, Cursor aesthetic)
+   Color palette (light-first, Apple aesthetic)
    ---------------------------------------------------------------------------
 
-   【Surface layers — slate-dark foundation】
-   --bg              #0F1117   Deep canvas (Cursor main bg)
-   --bg-panel        #171A23   Raised card/sidebar
-   --bg-sunk         #1E222E   Sunken layer (code block, table header)
-   --bg-active       #252A38   Hover/active row
-   --bg-title        #0B0D12   Titlebar (deeper than base)
-   --surface-input   #1E222E   Input/textarea/composer
+   【Surface layers — pure white + warm gray foundation】
+   --bg              #FFFFFF   Pure white canvas
+   --bg-panel        #F5F5F7   Raised card/sidebar/apple-panel
+   --bg-sunk         #EBEBED   Sunken layer (code block, table header)
+   --bg-active       #E8E8EC   Hover/active row
+   --bg-title        #F5F5F7   Titlebar (matches panel)
+   --surface-input   #FFFFFF   Input/textarea/composer
 
-   【Border layers】
-   --border          #2A2F3D   Default hairline
-   --border-strong   #3C4252   Input/composer strong border
-   --border-inverse  #E5E7EB   Light mode titlebar border
+   【Border layers — subtle, not harsh】
+   --border          #E5E5E7   Default hairline
+   --border-strong   #D1D1D6   Input/composer strong border
 
-   【Text layers】
-   --text            #E4E5E7   Body text
-   --text-strong     #F9FAFB   Headings/emphasis
-   --text-dim        #9CA3AF   Secondary
-   --text-faint      #6B7280   Placeholder/timestamp
-   --text-on-inverse #1F2937   Light mode body text
-   --text-on-inverse-dim #6B7280   Light mode secondary
+   【Text layers — crisp, high readability】
+   --text            #1D1D1F   Body text (near-black, not pure black)
+   --text-strong     #000000   Headings/emphasis
+   --text-dim        #86868B   Secondary
+   --text-faint      #AEAEB2   Placeholder/timestamp
    --text-on-accent  #FFFFFF   White text on accent button
 
-   【Accent — single vivid blue (Cursor signature)】
-   --accent          #5B8CFF   Primary brand (high saturation blue)
-   --accent-hover    #7BA4FF   Hover state (lighter)
-   --accent-soft     rgba(91, 140, 255, 0.12)   Selected row bg
+   【Accent — Apple blue, single source of truth】
+   --accent          #0071E3   Primary brand blue
+   --accent-hover    #0077ED   Hover state
+   --accent-soft     rgba(0, 113, 227, 0.08)   Selected row bg
 
    【Semantic colors】
-   --success         #10B981   Success/diff-add (emerald)
-   --success-bg      rgba(16, 185, 129, 0.12)
-   --danger          #EF4444   Error/diff-del (red)
-   --danger-bg       rgba(239, 68, 68, 0.12)
-   --warning         #F59E0B   Warning (amber)
-   --warning-bg      rgba(245, 158, 11, 0.12)
+   --success         #34C759   Success/diff-add (Apple green)
+   --success-bg      rgba(52, 199, 89, 0.12)
+   --danger          #FF3B30   Error/diff-del (Apple red)
+   --danger-bg       rgba(255, 59, 48, 0.12)
+   --warning         #FF9500   Warning (Apple orange)
+   --warning-bg      rgba(255, 149, 0, 0.12)
 
    【diff aliases — map to semantic colors】
    --diff-add        var(--success)
@@ -57,77 +54,73 @@
    --diff-del        var(--danger)
    --diff-del-bg     var(--danger-bg)
 
-   【Syntax highlighting — dark-adapted】
-   --syntax-fn       #A78BFA   Function name (purple)
-   --syntax-str      #34D399   String (green)
-   --syntax-kw       #F472B6   Keyword (pink)
-   --syntax-comment  #6B7280   Comment (gray)
-   --syntax-num      #FBBF24   Number (amber)
-   --syntax-built-in #60A5FA   Built-in type (blue)
-   --syntax-variable #E879F9   Variable (fuchsia)
-   --syntax-name     #A78BFA   Section/name (purple)
+   【Syntax highlighting — clean, readable on white】
+   --syntax-fn       #881391   Function name (purple)
+   --syntax-str      #1A7F37   String (green)
+   --syntax-kw       #CF222E   Keyword (red)
+   --syntax-comment  #656D76   Comment (gray)
+   --syntax-num      #0550AE   Number (blue)
+   --syntax-built-in #0969DA   Built-in type (blue)
+   --syntax-variable #953800   Variable (brown)
+   --syntax-name     #8250DF   Section/name (purple)
 
    【Tool icon semantics】
-   --tool-shell      #F59E0B   Shell tool amber
+   --tool-shell      #FF9500   Shell tool amber
 
-   【Scrollbar】
-   --scrollbar-thumb        #3C4252
-   --scrollbar-thumb-hover  #4B5563
+   【Scrollbar — light-adapted】
+   --scrollbar-thumb        #C8C8CC
+   --scrollbar-thumb-hover  #A8A8AD
 
-   【Shadow / scrim / radius】
-   --shadow-sm       0 1px 2px rgba(0, 0, 0, 0.24)
-   --shadow-md       0 4px 12px rgba(0, 0, 0, 0.32)
-   --shadow-lg       0 12px 32px rgba(0, 0, 0, 0.48)
-   --scrim           rgba(0, 0, 0, 0.6)
-   --scrim-strong    rgba(0, 0, 0, 0.75)
-   --radius          6px
-   --radius-sm       3px
+   【Shadow / scrim / radius — Apple-style】
+   --shadow-sm       0 1px 3px rgba(0, 0, 0, 0.06)
+   --shadow-md       0 4px 12px rgba(0, 0, 0, 0.08)
+   --shadow-lg       0 12px 32px rgba(0, 0, 0, 0.12)
+   --scrim           rgba(0, 0, 0, 0.3)
+   --scrim-strong    rgba(0, 0, 0, 0.5)
+   --radius          8px
+   --radius-sm       5px
 
    ---------------------------------------------------------------------------
    Usage constraints
    ---------------------------------------------------------------------------
    - No hardcoded hex/rgba in component className (e.g. text-[#9a9a9a])
-   - No `html.night .xxx { color: ... }` selectors — variable override only
    - Use semantic colors (success/danger/warning), not accent for status
-   - --text-on-inverse / --text-on-accent only for inverse/accent backgrounds
+   - --text-on-accent only for accent backgrounds
    - --tool-shell only for shell tool icons
    ========================================================================= */
 
 :root {
-  /* === Surface layers (dark-first Cursor style) === */
-  --bg: #0f1117;
-  --bg-panel: #171a23;
-  --bg-sunk: #1e222e;
-  --bg-active: #252a38;
-  --bg-title: #0b0d12;
-  --surface-input: #1e222e;
+  /* === Surface layers (light-first) === */
+  --bg: #ffffff;
+  --bg-panel: #f5f5f7;
+  --bg-sunk: #ebebed;
+  --bg-active: #e8e8ec;
+  --bg-title: #f5f5f7;
+  --surface-input: #ffffff;
 
   /* === Border layers === */
-  --border: #2a2f3d;
-  --border-strong: #3c4252;
-  --border-inverse: #e5e7eb;
+  --border: #e5e5e7;
+  --border-strong: #d1d1d6;
 
   /* === Text layers === */
-  --text: #e4e5e7;
-  --text-strong: #f9fafb;
-  --text-dim: #9ca3af;
-  --text-faint: #6b7280;
-  --text-on-inverse: #1f2937;
-  --text-on-inverse-dim: #6b7280;
+  --text: #1d1d1f;
+  --text-strong: #000000;
+  --text-dim: #86868b;
+  --text-faint: #aeaeb2;
   --text-on-accent: #ffffff;
 
-  /* === Accent (Cursor signature blue) === */
-  --accent: #5b8cff;
-  --accent-hover: #7ba4ff;
-  --accent-soft: rgba(91, 140, 255, 0.12);
+  /* === Accent (Apple blue) === */
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-soft: rgba(0, 113, 227, 0.08);
 
   /* === Semantic colors === */
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.12);
+  --success: #34c759;
+  --success-bg: rgba(52, 199, 89, 0.12);
+  --danger: #ff3b30;
+  --danger-bg: rgba(255, 59, 48, 0.12);
+  --warning: #ff9500;
+  --warning-bg: rgba(255, 149, 0, 0.12);
 
   /* === diff aliases === */
   --diff-add: var(--success);
@@ -135,93 +128,90 @@
   --diff-del: var(--danger);
   --diff-del-bg: var(--danger-bg);
 
-  /* === Syntax highlighting (dark-adapted) === */
-  --syntax-fn: #a78bfa;
-  --syntax-str: #34d399;
-  --syntax-kw: #f472b6;
-  --syntax-comment: #6b7280;
-  --syntax-num: #fbbf24;
-  --syntax-built-in: #60a5fa;
-  --syntax-variable: #e879f9;
-  --syntax-name: #a78bfa;
+  /* === Syntax highlighting (light-adapted, GitHub style) === */
+  --syntax-fn: #881391;
+  --syntax-str: #1a7f37;
+  --syntax-kw: #cf222e;
+  --syntax-comment: #656d76;
+  --syntax-num: #0550ae;
+  --syntax-built-in: #0969da;
+  --syntax-variable: #953800;
+  --syntax-name: #8250df;
 
   /* === Tool icon semantics === */
-  --tool-shell: #f59e0b;
+  --tool-shell: #ff9500;
 
   /* === Scrollbar === */
-  --scrollbar-thumb: #3c4252;
-  --scrollbar-thumb-hover: #4b5563;
+  --scrollbar-thumb: #c8c8cc;
+  --scrollbar-thumb-hover: #a8a8ad;
 
   /* === Shadow / scrim / radius === */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.32);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.48);
-  --scrim: rgba(0, 0, 0, 0.6);
-  --scrim-strong: rgba(0, 0, 0, 0.75);
-  --radius: 6px;
-  --radius-sm: 3px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --scrim: rgba(0, 0, 0, 0.3);
+  --scrim-strong: rgba(0, 0, 0, 0.5);
+  --radius: 8px;
+  --radius-sm: 5px;
 }
 
-/* Light mode — override for users who prefer light theme */
-html.light {
+/* Night mode — override for users who prefer dark theme */
+html.night {
   /* === Surface layers === */
-  --bg: #ffffff;
-  --bg-panel: #f9fafb;
-  --bg-sunk: #f3f4f6;
-  --bg-active: #e5e7eb;
-  --bg-title: #f9fafb;
-  --surface-input: #ffffff;
+  --bg: #1c1c1e;
+  --bg-panel: #2c2c2e;
+  --bg-sunk: #3a3a3c;
+  --bg-active: #48484a;
+  --bg-title: #1c1c1e;
+  --surface-input: #2c2c2e;
 
   /* === Border layers === */
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --border-inverse: #e5e7eb;
+  --border: #38383a;
+  --border-strong: #48484a;
 
   /* === Text layers === */
-  --text: #1f2937;
-  --text-strong: #111827;
-  --text-dim: #6b7280;
-  --text-faint: #9ca3af;
-  --text-on-inverse: #e4e5e7;
-  --text-on-inverse-dim: #9ca3af;
+  --text: #f5f5f7;
+  --text-strong: #ffffff;
+  --text-dim: #a1a1a6;
+  --text-faint: #6e6e73;
   --text-on-accent: #ffffff;
 
-  /* === Accent === */
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: rgba(37, 99, 235, 0.08);
+  /* === Accent (night-adapted) === */
+  --accent: #0a84ff;
+  --accent-hover: #409cff;
+  --accent-soft: rgba(10, 132, 255, 0.12);
 
   /* === Semantic colors === */
-  --success: #059669;
-  --success-bg: rgba(5, 150, 105, 0.1);
-  --danger: #dc2626;
-  --danger-bg: rgba(220, 38, 38, 0.1);
-  --warning: #d97706;
-  --warning-bg: rgba(217, 119, 6, 0.1);
+  --success: #30d158;
+  --success-bg: rgba(48, 209, 88, 0.12);
+  --danger: #ff453a;
+  --danger-bg: rgba(255, 69, 58, 0.12);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255, 159, 10, 0.12);
 
-  /* === Syntax highlighting (light-adapted) === */
-  --syntax-fn: #7c3aed;
-  --syntax-str: #059669;
-  --syntax-kw: #db2777;
-  --syntax-comment: #6b7280;
-  --syntax-num: #d97706;
-  --syntax-built-in: #2563eb;
-  --syntax-variable: #c026d3;
-  --syntax-name: #7c3aed;
+  /* === Syntax highlighting (dark-adapted, night) === */
+  --syntax-fn: #d2a8ff;
+  --syntax-str: #a1d9b4;
+  --syntax-kw: #ff7b72;
+  --syntax-comment: #8b949e;
+  --syntax-num: #79c0ff;
+  --syntax-built-in: #79c0ff;
+  --syntax-variable: #ffa657;
+  --syntax-name: #d2a8ff;
 
   /* === Scrollbar === */
-  --scrollbar-thumb: #d1d5db;
-  --scrollbar-thumb-hover: #9ca3af;
+  --scrollbar-thumb: #48484a;
+  --scrollbar-thumb-hover: #5a5a5e;
 
   /* === Shadow / scrim === */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
-  --scrim: rgba(0, 0, 0, 0.4);
-  --scrim-strong: rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --scrim-strong: rgba(0, 0, 0, 0.7);
 }
 
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -238,31 +228,27 @@ body,
 
 body {
   font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "PingFang SC",
-    "Microsoft YaHei",
+    "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Microsoft YaHei",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   letter-spacing: -0.01em;
 }
 
-/* Scrollbar — discreet(走变量,night 自动覆盖) */
+/* Scrollbar — discreet */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 5px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
@@ -277,7 +263,8 @@ pre,
 .patch-row,
 .kbd {
   font-family:
-    "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    "SF Mono", "JetBrains Mono", "Fira Code",
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-feature-settings:
     "liga" 0,
     "calt" 0;
@@ -288,7 +275,7 @@ pre,
    ========================================= */
 .markdown-content {
   color: var(--text);
-  line-height: 1.65;
+  line-height: 1.6;
 }
 .markdown-content > *:first-child {
   margin-top: 0;
@@ -402,7 +389,7 @@ pre,
 }
 
 /* =========================================
-   Code block — Codex style wrapper
+   Code block — clean wrapper
    ========================================= */
 .code-block {
   margin: 0.625rem 0;
@@ -464,7 +451,7 @@ pre,
 }
 
 /* =========================================
-   Diff / Patch view — Codex unified-diff
+   Diff / Patch view
    ========================================= */
 .diff-view {
   margin: 0.625rem 0;
@@ -533,17 +520,19 @@ pre,
    File tree — explorer
    ========================================= */
 .file-tree {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text);
 }
 .file-tree-row {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.125rem 0.5rem;
+  padding: 0.25rem 0.625rem;
   cursor: pointer;
   user-select: none;
+  border-radius: var(--radius-sm);
   transition: background 0.12s ease;
+  margin: 0 0.25rem;
 }
 .file-tree-row:hover {
   background: var(--bg-active);
@@ -551,10 +540,6 @@ pre,
 .file-tree-row.active {
   background: var(--accent-soft);
   color: var(--text-strong);
-}
-.file-tree-row .indent {
-  display: inline-block;
-  width: 0.75rem;
 }
 .file-tree-icon {
   color: var(--text-dim);
@@ -567,17 +552,17 @@ pre,
 }
 
 /* =========================================
-   Title bar — dark even in light mode
+   Title bar — light, clean
    ========================================= */
 .titlebar {
-  height: 32px;
+  height: 34px;
   display: flex;
   align-items: center;
   background: var(--bg-title);
-  color: var(--text-on-inverse);
-  border-bottom: 1px solid var(--border-inverse);
+  border-bottom: 1px solid var(--border);
   user-select: none;
   font-size: 12px;
+  color: var(--text-dim);
 }
 .titlebar .drag-region {
   flex: 1;
@@ -601,9 +586,6 @@ pre,
   gap: 0.625rem;
   letter-spacing: 0.01em;
 }
-/* warn/error 走语义色,与 danger/warning 区分:
-   - warn → --warning(琥珀色,非致命警告)
-   - error → --danger(红色,致命错误) */
 .statusbar.warn {
   background: var(--warning);
 }
@@ -628,9 +610,9 @@ pre,
   background: var(--surface-input);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  padding: 0.375rem 0.625rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   transition:
     border-color 0.12s ease,
@@ -654,9 +636,9 @@ pre,
   background: var(--surface-input);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  padding: 0.375rem 0.625rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   outline: none;
 }
@@ -672,14 +654,15 @@ pre,
   background: var(--accent);
   color: var(--text-on-accent);
   border: 1px solid var(--accent);
-  padding: 0.375rem 0.875rem;
+  padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition:
     background 0.12s ease,
-    border-color 0.12s ease;
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -689,6 +672,7 @@ pre,
 .btn:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
 }
 .btn:active {
   transform: translateY(1px);
@@ -699,6 +683,7 @@ pre,
   color: var(--text-faint);
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 .btn-ghost {
   background: transparent;
@@ -709,6 +694,7 @@ pre,
   background: var(--bg-active);
   border-color: transparent;
   color: var(--text-strong);
+  box-shadow: none;
 }
 .btn-outline {
   background: transparent;
@@ -719,35 +705,8 @@ pre,
   border-color: var(--accent);
   color: var(--accent);
 }
-/* Titlebar / dark chrome — light glyphs on dark bg(用 *-inverse 变量) */
-.btn-icon {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-on-inverse);
-  padding: 0.25rem;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-}
-.btn-icon:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-on-accent);
-}
-.btn-icon.active {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--text-on-accent);
-}
-.btn-icon:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
 
-/* Light surfaces (sidebar / settings / panels) — dark glyphs on light bg */
+/* Icon buttons — for panels/toolbars */
 .btn-icon-muted {
   background: transparent;
   border: 1px solid transparent;
@@ -784,7 +743,7 @@ pre,
   align-items: center;
   justify-content: center;
   background: var(--scrim);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 .modal-card {
   width: 100%;
@@ -795,10 +754,9 @@ pre,
   overflow: hidden;
   background: var(--bg-panel);
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--shadow-lg);
 }
-/* Settings — fixed comfortable frame (Cursor-like), not a skinny tall strip */
 .settings-card {
   width: min(720px, calc(100vw - 48px));
   height: min(480px, calc(100vh - 64px));
@@ -809,7 +767,7 @@ pre,
   overflow: hidden;
   background: var(--bg-panel);
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--shadow-lg);
 }
 .settings-layout {
@@ -820,7 +778,7 @@ pre,
 .settings-nav {
   width: 148px;
   flex-shrink: 0;
-  padding: 0.5rem 0.5rem 0.75rem;
+  padding: 0.75rem 0.5rem 0.75rem;
   border-right: 1px solid var(--border);
   background: var(--bg-sunk);
   display: flex;
@@ -864,7 +822,7 @@ pre,
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 1rem 1.25rem 1.125rem;
+  padding: 1.25rem 1.5rem 1.25rem;
 }
 .provider-grid {
   display: grid;
@@ -890,7 +848,7 @@ pre,
   flex-shrink: 0;
 }
 .modal-title {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-strong);
   letter-spacing: -0.01em;
@@ -1010,31 +968,31 @@ pre,
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2rem 1.5rem;
+  padding: 2.5rem 1.5rem;
   max-width: 28rem;
   margin: 0 auto;
 }
 .empty-state-icon {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 8px;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.875rem;
+  margin-bottom: 1rem;
   background: var(--bg-sunk);
   border: 1px solid var(--border);
   color: var(--accent);
 }
 .empty-state-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-strong);
   margin-bottom: 0.375rem;
   letter-spacing: -0.01em;
 }
 .empty-state-desc {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-dim);
   line-height: 1.55;
   margin-bottom: 1rem;
@@ -1063,19 +1021,22 @@ pre,
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Session row — text-only, Cursor chat-history style */
+/* Session row */
 .session-row {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
   user-select: none;
-  border-left: 2px solid transparent;
-  transition: background 0.12s ease;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 .session-row:hover {
   background: var(--bg-active);
@@ -1090,7 +1051,7 @@ pre,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
 }
 .session-row .time {
@@ -1105,15 +1066,15 @@ pre,
    ========================================= */
 .msg-row {
   display: flex;
-  gap: 0.625rem;
-  padding: 0.625rem 0.875rem;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
 }
 .msg-row.user {
   flex-direction: row-reverse;
 }
 .msg-avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1136,14 +1097,13 @@ pre,
   color: var(--accent);
   border: 1px solid var(--border);
 }
-/* tool-fail border 用 color-mix 派生自 --danger,避免硬编码 rgba 展开 */
 .msg-avatar.tool-fail {
   background: var(--danger-bg);
   color: var(--danger);
   border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
-/* Tool trace — collapsible agent tool I/O */
+/* Tool trace */
 .tool-trace {
   display: flex;
   align-items: center;
@@ -1169,7 +1129,7 @@ pre,
 .tool-trace-title {
   font-weight: 600;
   color: var(--text-strong);
-  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
 }
 .tool-trace-names,
 .tool-trace-preview {
@@ -1187,7 +1147,7 @@ pre,
   overflow: auto;
   font-size: 11px;
   line-height: 1.45;
-  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1199,52 +1159,41 @@ pre,
 .msg-body {
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 40px);
+  max-width: calc(100% - 42px);
 }
 .msg-body.user {
   display: flex;
   justify-content: flex-end;
 }
 .msg-bubble {
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.875rem;
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
 }
 .msg-bubble.user {
   background: var(--accent-soft);
   color: var(--text);
+  border: 1px solid transparent;
 }
 .msg-bubble.assistant {
   background: transparent;
   color: var(--text);
 }
 
-/* =========================================
-   Message action bar — inline copy/regenerate/stop
-   ========================================= */
+/* Message action bar */
 .msg-actions {
   display: flex;
   align-items: center;
   gap: 0.125rem;
-  margin-top: 0.25rem;
+  margin-top: 0.375rem;
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.15s ease;
 }
 .msg-row:hover .msg-actions,
 .msg-actions:focus-within {
   opacity: 1;
 }
-.msg-actions .btn-icon-muted {
-  padding: 0.1875rem;
-  border-radius: var(--radius-sm);
-}
-.msg-actions .btn-icon-muted:hover {
-  background: var(--bg-active);
-  color: var(--text-strong);
-}
-
-/* Streaming: keep the action bar always visible (stop button is critical) */
 .msg-actions.streaming {
   opacity: 1;
 }
@@ -1252,18 +1201,18 @@ pre,
   color: var(--diff-del);
 }
 .msg-actions .stop-btn:hover {
-  background: var(--diff-del-bg);
+  background: var(--danger-bg);
   color: var(--diff-del);
 }
 
-/* 会话内全文搜索命中高亮 */
+/* 全文搜索命中高亮 */
 .msg-search-hit {
-  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 50%, transparent);
   border-radius: var(--radius);
 }
 .msg-search-active {
-  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 80%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
   border-radius: var(--radius);
 }
 
@@ -1273,8 +1222,8 @@ pre,
 .composer {
   background: var(--surface-input);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  padding: 0.625rem 0.875rem;
   transition:
     border-color 0.12s ease,
     box-shadow 0.12s ease;
@@ -1288,7 +1237,7 @@ pre,
   border: none;
   color: var(--text);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
   resize: none;
   outline: none;
@@ -1314,16 +1263,15 @@ pre,
   }
 }
 
-/* =========================================
-   Floating controls — scroll-to-bottom
-   ========================================= */
+/* Scroll to bottom button */
 .scroll-bottom-btn {
   position: absolute;
-  right: 1rem;
   bottom: 0.75rem;
-  z-index: 20;
-  width: 32px;
-  height: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   background: var(--bg-panel);
   border: 1px solid var(--border-strong);
@@ -1331,20 +1279,20 @@ pre,
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition:
-    transform 0.12s ease,
-    background 0.12s ease,
-    color 0.12s ease;
+  box-shadow: var(--shadow-md);
+  transition: all 0.15s ease;
+  animation: fadeIn 0.2s ease-out;
 }
 .scroll-bottom-btn:hover {
-  background: var(--bg-active);
-  color: var(--text-strong);
-  transform: translateY(-1px);
+  background: var(--bg);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-50%) translateY(-2px);
 }
 .scroll-bottom-btn:active {
-  transform: translateY(0);
+  transform: translateX(-50%) scale(0.95);
 }
 
 /* =========================================
@@ -1359,14 +1307,14 @@ pre,
   align-items: flex-start;
   justify-content: center;
   padding-top: 12vh;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 .cmdk-panel {
   width: min(560px, 90vw);
   background: var(--bg-panel);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1378,8 +1326,8 @@ pre,
   border: none;
   border-bottom: 1px solid var(--border);
   color: var(--text);
-  font-size: 14px;
-  padding: 0.75rem 0.875rem;
+  font-size: 15px;
+  padding: 0.875rem 1rem;
   outline: none;
 }
 .cmdk-input::placeholder {
@@ -1388,13 +1336,13 @@ pre,
 .cmdk-list {
   overflow-y: auto;
   flex: 1;
-  padding: 0.25rem;
+  padding: 0.375rem;
 }
 .cmdk-item {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.5rem 0.625rem;
+  padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--text);
@@ -1404,7 +1352,7 @@ pre,
 .cmdk-item.active {
   background: var(--bg-active);
 }
-.cmddk-item-title {
+.cmdk-item-title {
   color: var(--text-strong);
   font-weight: 500;
 }
@@ -1412,7 +1360,7 @@ pre,
   color: var(--text-faint);
   font-size: 11px;
   margin-left: auto;
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
 }
 .cmdk-empty {
   padding: 1.5rem;
@@ -1421,8 +1369,7 @@ pre,
   font-size: 12px;
 }
 
-/* Screen-reader only — visually hidden but available to assistive tech.
-   用于 aria-live 状态播报(WorkspacePanel 加载/错误状态等)。 */
+/* Screen-reader only */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1435,29 +1382,7 @@ pre,
   border: 0;
 }
 
-/* Skeleton pulse — for streaming placeholder */
-.pulse-dot {
-  display: inline-block;
-  width: 6px;
-  height: 12px;
-  background: var(--accent);
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  animation: pulse 1.2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* =========================================
-   hljs — 走 syntax-* 变量,night 自动通过变量覆盖切换
-   ========================================= */
+/* hljs — uses syntax-* variables */
 .hljs {
   background: transparent;
   color: var(--text);
@@ -1523,7 +1448,7 @@ pre,
   font-weight: 700;
 }
 
-/* Utility — truncate */
+/* Truncate */
 .truncate {
   white-space: nowrap;
   overflow: hidden;
@@ -1531,10 +1456,10 @@ pre,
 }
 
 /* =========================================
-   UI Polish — Cursor/Codex 级交互细节
+   UI Polish — interaction details
    ========================================= */
 
-/* 焦点环 — 键盘可达元素统一 focus-visible 样式 */
+/* Focus ring */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -1546,7 +1471,7 @@ textarea:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* 模态框入场动画 — 从下往上 + 淡入 */
+/* Modal entrance animation */
 .modal-scrim {
   animation: scrimIn 0.15s ease-out;
 }
@@ -1555,12 +1480,8 @@ textarea:focus:not(:focus-visible) {
   animation: modalSlideUp 0.18s ease-out;
 }
 @keyframes scrimIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes modalSlideUp {
   from {
@@ -1573,56 +1494,18 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
-/* 提示框/浮层淡入 */
+/* Panel/overlay fade-in */
 .cmdk-panel,
 .mode-menu,
 [role="listbox"] {
   animation: fadeIn 0.1s ease-out;
 }
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* 滚到底按钮 — 悬浮 + 脉冲入场 */
-.scroll-bottom-btn {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-strong);
-  color: var(--text-dim);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: all 0.15s ease;
-  animation: fadeIn 0.2s ease-out;
-}
-.scroll-bottom-btn:hover {
-  background: var(--bg-active);
-  color: var(--accent);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
-  transform: translateX(-50%) translateY(-2px);
-}
-.scroll-bottom-btn:active {
-  transform: translateX(-50%) scale(0.95);
-}
-
-/* 消息气泡 — hover 微高亮 */
+/* Hover subtle */
 .msg-row .msg-bubble.assistant {
   transition: background 0.12s ease;
 }
@@ -1630,33 +1513,7 @@ textarea:focus:not(:focus-visible) {
   background: var(--bg-active);
 }
 
-/* 侧栏会话行 — 提升 hover 反馈 */
-.session-row {
-  transition:
-    background 0.12s ease,
-    border-left-color 0.12s ease;
-}
-.session-row:active {
-  transform: scale(0.99);
-}
-
-/* 停止按钮 — 流式时常显 + hover 微红 */
-.stop-btn {
-  transition:
-    color 0.12s ease,
-    background 0.12s ease;
-}
-.stop-btn:hover {
-  color: var(--danger) !important;
-  background: var(--danger-bg) !important;
-}
-
-/* 空状态 — 柔和入场 */
-.empty-state {
-  animation: fadeIn 0.25s ease-out;
-}
-
-/* 提供商卡片 — 选中态 + hover 提升 */
+/* Provider card */
 .provider-card {
   transition: all 0.12s ease;
   cursor: pointer;
@@ -1669,7 +1526,7 @@ textarea:focus:not(:focus-visible) {
   transform: scale(0.98);
 }
 
-/* 设置行 — hover 微高亮 */
+/* Settings row hover */
 .settings-row {
   transition:
     border-color 0.12s ease,
@@ -1680,32 +1537,29 @@ textarea:focus:not(:focus-visible) {
   box-shadow: var(--shadow-sm);
 }
 
-/* 输入框 — 改善 focus 反馈 */
-.input:focus,
-.textarea:focus,
-.select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  transition:
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
-}
-
-/* 代码块 — hover 阴影提升 */
+/* Code/diff block hover */
 .code-block:hover,
 .diff-view:hover {
   box-shadow: var(--shadow-md);
   transition: box-shadow 0.12s ease;
 }
 
-/* 消息操作条 — 提升 hover 区域 */
+/* Message action buttons sizing */
 .msg-actions button {
   padding: 0.25rem 0.375rem;
   min-width: 1.5rem;
   min-height: 1.5rem;
 }
 
-/* 响应式: 窄屏侧栏自适应 */
+/* Text selection */
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+/* =========================================
+   Responsive — narrow screens
+   ========================================= */
 @media (max-width: 480px) {
   .panel {
     width: 100% !important;
@@ -1729,20 +1583,13 @@ textarea:focus:not(:focus-visible) {
     padding: 0.5rem 0.625rem;
   }
   .msg-body {
-    max-width: calc(100% - 36px);
+    max-width: calc(100% - 38px);
   }
 }
 
-/* 滚动条瘦身 — 窄屏时更纤细 */
 @media (max-width: 640px) {
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
-}
-
-/* 选中文本高亮 */
-::selection {
-  background: var(--accent-soft);
-  color: var(--text-strong);
 }
