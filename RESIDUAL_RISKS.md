@@ -1,7 +1,7 @@
 # Residual Risks & Tech Debt Ledger
 
 > 更新: 2026-07-29
-> 结论: 代码可收口项继续推进（IPC 限流、流式 Markdown 节流、快捷键、CI、E2E smoke 扩展）；真实 FPS、签名发布和跨平台仍需外部环境。
+> 结论: 所有代码可收口项已关闭（IPC 限流、流式 Markdown 节流、快捷键、CI、E2E smoke 深度、消息编辑、全文搜索）。真实 FPS、签名发布和跨平台仍需外部环境。
 
 ## 当前已关闭
 
