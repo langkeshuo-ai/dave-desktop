@@ -284,6 +284,7 @@ export function ChatView({
     setSearchOpen(false)
     setSearchQuery("")
     setActiveSearchIndex(null)
+    setNavCursor(null)
   }, [])
 
   // 查询变化时定位到第一处命中
