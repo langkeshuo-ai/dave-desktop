@@ -13,7 +13,7 @@ const BACKUP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000 // 30 days
 const BACKUP_MAX_COUNT = 10
 
 /** 删除超过 30 天的旧备份,每次新建前检查总数,超过 BACKUP_MAX_COUNT 则删最旧的。 */
-function pruneOldBackups(): void {
+export function pruneOldBackups(): void {
   try {
     const store = getStore()
     const now = Date.now()

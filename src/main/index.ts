@@ -111,6 +111,8 @@ if (!initialized) {
     // the log but still surface a window so the user is not stuck tray-less.
     try {
       getStore()
+      // 启动时清理超过 30 天的 session 备份
+      import("./session").then(({ pruneOldBackups }) => pruneOldBackups()).catch(() => {})
     } catch (err) {
       log.error("getStore() failed during startup:", err)
     }
