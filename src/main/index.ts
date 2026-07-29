@@ -9,7 +9,6 @@ import { trackEvent } from "./telemetry-store"
 import { checkStartupBudget, COLD_WINDOW_BUDGET_MS } from "../shared/telemetry"
 import { isAllowedAppNavigation } from "../shared/navigation-policy"
 import log from "electron-log"
-import windowStateKeeper from "electron-window-state"
 import { initSecureStorage } from "./secure-storage"
 
 // 自动更新:electron-updater 已依赖(^6.0.0),仅在 packaged 生产构建中启用。
@@ -259,6 +258,9 @@ function sanitizeLogField(value: string): string {
 function createWindow(): BrowserWindow {
   // Persist window size/position/maximized state across launches. electron-window-state
   // is the community standard (used by VSCode/Slack/Atom), MIT, ~50k weekly downloads.
+  // lazy import 避免冷启动时加载
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- 主进程 CJS require OK
+  const windowStateKeeper = require("electron-window-state")
   const winState = windowStateKeeper({
     defaultWidth: 1200,
     defaultHeight: 800,

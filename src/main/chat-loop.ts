@@ -7,7 +7,7 @@ import log from "electron-log"
 import type { AgentMode, ChatMessage } from "../shared/types"
 import { clampToolOutput, truncateMessages } from "../shared/context"
 import { SseParser } from "../shared/sse-parser"
-import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
+import { getStore, getSecure } from "./store"
 import {
   anthropicToMessage,
   buildAgentBody,
@@ -23,7 +23,7 @@ import {
 import { autoTitleSession, getSessionMessages, saveSessionMessages } from "./session"
 import { sessionRuntime } from "./session-runtime"
 import { fetchPublicHttps } from "./provider-url-policy"
-import { getStore } from "./store"
+import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 
 const partialBySession = new Map<string, string>()
 
@@ -275,6 +275,7 @@ async function runToolCalls(
     try {
       args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>
     } catch {
+      log.debug("malformed tool_call arguments from LLM:", tc.function.arguments)
       args = {}
     }
 
@@ -333,7 +334,7 @@ export async function handleChatStream(
   const store = getStore()
   const provider = (store.get("provider") as string) || "openai"
   // 使用 secure storage 读取 API Key(支持 safeStorage 解密)
-  const { getSecure } = await import("./store")
+  // getSecure 通过顶层 static import 加载,由 Node 模块缓存保证零额外开销
   const storedKey = ((await getSecure(`${provider}-api-key`)) || "").trim()
   const model = resolveModel(provider, store, (store.get(`${provider}-model`) as string) || "")
   // resolveKey handles custom-api-key alias; never ship empty Bearer headers.

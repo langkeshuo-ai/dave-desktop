@@ -20,6 +20,10 @@ export function estimateTokens(text: string): number {
     return enc().encode(text).length
   } catch {
     // Fallback: ~4 chars per token
+    // tiktoken 失败说明 node_modules 可能损坏，静默兜底而非硬崩
+    if (typeof process !== "undefined" && process.env.NODE_ENV !== "test") {
+      console.warn("context: tiktoken encoding failed, using char-length fallback")
+    }
     return Math.ceil(text.length / 4)
   }
 }

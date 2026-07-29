@@ -167,13 +167,6 @@ export function checkStartupBudget(
  * - sevenDayRetained = 7 天内再次启动过的用户数。
  */
 export function computeFunnel(events: TelemetryEvent[]): FunnelSnapshot {
-  const uniqBy = (pred: (e: TelemetryEvent) => boolean) => {
-    const set = new Set<string>()
-    for (const e of events) {
-      if (pred(e)) set.add(`${e.ts}-${e.name}-${JSON.stringify(e.props ?? {})}`)
-    }
-    return set.size
-  }
   // 简单去重:name + ts + props 相同才视为 1;
   // 同 ts 不同 ret(0/1)或不同 provider 应分别计数(同 ts 内可能有多用户/多设备事件)。
   const dedup = (pred: (e: TelemetryEvent) => boolean) => {
@@ -192,9 +185,6 @@ export function computeFunnel(events: TelemetryEvent[]): FunnelSnapshot {
   const workspaceReady = dedup((e) => e.name === "onboarding_workspace_chosen")
   const firstMessage = dedup((e) => e.name === "first_message_sent")
   const sevenDayRetained = dedup((e) => e.name === "app_launch" && e.props?.ret === "1")
-
-  // 抑制 lint:uniqBy 暂时保留,后续若需要更复杂去重可启用。
-  void uniqBy
 
   const safeRate = (num: number, den: number) => (den > 0 ? num / den : 0)
 

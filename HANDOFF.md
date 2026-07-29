@@ -28,17 +28,17 @@
 
 ### 本轮完整新增
 
-| 项 | 位置 | 说明 |
-| --- | --- | --- |
-| IPC 滑动窗口限流 | `src/shared/rate-limit.ts` + `ipc.ts` | store-set/chat-stream 30/s；apply-patch 10/s |
-| 流式 Markdown 节流 | `markdown-throttle.ts` + `MessageList` | 流式 120ms + memo |
-| 全局快捷键 | `App.tsx` | Esc 停流；Ctrl+1-9 切会话；Ctrl+N 新建；Ctrl+, 设置；Ctrl+K 命令面板；? 快捷键帮助 |
-| CI workflow | `.github/workflows/ci.yml` | verify + audit --omit=dev + electron smoke |
-| **用户消息编辑** | `session-edit.ts` + `session-replace-messages` + IPC | 就地编辑 → 截断后续 → 重新生成；不再重复堆叠 user |
-| **会话内全文搜索** | `src/shared/message-search.ts` + `ChatView.tsx` | Ctrl+F 搜索条；Enter/Shift+Enter 上下跳；命中高亮；Esc 关闭 |
-| **Assistant 导航** | `ChatView.tsx` | Ctrl+↑/↓ 跳到上/下一条 assistant 消息 |
-| E2E smoke 扩展 | `tests/electron-smoke.mjs` | 新增 Ctrl+F 搜索条断言 + 会话内搜索验证 |
-| 单测 | `tests/unit.test.ts` | **150 项**，含 rate-limit/throttle/session-edit/message-search |
+| 项                 | 位置                                                 | 说明                                                                               |
+| ------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| IPC 滑动窗口限流   | `src/shared/rate-limit.ts` + `ipc.ts`                | store-set/chat-stream 30/s；apply-patch 10/s                                       |
+| 流式 Markdown 节流 | `markdown-throttle.ts` + `MessageList`               | 流式 120ms + memo                                                                  |
+| 全局快捷键         | `App.tsx`                                            | Esc 停流；Ctrl+1-9 切会话；Ctrl+N 新建；Ctrl+, 设置；Ctrl+K 命令面板；? 快捷键帮助 |
+| CI workflow        | `.github/workflows/ci.yml`                           | verify + audit --omit=dev + electron smoke                                         |
+| **用户消息编辑**   | `session-edit.ts` + `session-replace-messages` + IPC | 就地编辑 → 截断后续 → 重新生成；不再重复堆叠 user                                  |
+| **会话内全文搜索** | `src/shared/message-search.ts` + `ChatView.tsx`      | Ctrl+F 搜索条；Enter/Shift+Enter 上下跳；命中高亮；Esc 关闭                        |
+| **Assistant 导航** | `ChatView.tsx`                                       | Ctrl+↑/↓ 跳到上/下一条 assistant 消息                                              |
+| E2E smoke 扩展     | `tests/electron-smoke.mjs`                           | 新增 Ctrl+F 搜索条断言 + 会话内搜索验证                                            |
+| 单测               | `tests/unit.test.ts`                                 | **150 项**，含 rate-limit/throttle/session-edit/message-search                     |
 
 ### 验证结果（全绿）
 
@@ -73,31 +73,31 @@ Markdown chunk        → ≈ 738.13 KB
 
 ### 按键映射一览
 
-| 快捷键 | 动作 | 实现位置 |
-| --- | --- | --- |
-| Esc | 关闭弹窗/停止流式 | `App.tsx` |
-| Ctrl+1~9 | 切换会话（1 索引） | `App.tsx` |
-| Ctrl+N | 新建会话 | 主进程 globalShortcut |
-| Ctrl+, | 打开设置 | 主进程 globalShortcut |
-| Ctrl+K | 命令面板 | 主进程 globalShortcut |
-| Ctrl+F | 搜索栏（会话内全文） | `ChatView.tsx` |
-| Ctrl+↑/↓ | 跳到上/下一条 assistant | `ChatView.tsx` |
-| Enter | 搜索下一处 | `ChatView.tsx` |
-| Shift+Enter | 搜索上一处 | `ChatView.tsx` |
-| ? | 快捷键帮助面板 | `App.tsx` |
+| 快捷键      | 动作                    | 实现位置              |
+| ----------- | ----------------------- | --------------------- |
+| Esc         | 关闭弹窗/停止流式       | `App.tsx`             |
+| Ctrl+1~9    | 切换会话（1 索引）      | `App.tsx`             |
+| Ctrl+N      | 新建会话                | 主进程 globalShortcut |
+| Ctrl+,      | 打开设置                | 主进程 globalShortcut |
+| Ctrl+K      | 命令面板                | 主进程 globalShortcut |
+| Ctrl+F      | 搜索栏（会话内全文）    | `ChatView.tsx`        |
+| Ctrl+↑/↓    | 跳到上/下一条 assistant | `ChatView.tsx`        |
+| Enter       | 搜索下一处              | `ChatView.tsx`        |
+| Shift+Enter | 搜索上一处              | `ChatView.tsx`        |
+| ?           | 快捷键帮助面板          | `App.tsx`             |
 
 ### 未完成 / 外部依赖
 
-| ID | 级别 | 状态 | 阻塞原因 |
-| --- | --- | --- | --- |
-| FPS-REAL | P1 | 工具就绪（Gauge 按钮），**未人工采集** | 需在目标 Windows 机手动：`npm run dev` → 点 Gauge → 滚动 → 读控制台报告 |
-| UAT-E2E | P1 | smoke 基线有；**流式/编辑/Agent 批准全链路仍缺** | 需真实 API Key；编辑消息 GUI 断言需 Playwright 脚本 |
-| SIGNING | P1 | **无代码签名证书** | 需采购 Windows 代码签名证书（$200/年） |
-| UPDATE-RELEASE | P1 | updater 已接线（`index.ts:setupAutoUpdater`） | 缺签名 + GitHub Releases 发布策略 |
-| DEV-AUDIT | P2 | `npm audit --omit=dev` = 0；全 audit 仍在开发链有 19 high（electron-builder/eslint） | 上游依赖修复；不可 `audit fix --force` |
-| CI 远端 | P2 | workflow 已入库（`.github/workflows/ci.yml`） | 需 push 后观察 runner 首次绿灯 |
-| Worker/冷启动 | P2 | 没做 | 主进程 worker 线程 + lazy require 优化 |
-| MAC-LINUX | P3 | 仅 Windows 环境 | 需 macOS/Linux 机器构建和 smoke |
+| ID             | 级别 | 状态                                                                                 | 阻塞原因                                                                |
+| -------------- | ---- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| FPS-REAL       | P1   | 工具就绪（Gauge 按钮），**未人工采集**                                               | 需在目标 Windows 机手动：`npm run dev` → 点 Gauge → 滚动 → 读控制台报告 |
+| UAT-E2E        | P1   | smoke 基线有；**流式/编辑/Agent 批准全链路仍缺**                                     | 需真实 API Key；编辑消息 GUI 断言需 Playwright 脚本                     |
+| SIGNING        | P1   | **无代码签名证书**                                                                   | 需采购 Windows 代码签名证书（$200/年）                                  |
+| UPDATE-RELEASE | P1   | updater 已接线（`index.ts:setupAutoUpdater`）                                        | 缺签名 + GitHub Releases 发布策略                                       |
+| DEV-AUDIT      | P2   | `npm audit --omit=dev` = 0；全 audit 仍在开发链有 19 high（electron-builder/eslint） | 上游依赖修复；不可 `audit fix --force`                                  |
+| CI 远端        | P2   | workflow 已入库（`.github/workflows/ci.yml`）                                        | 需 push 后观察 runner 首次绿灯                                          |
+| Worker/冷启动  | P2   | 没做                                                                                 | 主进程 worker 线程 + lazy require 优化                                  |
+| MAC-LINUX      | P3   | 仅 Windows 环境                                                                      | 需 macOS/Linux 机器构建和 smoke                                         |
 
 ### 已知报错条件
 
@@ -157,20 +157,20 @@ npm run package:win
 
 ## 5. 踩坑记录（重要）
 
-| 坑 | 原因 | 不要再做 |
-| --- | --- | --- |
-| `require is not defined in ES module` | type:module + CJS require 未 external | 主进程 dynamic require 必须 externalize |
-| React.lazy 包装 remark/rehype 插件 | 插件不是 Component | 只 lazy 组件；插件静态 import |
-| hooks 在 MessageBubble 条件 return 后 | Rules of Hooks | 流式节流放到 `AssistantMarkdownBubble` 独立子组件 |
-| rehype-sanitize 直接塞 Plugin 类型 | 工厂签名不兼容 | 元组 + `as never` |
-| virtualizer 泛型 HTMLDivElement vs Element | prop 过宽 | `ReactVirtualizer<HTMLDivElement, Element>` |
-| 预估组件 850KB 懒加载收益 | 组件很小，大头 Markdown/React | 以 `out/bundle-stats.html` 为准 |
-| dual tsconfig | main 不在 renderer tsconfig | 必须 `npm run typecheck` 双跑 |
-| `npm audit fix --force` | 会把 electron-builder 降到 22.x | 只用 omit=dev 门禁 |
-| electron-smoke 里直接写 `document` | Node ESLint no-undef | `waitForFunction` 用字符串回调 |
-| husky typecheck 超时 | 双 tsc 慢 | 紧急 `HUSKY=0`，事后补绿 |
-| **搜索关闭后 Ctrl+↑ 高亮残留** | 关闭搜索时没重置 navCursor | **closeSearch 里必须一并设置 `setNavCursor(null)`** |
-| **搜索和导航共享 activeSearchIndex 但不同步** | Ctrl+↑ 设 navCursor，搜索设 activeSearchIndex，但 ChatView:582 传 `searchOpen || navCursor != null ? activeSearchIndex : null` | 导航和搜索使用同一套 index 和 setter，navCursor 只在 keydown 中临时用，最终统一走 `activeSearchIndex` |
+| 坑                                            | 原因                                                                          | 不要再做                                            |
+| --------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
+| `require is not defined in ES module`         | type:module + CJS require 未 external                                         | 主进程 dynamic require 必须 externalize             |
+| React.lazy 包装 remark/rehype 插件            | 插件不是 Component                                                            | 只 lazy 组件；插件静态 import                       |
+| hooks 在 MessageBubble 条件 return 后         | Rules of Hooks                                                                | 流式节流放到 `AssistantMarkdownBubble` 独立子组件   |
+| rehype-sanitize 直接塞 Plugin 类型            | 工厂签名不兼容                                                                | 元组 + `as never`                                   |
+| virtualizer 泛型 HTMLDivElement vs Element    | prop 过宽                                                                     | `ReactVirtualizer<HTMLDivElement, Element>`         |
+| 预估组件 850KB 懒加载收益                     | 组件很小，大头 Markdown/React                                                 | 以 `out/bundle-stats.html` 为准                     |
+| dual tsconfig                                 | main 不在 renderer tsconfig                                                   | 必须 `npm run typecheck` 双跑                       |
+| `npm audit fix --force`                       | 会把 electron-builder 降到 22.x                                               | 只用 omit=dev 门禁                                  |
+| electron-smoke 里直接写 `document`            | Node ESLint no-undef                                                          | `waitForFunction` 用字符串回调                      |
+| husky typecheck 超时                          | 双 tsc 慢                                                                     | 紧急 `HUSKY=0`，事后补绿                            |
+| **搜索关闭后 Ctrl+↑ 高亮残留**                | 关闭搜索时没重置 navCursor                                                    | **closeSearch 里必须一并设置 `setNavCursor(null)`** |
+| **搜索和导航共享 activeSearchIndex 但不同步** | Ctrl+↑ 设 navCursor，搜索设 activeSearchIndex，但 ChatView:582 传 `searchOpen |                                                     | navCursor != null ? activeSearchIndex : null` | 导航和搜索使用同一套 index 和 setter，navCursor 只在 keydown 中临时用，最终统一走 `activeSearchIndex` |
 
 **特殊配置**
 

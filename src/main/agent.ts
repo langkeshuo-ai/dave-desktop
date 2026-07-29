@@ -16,6 +16,7 @@ import { deniedShellReason } from "../shared/shell-policy"
 import { MAX_READ_FILE_CHARS } from "../shared/types"
 import type { AgentMode } from "../shared/types"
 import type { FileTreeNode } from "../shared/workspace"
+import log from "electron-log"
 
 export type { AgentMode }
 
@@ -255,6 +256,7 @@ async function toolAstGrep(
       }
     }
   } catch {
+    log.debug("ast-grep not available, falling back to rg")
     /* fall through */
   }
 
@@ -274,6 +276,7 @@ async function toolAstGrep(
       }
     }
   } catch {
+    log.debug("rg not available, falling back to grep")
     /* fall through */
   }
 
