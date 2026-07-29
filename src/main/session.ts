@@ -8,10 +8,43 @@ import { sessionRuntime } from "./session-runtime"
 import type { ChatMessage, Session } from "../shared/types"
 import log from "electron-log"
 
+const BACKUP_PREFIX = "corrupt-backup-"
+const BACKUP_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000 // 30 days
+const BACKUP_MAX_COUNT = 10
+
+/** 删除超过 30 天的旧备份,每次新建前检查总数,超过 BACKUP_MAX_COUNT 则删最旧的。 */
+function pruneOldBackups(): void {
+  try {
+    const store = getStore()
+    const now = Date.now()
+    const keys: { key: string; ts: number }[] = []
+    for (const k of Object.keys(store.store)) {
+      if (!k.startsWith(BACKUP_PREFIX)) continue
+      const ts = Number(k.split("-").pop() || "0")
+      if (Number.isFinite(ts) && now - ts > BACKUP_MAX_AGE_MS) {
+        store.delete(k)
+      } else {
+        keys.push({ key: k, ts })
+      }
+    }
+    // 仍然超过上限,删最旧的
+    if (keys.length >= BACKUP_MAX_COUNT) {
+      keys.sort((a, b) => a.ts - b.ts)
+      for (let i = 0; i < keys.length - BACKUP_MAX_COUNT + 1; i++) {
+        store.delete(keys[i].key)
+      }
+    }
+  } catch {
+    // best-effort cleanup; 不打断主流程
+  }
+}
+
 function recoverCorruptJson(key: string, raw: string, error: unknown): void {
-  const backupKey = `corrupt-backup-${key}-${Date.now()}`
-  getStore().set(backupKey, raw)
-  getStore().delete(key)
+  const backupKey = `${BACKUP_PREFIX}${key}-${Date.now()}`
+  const store = getStore()
+  pruneOldBackups()
+  store.set(backupKey, raw)
+  store.delete(key)
   log.error(
     `session persistence: corrupt JSON moved to ${backupKey}:`,
     error instanceof Error ? error.message : String(error),

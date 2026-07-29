@@ -7,6 +7,8 @@ import {
   FolderOpen,
   ChevronRight,
   ChevronDown,
+  Search,
+  X,
 } from "lucide-react"
 import type { FileTreeNode } from "../../shared/workspace"
 import { useMounted } from "../lib/useMounted"
@@ -22,6 +24,7 @@ export function WorkspacePanel({ workspace, onPickPath }: WorkspacePanelProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [filter, setFilter] = useState("")
   // mounted 守卫:fileTree 等待期间用户可能切走面板(workspaceOpen 翻成 false)。
   // 抽到 useMounted hook,Settings / WorkspacePanel 共享。
   const safeSet = useMounted()
@@ -48,6 +51,25 @@ export function WorkspacePanel({ workspace, onPickPath }: WorkspacePanelProps) {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  /** 递归过滤:如果名称匹配 filter 或任一子节点匹配,则保留。 */
+  function filterNode(node: FileTreeNode, q: string): FileTreeNode | null {
+    const nameMatch = node.name.toLowerCase().includes(q)
+    if (!node.isDir) return nameMatch ? node : null
+    const filteredChildren = node.children
+      ?.map((c) => filterNode(c, q))
+      .filter((c): c is FileTreeNode => c !== null)
+    if (nameMatch || (filteredChildren && filteredChildren.length > 0)) {
+      return { ...node, children: filteredChildren ?? [] }
+    }
+    return null
+  }
+
+  const displayedTree = filter.trim()
+    ? tree
+        .map((n) => filterNode(n, filter.trim().toLowerCase()))
+        .filter((n): n is FileTreeNode => n !== null)
+    : tree
 
   if (!workspace) {
     return (
@@ -81,8 +103,34 @@ export function WorkspacePanel({ workspace, onPickPath }: WorkspacePanelProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto py-1">
-        {/* 状态区域:aria-live=polite 让屏幕阅读器在状态变化时播报,
-            但不打断当前朗读(对比 assertive 不会抢话)。 */}
+        {/* 搜索输入 */}
+        <div className="px-2 pb-1">
+          <div className="relative flex items-center">
+            <Search
+              size={11}
+              className="absolute left-2 text-[var(--text-faint)] pointer-events-none"
+            />
+            <input
+              type="search"
+              className="input !py-1 !pl-6 !pr-6 !text-xs w-full"
+              placeholder="过滤文件…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              aria-label="过滤文件"
+            />
+            {filter && (
+              <button
+                type="button"
+                className="absolute right-1 btn-icon-muted !p-0.5"
+                onClick={() => setFilter("")}
+                aria-label="清除过滤"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+        </div>
+        {/* 状态区域: aria-live=polite 让屏幕阅读器在状态变化时播报 */}
         <div aria-live="polite" aria-atomic="true" className="sr-only">
           {loading ? "工作区加载中" : err ? `错误:${err}` : "工作区就绪"}
         </div>
@@ -97,7 +145,10 @@ export function WorkspacePanel({ workspace, onPickPath }: WorkspacePanelProps) {
         {tree.length === 0 && !err && !loading && (
           <p className="px-3 py-2 text-xs text-[var(--text-faint)]">空工作区</p>
         )}
-        {tree.map((node) => (
+        {displayedTree.length === 0 && !err && !loading && filter.trim() && (
+          <p className="px-3 py-2 text-xs text-[var(--text-faint)]">无匹配文件</p>
+        )}
+        {displayedTree.map((node) => (
           <TreeRow
             key={node.path}
             node={node}

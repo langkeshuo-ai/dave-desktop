@@ -34,14 +34,14 @@ export class SessionRuntime {
   }
 
   /** Abort in-flight work and reject pending approval (as denied).
-   *  不从 Map 里删 controller — 保留是为了让 runToolCalls / runAgentLoop
-   *  在循环里能查到 `getSignal(sessionId)?.aborted`,跳过被中止会话的
-   *  剩余工具。controller 会在下次 beginAbortScope 被替换,或在 done/error
-   *  路径里被 clearAbort 清理。 */
+   *  保留 controller 在 Map 中(不清除),让 runToolCalls / runAgentLoop
+   *  能查到 `getSignal(sessionId)?.aborted` 而跳过剩余工具。
+   *  controller 会在 done/error 路径被 clearAbort 清理。 */
   abortSession(sessionId: string): void {
     const controller = this.aborts.get(sessionId)
     if (controller) {
       controller.abort()
+      // Keep in map — runToolCalls checks signal.aborted to short-circuit
     }
     const pending = this.approvals.get(sessionId)
     if (pending) {

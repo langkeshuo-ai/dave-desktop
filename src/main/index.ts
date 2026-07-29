@@ -255,6 +255,8 @@ function sanitizeLogField(value: string): string {
     .slice(0, MAX_LOG_FIELD_LENGTH)
 }
 
+const reloadedWindows = new WeakSet<BrowserWindow>()
+
 function createWindow(): BrowserWindow {
   // Persist window size/position/maximized state across launches. electron-window-state
   // is the community standard (used by VSCode/Slack/Atom), MIT, ~50k weekly downloads.
@@ -336,11 +338,11 @@ function createWindow(): BrowserWindow {
     // 渲染进程崩溃(OOM / 渲染死锁)时主动重载,避免用户面对永久白屏。
     // 仅在非退出状态下重载,且只重试一次以防重载循环。
     if (details.reason !== "crashed" || isAppQuitting()) return
-    if ((win as unknown as { _reloadAttempted?: boolean })._reloadAttempted) {
+    if (reloadedWindows.has(win)) {
       log.error("renderer reload already attempted once — giving up to avoid loop")
       return
     }
-    ;(win as unknown as { _reloadAttempted?: boolean })._reloadAttempted = true
+    reloadedWindows.add(win)
     setTimeout(() => {
       try {
         win.reload()
