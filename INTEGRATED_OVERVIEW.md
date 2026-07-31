@@ -118,11 +118,12 @@ ec5e508 feat: mock E2E streaming, cold-start reorder, markdown highlight subset
 
 ## 9. 文档索引
 
-| 文档                      | 内容                                              |
-| ------------------------- | ------------------------------------------------- |
-| `ANALYSIS_2026-07-31.md`  | 六维分析(最新值/优化点/洞察/拓扑分形/树结构/建议) |
-| `OPTIMIZATION_ROADMAP.md` | 0.2.0 路线图 + 差距矩阵 + 重构评估(§十)           |
-| `RESIDUAL_RISKS.md`       | 风险/技术债台账(已关闭 20+ 项 + 外部依赖)         |
-| `PERFORMANCE_REPORT.md`   | 性能实测(bundle/FPS 60fps/冷启动 1726ms)          |
-| `HANDOFF.md`              | 交接文档(本轮增量 + 下游依赖)                     |
-| `AGENTS.md`               | Agent 指南 + 全部 gotcha(secure-storage/MCP 等)   |
+| 文档                      | 内容                                                   |
+| ------------------------- | ------------------------------------------------------ |
+| `ANALYSIS_2026-07-31.md`  | 六维分析(最新值/优化点/洞察/拓扑分形/树结构/建议)      |
+| `ROADMAP_0.3.0.md`        | 0.3.0 规划初稿(skills/i18n/跨平台 + 开源评估 + 里程碑) |
+| `OPTIMIZATION_ROADMAP.md` | 0.2.0 路线图 + 差距矩阵 + 重构评估(§十)                |
+| `RESIDUAL_RISKS.md`       | 风险/技术债台账(已关闭 20+ 项 + 外部依赖)              |
+| `PERFORMANCE_REPORT.md`   | 性能实测(bundle/FPS 60fps/冷启动 1726ms)               |
+| `HANDOFF.md`              | 交接文档(本轮增量 + 下游依赖)                          |
+| `AGENTS.md`               | Agent 指南 + 全部 gotcha(secure-storage/MCP 等)        |
