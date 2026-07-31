@@ -35,6 +35,9 @@ desktop.ini
 # Temp test directories
 ts-test-*/
 
+# Visual regression: baselines (baseline-*.png) are tracked; diff outputs are runtime products
+tests/screenshots/diff-*.png
+
 # Legacy CLI artifacts (kept under legacy/ for reference but not tracked)
 legacy/*.exe
 legacy/*.zip
