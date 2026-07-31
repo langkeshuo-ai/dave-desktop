@@ -76,6 +76,7 @@ import {
   splitMcpToolName,
   validateMcpServerConfig,
 } from "../src/shared/mcp"
+import { mcpManager } from "../src/main/mcp-client"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -2079,5 +2080,39 @@ describe("mcp helpers", () => {
     expect(out[0].args).toEqual(["-y", "pkg"])
     expect(parseMcpServers("not array")).toEqual([])
     expect(parseMcpServers(null)).toEqual([])
+  })
+})
+
+// =====================================================================
+// mcp client — 真实 stdio 连接端到端(关闭 MCP-TOOLS "待手动验证")
+// =====================================================================
+describe("mcp client integration", () => {
+  const serverPath = join(process.cwd(), "tests", "fixtures", "mcp-echo-server.mjs")
+
+  afterEach(async () => {
+    await mcpManager.disconnectAll()
+  })
+
+  it("connects, lists and calls tools end-to-end via stdio", async () => {
+    await mcpManager.connect({ name: "echo", command: process.execPath, args: [serverPath] })
+    expect(mcpManager.isConnected("echo")).toBe(true)
+
+    const tools = mcpManager.listTools()
+    expect(tools.map((t) => t.fullName).sort()).toEqual(["mcp__echo__add", "mcp__echo__echo"])
+    expect(mcpManager.getTool("mcp__echo__echo")).not.toBeNull()
+    expect(mcpManager.getTool("mcp__echo__missing")).toBeNull()
+    expect(mcpManager.getTool("toolShell")).toBeNull()
+
+    const sum = await mcpManager.callTool("mcp__echo__add", { a: 2, b: 3 })
+    expect(sum).toBe("5")
+    const echoed = await mcpManager.callTool("mcp__echo__echo", { text: "hi" })
+    expect(echoed).toBe("hi")
+  })
+
+  it("reports an error when the tool is not found on a connected server", async () => {
+    await mcpManager.connect({ name: "echo", command: process.execPath, args: [serverPath] })
+    await expect(mcpManager.callTool("mcp__echo__nope", {})).rejects.toThrow(
+      /MCP 工具未连接|callTool|Error/i,
+    )
   })
 })

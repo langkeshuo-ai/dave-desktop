@@ -333,6 +333,17 @@ export function registerIpcHandlers(deps: Deps) {
     return readStructuredEvents(limit)
   })
 
+  // 日志输出级别控制(roadmap §3.1):debug/info/warn/error,同步文件与控制台
+  ipcMain.handle("logs-set-level", (event, level: unknown) => {
+    if (!validateSender(event)) return false
+    const lvl = typeof level === "string" ? level : ""
+    if (lvl !== "debug" && lvl !== "info" && lvl !== "warn" && lvl !== "error") return false
+    log.transports.file.level = lvl
+    log.transports.console.level = lvl
+    appendEvent("info", "log_level_changed", { level: lvl })
+    return true
+  })
+
   // 诊断导出:打包日志 + 系统信息 + 会话元数据为单个文本文件
   ipcMain.handle("diagnostics-export", (event) => {
     if (!validateSender(event)) return null

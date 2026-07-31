@@ -325,13 +325,18 @@ function createWindow(): BrowserWindow {
   win.on("ready-to-show", () => {
     if (!isAppQuitting()) win.show()
     // 性能打点:主进程拉起 → 主窗口 ready-to-show(用户实际看到主界面)的延迟。
-    // 用于核对 cold_window 预算(目标 < COLD_WINDOW_BUDGET_MS)。
+    // 遥测事件(漏斗/看板)+ 结构化日志(排障)双落盘。
     const elapsedMs = Date.now() - processStartedAt
     const verdict = checkStartupBudget("cold_window", elapsedMs)
     trackEvent("first_window_shown", {
       elapsedMs: String(elapsedMs),
       within: verdict.within ? "1" : "0",
       budgetMs: String(COLD_WINDOW_BUDGET_MS),
+    })
+    appendEvent("info", "first_window_shown", {
+      elapsedMs,
+      within: verdict.within ? "1" : "0",
+      budgetMs: COLD_WINDOW_BUDGET_MS,
     })
   })
 

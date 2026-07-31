@@ -155,6 +155,8 @@ const api = {
     openDir: () => ipcRenderer.invoke("open-log-dir") as Promise<string>,
     readStructured: (limit?: number) =>
       ipcRenderer.invoke("logs-read-structured", { limit }) as Promise<StructuredEvent[]>,
+    setLevel: (level: "debug" | "info" | "warn" | "error") =>
+      ipcRenderer.invoke("logs-set-level", level) as Promise<boolean>,
   },
 
   diagnostics: {

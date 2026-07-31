@@ -125,9 +125,9 @@
 **方案**:
 
 - [x] **结构化日志** — JSON Lines 格式(2026-07-31):`src/main/structured-log.ts` 落盘 userData/logs/events.jsonl(2000 行/512KB 截断),关键事件打点(启动/崩溃/渲染进程退出/IPC 限流)
-- [ ] **日志级别控制** — Settings 增加"日志级别"选择器（debug / info / warn / error）
+- [x] **日志级别控制** — Settings 增加"日志级别"选择器(2026-07-31:LogViewer 输出级别,同步文件+控制台)
 - [x] **日志查看器** — Settings「关于」内嵌查看器(关键字/级别过滤 + 刷新,2026-07-31)
-- [ ] **性能日志** — 记录关键路径耗时（启动 / TTFB / token 生成速度）(已有遥测事件,未单独落盘)
+- [x] **性能日志** — 记录关键路径耗时(2026-07-31:first_window_shown elapsedMs 已落盘 structured-log;TTFB/token 走遥测事件)
 
 **实现**:
 
@@ -232,7 +232,7 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 - [x] **Playwright E2E 基线** — `npm run test:electron`：CSP/挂载/帮助/命令面板/设置/新建会话/导出
   - 仍待：API Key 后真实发消息 → 流式回复
   - 仍待：Agent 批准 / patch 应用 / 编辑消息 GUI 断言
-- [x] **视觉回归基线** — `tests/electron-screenshot.mjs` 生成 light/night 基线 PNG(2026-07-31);对比工具(pixelmatch / Playwright toHaveScreenshot)待接
+- [x] **视觉回归基线 + 对比** — `tests/electron-screenshot.mjs` 基线 + `electron-visual-diff.mjs`(pixelmatch,diff 比例>1% 报错)(2026-07-31)
 
 **实现**:
 

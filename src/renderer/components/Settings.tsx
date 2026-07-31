@@ -787,6 +787,7 @@ function LogViewer() {
   const [events, setEvents] = useState<StructuredEvent[]>([])
   const [filter, setFilter] = useState("")
   const [level, setLevel] = useState<"all" | "info" | "warn" | "error">("all")
+  const [outLevel, setOutLevel] = useState<"debug" | "info" | "warn" | "error">("info")
 
   const refresh = useCallback(async () => {
     try {
@@ -796,6 +797,15 @@ function LogViewer() {
       /* 静默:查看器失败不影响设置面板 */
     }
   }, [safeSet])
+
+  const changeLevel = useCallback(async (lvl: "debug" | "info" | "warn" | "error") => {
+    setOutLevel(lvl)
+    try {
+      await window.dave.logs.setLevel(lvl)
+    } catch {
+      /* 静默 */
+    }
+  }, [])
 
   useEffect(() => {
     void refresh()
@@ -824,6 +834,18 @@ function LogViewer() {
           aria-label="日志级别"
         >
           <option value="all">全部</option>
+          <option value="info">info</option>
+          <option value="warn">warn</option>
+          <option value="error">error</option>
+        </select>
+        <select
+          value={outLevel}
+          onChange={(e) => void changeLevel(e.target.value as "debug" | "info" | "warn" | "error")}
+          className="input !py-1 !text-[11px] w-24"
+          aria-label="日志输出级别"
+          title="调整 electron-log 输出级别(文件 + 控制台)"
+        >
+          <option value="debug">debug</option>
           <option value="info">info</option>
           <option value="warn">warn</option>
           <option value="error">error</option>

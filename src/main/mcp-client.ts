@@ -36,7 +36,14 @@ export class McpManager {
   async connect(config: McpServerConfig): Promise<void> {
     await this.disconnect(config.name)
     const transport = new StdioClientTransport({ command: config.command, args: config.args })
-    const client = new Client({ name: "dave-desktop", version: app.getVersion() })
+    // vitest(node)下 app 为 mock,getVersion 可能缺失/异常,兜底固定版本
+    let version = "0.1.0"
+    try {
+      version = typeof app.getVersion === "function" ? app.getVersion() : "0.1.0"
+    } catch {
+      /* 保持兜底 */
+    }
+    const client = new Client({ name: "dave-desktop", version })
     await client.connect(transport)
     const { tools } = await client.listTools()
     this.servers.set(config.name, {
@@ -62,9 +69,14 @@ export class McpManager {
     }
   }
 
+  /** 断开所有已连接服务器。 */
+  async disconnectAll(): Promise<void> {
+    for (const name of [...this.servers.keys()]) await this.disconnect(name)
+  }
+
   /** 全量重连:先断开所有,再逐个连接;单个失败不影响其他。 */
   async connectAll(configs: McpServerConfig[]): Promise<void> {
-    for (const name of [...this.servers.keys()]) await this.disconnect(name)
+    await this.disconnectAll()
     for (const cfg of configs) {
       try {
         await this.connect(cfg)
