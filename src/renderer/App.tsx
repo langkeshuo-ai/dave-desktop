@@ -101,8 +101,15 @@ export default function App() {
   const ttfbStartedAtRef = useRef<number | null>(null)
 
   // Apply theme to <html> via class "night" — globals.css reads it to override vars.
+  // 首次渲染不写回 store:mount 时 loadPersisted(下方 effect)会读持久化值并 setTheme,
+  // 若这里先写回,会把持久化的 night 覆盖成初始 light(重启/重载后主题丢失)。
+  const themeAppliedRef = useRef(false)
   useEffect(() => {
     document.documentElement.classList.toggle("night", theme === "night")
+    if (!themeAppliedRef.current) {
+      themeAppliedRef.current = true
+      return
+    }
     void window.dave.store.set("theme", theme)
   }, [theme])
 
