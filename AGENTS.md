@@ -44,6 +44,10 @@ The quit-flag (`setQuitting`/`isAppQuitting`) lives in its own module. Moving it
 
 `electron-store` is encrypted with a per-machine key derived via XOR of `app.getPath("userData")` with a fixed salt — not a strong KDF, just machine-binding.
 
+### secure-storage async API 字段名(2026-07-31 修复)
+
+Electron 42 的 `safeStorage.decryptStringAsync` 返回 `{ shouldReEncrypt, result }` — 字段名是 **`result`**,不是 `plainText`(electron.d.ts 确认)。取错字段会静默返回 undefined → `secure-storage: decrypt failed for <key>` → 渲染端守卫误判"未配置 API Key"。另:encrypt/decrypt 必须走**同一** API 路径(async 或 sync),初始化时一次性决定 `useAsyncApi`,不能运行时探测混用(async 密文与 sync 解密格式不兼容)。详见 `src/main/secure-storage.ts` 注释。
+
 ### Windows auto-launch sentinel
 
 `isEnabled()` requires both the `.lnk` shortcut AND a `.dave-sentinel` file beside it. Legacy marker files from an old broken version are auto-cleaned.

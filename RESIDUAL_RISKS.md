@@ -1,7 +1,10 @@
 # Residual Risks & Tech Debt Ledger
 
-> 更新: 2026-07-29
-> 结论: 所有代码可收口项已关闭（IPC 限流、流式 Markdown 节流、快捷键、CI、E2E smoke 深度、消息编辑、全文搜索）。真实 FPS、签名发布和跨平台仍需外部环境。
+> 更新: 2026-07-31
+> 结论: 所有代码可收口项已关闭。本轮新增关闭:mock 流式 E2E 全链路(免真实 Key)、
+> FPS 真机采集(2000 条混合消息实测 avg 60fps / P95 16.8ms)、发布 workflow 配置、
+> secure-storage async 解密字段名 bug 修复(Electron 42 `decryptStringAsync` 返回 `{ shouldReEncrypt, result }`)。
+> 仍待外部环境:代码签名证书、真实 API Key 全链路 E2E、远端 CI 首绿、跨平台。
 
 ## 当前已关闭
 
@@ -27,17 +30,17 @@
 
 ## 仍待外部或真实环境验证
 
-| ID               | 级别 | 状态与原因                                                                                      | 关闭条件                                                               |
-| ---------------- | ---- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| FPS-REAL         | P1   | 2000 条混合消息的 Electron 真窗口滚动指标尚未采集；不能用 jsdom/Node 伪造                       | 在目标 Windows 机器记录 avg、P50/P95/P99、>16.7/>33.3/>50ms、卡顿率    |
-| UAT-E2E          | P1   | smoke 已覆盖 CSP/帮助/命令面板/设置/新建会话/导出；真实流式与 Agent 批准仍缺                    | 覆盖发消息、编辑再生成、Agent 批准；CI 稳定绿                          |
-| SIGNING          | P1   | Windows/macOS 发布未签名，取决于证书采购                                                        | 配置代码签名并验证 SmartScreen/Gatekeeper                              |
-| UPDATE-RELEASE   | P1   | updater 已接线但缺签名与 GitHub Releases 发布策略                                               | 签名产物 + latest.yml + staged rollout                                 |
-| DEV-AUDIT        | P2   | 全依赖 audit 为 19 high + 1 moderate，均在 lint/打包开发链；npm 建议会危险降级 electron-builder | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar |
-| CI               | P2   | workflow 已入库；远端 runner 首次绿灯与 package smoke 仍待观察                                  | PR 上 `npm ci` + verify + electron smoke 稳定；可选 package:win smoke  |
-| OS-SHELL-SANDBOX | P2   | 当前为策略层，不是 OS 隔离                                                                      | utilityProcess/Job Object/AppContainer 等系统隔离方案成熟并验证        |
-| MAC-LINUX        | P3   | 本轮只有 Windows 环境                                                                           | macOS/Linux 真机构建与 smoke                                           |
-| SESSION-DB       | P3   | electron-store 当前规模够用                                                                     | 数据量或事务需求触发后迁移 SQLite                                      |
+| ID               | 级别 | 状态与原因                                                                                                                                                         | 关闭条件                                                               |
+| ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| FPS-REAL         | P1   | ✅ **已关闭(2026-07-31)**:`tests/electron-fps.mjs` 真机自动采集,2000 条混合消息滚动 avg 60fps、P95/P99 16.8ms、>33.3ms 慢帧 0,写入 PERFORMANCE_REPORT.md           | 已达成(>50fps、P95<30ms、P99<50ms)                                     |
+| UAT-E2E          | P1   | 部分缓解(2026-07-31):`DAVE_TEST_MOCK_PROVIDER=1` mock 全链路覆盖流式/编辑再生成/Agent 批准/patch 预览(免真实 Key,CI 可跑);真实 API Key 场景仍缺                    | 覆盖真实 Key 发消息→流式→编辑→批准;CI 稳定绿                           |
+| SIGNING          | P1   | Windows/macOS 发布未签名,取决于证书采购($200/年);electron-builder 已配置从 `WIN_CSC_LINK`/`WIN_CSC_KEY_PASSWORD` 读取                                              | 配置代码签名并验证 SmartScreen/Gatekeeper                              |
+| UPDATE-RELEASE   | P1   | 配置就绪(2026-07-31):`publish: github` + `.github/workflows/release.yml`(v* tag 触发 verify→打包→上传);缺签名证书与首次实际发布                                    | 签名产物 + latest.yml + staged rollout                                 |
+| DEV-AUDIT        | P2   | 全依赖 audit 21 high(2026-07-31 复核):vitest 3.x 最新 3.2.7 仍带 coverage-v8 漏洞,4.x 修复但有 runner 回归(见台账 VITEST-RUNNER);其余链需 breaking 升级,无安全路径 | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar |
+| CI               | P2   | workflow 已入库；远端 runner 首次绿灯与 package smoke 仍待观察                                                                                                     | PR 上 `npm ci` + verify + electron smoke 稳定；可选 package:win smoke  |
+| OS-SHELL-SANDBOX | P2   | 当前为策略层，不是 OS 隔离                                                                                                                                         | utilityProcess/Job Object/AppContainer 等系统隔离方案成熟并验证        |
+| MAC-LINUX        | P3   | 本轮只有 Windows 环境                                                                                                                                              | macOS/Linux 真机构建与 smoke                                           |
+| SESSION-DB       | P3   | electron-store 当前规模够用                                                                                                                                        | 数据量或事务需求触发后迁移 SQLite                                      |
 
 ## 依赖审计口径
 
