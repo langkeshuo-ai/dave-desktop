@@ -11,9 +11,9 @@
 | -------- | ------------------------------------------------------------------------------------------------------ |
 | 定位     | 本地 Agent 桌面客户端(Electron 42 + React 19 + TS 5.8 + Zustand 5 + Tailwind 4,中文 UI)                |
 | 版本     | 0.1.0(0.2.0 目标:性能 + 可观测性 + 可分发)                                                             |
-| 门禁     | `npm run verify` 全绿:format / eslint / 双 tsconfig typecheck / **161 tests** / coverage / build       |
+| 门禁     | `npm run verify` 全绿:format / eslint / 双 tsconfig typecheck / **164 tests** / coverage / build       |
 | 架构     | Electron 三进程(main / preload / renderer)+ `src/shared/` 纯函数共享层(IPC 边界校验全在此,node 可单测) |
-| 提交     | 4 个功能/文档 commit(见 §7),工作区干净                                                                 |
+| 提交     | 9 个功能/文档 commit(见 §7),工作区干净                                                                 |
 | 安全口径 | 生产依赖 audit **0 漏洞**;IPC 白名单 + sender 校验 + 限流 + shell hard-deny + sanitize + 导航同源      |
 
 ## 2. 能力矩阵(对齐 atomcode / claude code / codex / hermes 等参考项目)
@@ -25,7 +25,7 @@
 | 审批/安全纵深                          | ✅       | ✅ 4 模式 + 白名单/限流/sender/sanitize/导航        | 无差距         |
 | 会话管理/导出/搜索/编辑                | ✅       | ✅ 全文搜索、就地编辑再生成、Markdown 导出          | 无差距         |
 | 性能                                   | ✅       | ✅ 实测达标(见 §3)                                  | 无差距         |
-| **MCP 工具扩展**                       | ✅       | ✅ 基础版(复用官方 SDK,stdio,一律审批)              | 已对齐         |
+| **MCP 工具扩展**                       | ✅       | ✅ 基础版(复用官方 SDK,stdio,一律审批,启动自动连接) | 已对齐         |
 | **结构化日志/可观测性**                | ✅       | ✅ JSON Lines + Settings 查看器                     | 已对齐         |
 | **诊断导出**                           | ✅       | ✅ 一键打包报告                                     | 已对齐         |
 | skills / 工具市场                      | ✅       | ❌                                                  | 0.3.0 记录     |
@@ -37,7 +37,7 @@
 
 | 指标                    | 实测                                                | 目标                | 结论                             |
 | ----------------------- | --------------------------------------------------- | ------------------- | -------------------------------- |
-| 单元测试                | **161/161**(153 → 161)                              | >150                | ✅                               |
+| 单元测试                | **164/164**(153 → 164)                              | >150                | ✅                               |
 | 主 renderer bundle      | **745.76KB**                                        | <900KB              | ✅(-39.6% 于基线)                |
 | Markdown 按需 chunk     | **608KB**(738 → 608,highlight 20 语言子集)          | 建议 <500KB         | ⚠️ 已降 17.6%,收益递减           |
 | 2000 条消息滚动         | **avg 60fps / P95 16.8ms / P99 16.8ms,慢帧 0**      | >50fps / P95<30ms   | ✅ FPS-REAL 关闭                 |
@@ -45,6 +45,15 @@
 | E2E(mock 全链路)        | 3 场景:流式/编辑再生成/审批+patch                   | —                   | ✅ 免真实 Key,CI 可跑            |
 | 依赖安全                | prod **0 漏洞**;dev 21 high 无安全可升级路径        | —                   | ⚠️ 外部等待上游                  |
 | 大文件 patch 内存       | 分批并发(每批 ≤4 文件),峰值从"全部文件"降为"批大小" | —                   | ✅ 语义不变                      |
+
+## 3.5 终审实证(2026-07-31,收尾核验)
+
+| 核验项                | 结果                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 完整 `npm run verify` | ✅ format / eslint / 双 tsconfig typecheck / **164 tests + coverage** / build(25.58s)全绿                                               |
+| electron-smoke 回归   | ✅ 三场景(流式/编辑再生成/审批+patch)+ 整体 EXIT:0——启动路径改动(MCP 自动连接/日志级别持久化)无回归                                     |
+| 失败编辑完整性复核    | ✅ 全部失败 edit 均重读精确文本后成功重试;关键函数(LogViewer/McpPanel/open-log-dir/logs-set-level)闭合完整;git 工作区干净、无未跟踪文件 |
+| 单测                  | **164/164**(153 → 164)                                                                                                                  |
 
 ## 4. 两轮工作成果
 
@@ -67,13 +76,13 @@
 
 ### 剩余:全部为外部依赖(代码侧已无可推进)
 
-| 项                      | 触发条件                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| 代码签名证书            | 采购($200/年)→ GitHub Secrets `WIN_CSC_LINK` + `WIN_CSC_KEY_PASSWORD` → 打 v0.2.0 tag |
-| 真实 API Key 全链路 E2E | 配置真实 Key 跑通发消息→流式→编辑→批准(mock 已覆盖同链路)                             |
-| 远端 CI 首绿            | 本地无 git remote:需 `git remote add origin` 后 push(workflow 已入库)                 |
-| 漏斗真实数据            | 发布后 7 日回访窗口(FunnelView 已含留存指标)                                          |
-| 跨平台                  | macOS/Linux 真机构建与 smoke                                                          |
+| 项                      | 触发条件                                                                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 代码签名证书            | 采购($200/年)→ GitHub Secrets `WIN_CSC_LINK` + `WIN_CSC_KEY_PASSWORD` → 打 v0.2.0 tag                                                         |
+| 真实 API Key 全链路 E2E | 配置真实 Key 跑通发消息→流式→编辑→批准(mock 已覆盖同链路)                                                                                     |
+| 远端 CI 首绿            | 本地无 git remote;GitHub MCP 创建仓库尝试失败(fetch failed,服务不可达,2026-07-31):需服务恢复后建仓 + `git remote add` + push(workflow 已入库) |
+| 漏斗真实数据            | 发布后 7 日回访窗口(FunnelView 已含留存指标)                                                                                                  |
+| 跨平台                  | macOS/Linux 真机构建与 smoke                                                                                                                  |
 
 ## 6. 关键架构决策与 gotcha(摘要)
 
@@ -86,6 +95,10 @@
 ## 7. 提交历史
 
 ```
+d93256e feat: mcp auto-connect on startup and persisted log level
+f16c71b chore: ignore visual diff runtime artifacts
+8a8c82b feat: mcp integration tests, visual diff tool and log level control
+d8c6a02 docs: integrated project overview
 3c587d3 feat: structured logging, diagnostics export and MCP tool integration
 85c670a feat: batched patch apply, cold-start measurement and visual baselines
 704ab28 docs: analysis report, roadmap and risk ledger updates
