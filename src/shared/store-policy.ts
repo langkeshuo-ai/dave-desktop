@@ -25,6 +25,8 @@ const STORE_KEY_WHITELIST = new Set<string>([
   "mcp-servers",
   // electron-log 输出级别(见 shared/log-level.ts;logs-set-level IPC 写入)
   "log-level",
+  // 用户自定义技能(JSON 数组,见 shared/skills.ts;写操作走 skills-set IPC)
+  "skills",
 ])
 
 const STORE_KEY_API_KEY_RE = /^(openai|anthropic|deepseek|custom)-api-key$/

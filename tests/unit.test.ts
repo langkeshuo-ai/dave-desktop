@@ -78,6 +78,7 @@ import {
 } from "../src/shared/mcp"
 import { mcpManager } from "../src/main/mcp-client"
 import { isValidLogLevel, LOG_LEVELS } from "../src/shared/log-level"
+import { parseSkills, validateSkill } from "../src/shared/skills"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -2132,5 +2133,33 @@ describe("log-level", () => {
     expect(isValidLogLevel(123)).toBe(false)
     expect(isValidLogLevel(null)).toBe(false)
     expect(LOG_LEVELS).toEqual(["debug", "info", "warn", "error"])
+  })
+})
+
+// =====================================================================
+// skills — 用户自定义预置技能(0.3.0 M1 第一步)
+// =====================================================================
+describe("skills helpers", () => {
+  it("validateSkill accepts valid and rejects invalid skills", () => {
+    expect(
+      validateSkill({ name: "review", description: "code review", content: "请审查代码" }),
+    ).toEqual({ name: "review", description: "code review", content: "请审查代码" })
+    expect(validateSkill(null)).toBeNull()
+    expect(validateSkill({ name: "", description: "", content: "x" })).toBeNull()
+    expect(validateSkill({ name: "a b", description: "", content: "x" })).toBeNull()
+    expect(validateSkill({ name: "ok", description: "", content: "   " })).toBeNull()
+    expect(validateSkill({ name: "ok", description: "", content: "x".repeat(2001) })).toBeNull()
+  })
+
+  it("parseSkills filters invalid and dedupes by name", () => {
+    const raw = [
+      { name: "a", description: "", content: "1" },
+      { name: "a", description: "", content: "2" },
+      { name: "bad name", description: "", content: "3" },
+      { name: "b", description: "", content: "4" },
+    ]
+    expect(parseSkills(raw).map((s) => s.name)).toEqual(["a", "b"])
+    expect(parseSkills("x")).toEqual([])
+    expect(parseSkills(null)).toEqual([])
   })
 })

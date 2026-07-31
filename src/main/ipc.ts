@@ -29,6 +29,7 @@ import { exportDiagnostics } from "./diagnostics"
 import { mcpManager } from "./mcp-client"
 import { parseMcpServers } from "../shared/mcp"
 import { isValidLogLevel } from "../shared/log-level"
+import { parseSkills } from "../shared/skills"
 import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
 import { sanitizeMessagesForReplace } from "../shared/session-edit"
 import { getSecure, setSecure } from "./store"
@@ -362,6 +363,18 @@ export function registerIpcHandlers(deps: Deps) {
     const configs = parseMcpServers(raw)
     getStore().set("mcp-servers", JSON.stringify(configs))
     await mcpManager.connectAll(configs)
+    return true
+  })
+
+  // ---- Skills(用户自定义预置技能,0.3.0 M1 第一步) ----------------
+  ipcMain.handle("skills-list", (event) => {
+    if (!validateSender(event)) return []
+    const raw = getStore().get("skills") as string | undefined
+    return raw ? parseSkills(JSON.parse(raw) as unknown) : []
+  })
+  ipcMain.handle("skills-set", (event, raw: unknown) => {
+    if (!validateSender(event)) return false
+    getStore().set("skills", JSON.stringify(parseSkills(raw)))
     return true
   })
 

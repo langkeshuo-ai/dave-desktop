@@ -12,6 +12,7 @@ import {
   FolderTree,
   Info,
   Plug,
+  Copy,
 } from "lucide-react"
 import { useFocusRestore } from "../lib/useFocusRestore"
 import { useMounted } from "../lib/useMounted"
@@ -22,6 +23,7 @@ import {
   type McpDiscoveredTool,
   type McpServerConfig,
 } from "../../shared/mcp"
+import { validateSkill, type SkillDefinition } from "../../shared/skills"
 
 interface SettingsProps {
   onClose: () => void
@@ -516,7 +518,12 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                 </div>
               )}
 
-              {tab === "extensions" && <McpPanel />}
+              {tab === "extensions" && (
+                <div className="space-y-4">
+                  <McpPanel />
+                  <SkillsPanel />
+                </div>
+              )}
             </div>
 
             <div className="modal-footer">
@@ -882,6 +889,128 @@ function LogViewer() {
             </div>
           ))
         )}
+      </div>
+    </div>
+  )
+}
+
+/** 自定义预置技能面板(0.3.0 M1 第一步):增删 + 复制内容取用。 */
+function SkillsPanel() {
+  const safeSet = useMounted()
+  const [skills, setSkills] = useState<SkillDefinition[]>([])
+  const [draft, setDraft] = useState<SkillDefinition>({ name: "", description: "", content: "" })
+  const [status, setStatus] = useState("")
+
+  const refresh = useCallback(async () => {
+    try {
+      const list = await window.dave.skills.list()
+      safeSet(() => setSkills(list))
+    } catch {
+      /* 静默 */
+    }
+  }, [safeSet])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  const save = useCallback(async () => {
+    const ok = await window.dave.skills.save(skills)
+    setStatus(ok ? "已保存" : "保存失败")
+  }, [skills])
+
+  const addDraft = () => {
+    const s = validateSkill(draft)
+    if (!s) {
+      setStatus("配置无效(名称限字母数字-_ ≤48;内容必填 ≤2000 字符)")
+      return
+    }
+    if (skills.some((x) => x.name === s.name)) {
+      setStatus("技能名已存在")
+      return
+    }
+    setSkills([...skills, s])
+    setDraft({ name: "", description: "", content: "" })
+    setStatus("已加入列表,点击「保存技能」生效")
+  }
+
+  const copy = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setStatus("已复制到剪贴板")
+    } catch {
+      /* file:// 下剪贴板可能受限,静默 */
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
+        自定义预置技能:命名 prompt(名称/描述/内容),管理后点击复制图标取用。 0.3.0 完整版将注册到
+        Agent 工具循环。
+      </p>
+
+      {skills.length === 0 ? (
+        <div className="text-[11px] text-[var(--text-faint)]">尚未添加技能</div>
+      ) : (
+        <div className="space-y-1.5">
+          {skills.map((s) => (
+            <div key={s.name} className="flex items-center gap-2 text-[11px]">
+              <span className="font-medium text-[var(--text-strong)]">{s.name}</span>
+              <span className="text-[var(--text-dim)] truncate">{s.description}</span>
+              <button
+                type="button"
+                className="btn-icon-muted !p-1"
+                aria-label={`复制 ${s.name}`}
+                onClick={() => void copy(s.content)}
+              >
+                <Copy size={11} />
+              </button>
+              <button
+                type="button"
+                className="btn-icon-muted !p-1 ml-auto"
+                aria-label={`删除 ${s.name}`}
+                onClick={() => setSkills(skills.filter((x) => x.name !== s.name))}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <input
+          className="input !py-1 !text-[11px]"
+          placeholder="技能名称(如 review-code)"
+          aria-label="技能名称"
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+        />
+        <input
+          className="input !py-1 !text-[11px] w-full"
+          placeholder="描述(可选)"
+          aria-label="技能描述"
+          value={draft.description}
+          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+        />
+        <textarea
+          className="input !py-1 !text-[11px] w-full min-h-[4rem] resize-y"
+          placeholder="技能内容(prompt,≤2000 字符)"
+          aria-label="技能内容"
+          value={draft.content}
+          onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+        />
+        <button type="button" className="btn btn-outline !py-1 text-[11px]" onClick={addDraft}>
+          加入列表
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button type="button" className="btn !py-1 text-[11px]" onClick={() => void save()}>
+          保存技能
+        </button>
+        {status && <span className="text-[10px] text-[var(--text-dim)]">{status}</span>}
       </div>
     </div>
   )

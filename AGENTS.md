@@ -60,6 +60,11 @@ Electron 42 的 `safeStorage.decryptStringAsync` 返回 `{ shouldReEncrypt, resu
 - Settings「扩展」tab 管理服务器;新增 IPC/preload 通道必须同步在 `KeyboardHelp` 与
   SELF_CHECK 的盲测小节登记(若为快捷键/用户可见功能)。
 
+### Skills(用户自定义预置技能,0.3.0 M1 第一步)
+
+- 存 store key `skills`(JSON 数组,白名单已加);写操作走 `skills-set` IPC(`parseSkills` 校验+去重),渲染端不直接 store.set;名称限字母数字-_ ≤48、内容 ≤2000 字符(见 `src/shared/skills.ts`)。
+- 与 EmptyStateTemplates(内置模板)的区别:skills 是用户自定义的;0.3.0 完整版将注册到 agent 工具循环(`skill__<name>` 命名空间,与 MCP 同款审批)。
+
 ### Windows auto-launch sentinel
 
 `isEnabled()` requires both the `.lnk` shortcut AND a `.dave-sentinel` file beside it. Legacy marker files from an old broken version are auto-cleaned.

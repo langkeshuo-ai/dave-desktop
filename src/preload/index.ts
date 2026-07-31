@@ -15,6 +15,7 @@ import type { FileTreeNode } from "../shared/workspace"
 import type { FunnelSnapshot, TelemetryEvent, TelemetryEventName } from "../shared/telemetry"
 import type { StructuredEvent } from "../shared/structured-log"
 import type { McpDiscoveredTool, McpServerConfig } from "../shared/mcp"
+import type { SkillDefinition } from "../shared/skills"
 
 const api = {
   store: {
@@ -167,6 +168,12 @@ const api = {
     listTools: () => ipcRenderer.invoke("mcp-list-tools") as Promise<McpDiscoveredTool[]>,
     saveServers: (configs: McpServerConfig[]) =>
       ipcRenderer.invoke("mcp-servers-set", configs) as Promise<boolean>,
+  },
+
+  skills: {
+    list: () => ipcRenderer.invoke("skills-list") as Promise<SkillDefinition[]>,
+    save: (skills: SkillDefinition[]) =>
+      ipcRenderer.invoke("skills-set", skills) as Promise<boolean>,
   },
 
   telemetry: {
