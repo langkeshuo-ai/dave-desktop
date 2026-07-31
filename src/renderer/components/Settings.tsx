@@ -11,9 +11,17 @@ import {
   Cpu,
   FolderTree,
   Info,
+  Plug,
 } from "lucide-react"
 import { useFocusRestore } from "../lib/useFocusRestore"
 import { useMounted } from "../lib/useMounted"
+import type { StructuredEvent } from "../../shared/structured-log"
+import {
+  parseMcpServers,
+  validateMcpServerConfig,
+  type McpDiscoveredTool,
+  type McpServerConfig,
+} from "../../shared/mcp"
 
 interface SettingsProps {
   onClose: () => void
@@ -38,6 +46,7 @@ const PROVIDERS = [
 const TABS = [
   { id: "provider" as const, label: "模型", icon: Cpu },
   { id: "workspace" as const, label: "工作区", icon: FolderTree },
+  { id: "extensions" as const, label: "扩展", icon: Plug },
   { id: "about" as const, label: "关于", icon: Info },
 ]
 
@@ -53,11 +62,12 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
   const [model, setModel] = useState("gpt-4o")
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [diagMsg, setDiagMsg] = useState<string | null>(null)
   const [customHost, setCustomHost] = useState("")
   const [customModel, setCustomModel] = useState("")
   const [customApiKey, setCustomApiKey] = useState("")
   const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false)
-  const [tab, setTab] = useState<"provider" | "workspace" | "about">("provider")
+  const [tab, setTab] = useState<"provider" | "workspace" | "extensions" | "about">("provider")
   const [cwd, setCwd] = useState("")
   const [autoclear, setAutoclear] = useState(true)
   const [probeBusy, setProbeBusy] = useState(false)
@@ -199,7 +209,13 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
   const sectionTitle =
-    tab === "provider" ? "模型与密钥" : tab === "workspace" ? "工作区与启动" : "关于"
+    tab === "provider"
+      ? "模型与密钥"
+      : tab === "workspace"
+        ? "工作区与启动"
+        : tab === "extensions"
+          ? "扩展与 MCP"
+          : "关于"
 
   return (
     <div className="modal-scrim" role="presentation" onClick={onClose}>
@@ -466,6 +482,22 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                     >
                       打开日志目录
                     </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline text-xs"
+                      onClick={() =>
+                        void (async () => {
+                          try {
+                            const path = await window.dave.diagnostics.export()
+                            setDiagMsg(path ? `已导出:${path}` : "导出失败")
+                          } catch {
+                            setDiagMsg("导出失败")
+                          }
+                        })()
+                      }
+                    >
+                      导出诊断报告
+                    </button>
                     {onReopenWelcome && (
                       <button
                         type="button"
@@ -477,8 +509,14 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                     )}
                     <FunnelView />
                   </div>
+                  {diagMsg && (
+                    <div className="text-[10px] text-[var(--text-dim)] break-all">{diagMsg}</div>
+                  )}
+                  <LogViewer />
                 </div>
               )}
+
+              {tab === "extensions" && <McpPanel />}
             </div>
 
             <div className="modal-footer">
@@ -600,6 +638,228 @@ function FunnelView() {
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** MCP 服务器配置面板:服务器增删 + 保存重连 + 已发现工具展示。 */
+function McpPanel() {
+  const safeSet = useMounted()
+  const [servers, setServers] = useState<McpServerConfig[]>([])
+  const [tools, setTools] = useState<McpDiscoveredTool[]>([])
+  const [draft, setDraft] = useState<McpServerConfig>({ name: "", command: "", args: [] })
+  const [status, setStatus] = useState("")
+
+  const refresh = useCallback(async () => {
+    try {
+      const raw = await window.dave.store.get("mcp-servers")
+      const list = parseMcpServers(raw ? (JSON.parse(raw) as unknown) : [])
+      const tl = await window.dave.mcp.listTools()
+      safeSet(() => {
+        setServers(list)
+        setTools(tl)
+      })
+    } catch {
+      /* 静默 */
+    }
+  }, [safeSet])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  const save = useCallback(async () => {
+    setStatus("连接中…")
+    const ok = await window.dave.mcp.saveServers(servers)
+    await refresh()
+    setStatus(ok ? "已保存并重连" : "保存失败")
+  }, [servers, refresh])
+
+  const addDraft = () => {
+    if (!draft.name.trim() || !draft.command.trim()) {
+      setStatus("名称与命令必填")
+      return
+    }
+    const cfg = validateMcpServerConfig(draft)
+    if (!cfg) {
+      setStatus("配置无效(名称限字母数字-_ ,≤48 字符)")
+      return
+    }
+    setServers([...servers, cfg])
+    setDraft({ name: "", command: "", args: [] })
+    setStatus("已加入列表,点击「保存并连接」生效")
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
+        通过 MCP(Model Context Protocol)连接外部工具服务器(如 filesystem / git),
+        发现到的工具会自动并入 Agent 工具集,调用前一律需批准。协议:stdio。
+      </p>
+
+      {servers.length === 0 ? (
+        <div className="text-[11px] text-[var(--text-faint)]">尚未配置 MCP 服务器</div>
+      ) : (
+        <div className="space-y-1.5">
+          {servers.map((s) => (
+            <div key={s.name} className="flex items-center gap-2 text-[11px]">
+              <span className="font-medium text-[var(--text-strong)]">{s.name}</span>
+              <span className="text-[var(--text-dim)] truncate">
+                {s.command} {s.args.join(" ")}
+              </span>
+              <button
+                type="button"
+                className="btn-icon-muted !p-1 ml-auto"
+                aria-label={`删除 ${s.name}`}
+                onClick={() => setServers(servers.filter((x) => x.name !== s.name))}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <input
+          className="input !py-1 !text-[11px]"
+          placeholder="服务器名称(如 filesystem)"
+          aria-label="MCP 服务器名称"
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+        />
+        <input
+          className="input !py-1 !text-[11px] w-full"
+          placeholder="启动命令(如 npx)"
+          aria-label="MCP 启动命令"
+          value={draft.command}
+          onChange={(e) => setDraft({ ...draft, command: e.target.value })}
+        />
+        <input
+          className="input !py-1 !text-[11px] w-full"
+          placeholder="参数(空格分隔,如 -y @modelcontextprotocol/server-filesystem C:/workspace)"
+          aria-label="MCP 命令参数"
+          value={draft.args.join(" ")}
+          onChange={(e) =>
+            setDraft({ ...draft, args: e.target.value.split(/\s+/).filter(Boolean) })
+          }
+        />
+        <button type="button" className="btn btn-outline !py-1 text-[11px]" onClick={addDraft}>
+          加入列表
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button type="button" className="btn !py-1 text-[11px]" onClick={() => void save()}>
+          保存并连接
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost !py-1 text-[11px]"
+          onClick={() => void refresh()}
+        >
+          刷新工具
+        </button>
+        {status && <span className="text-[10px] text-[var(--text-dim)]">{status}</span>}
+      </div>
+
+      {tools.length > 0 && (
+        <div className="bg-[var(--bg-sunk)] border border-[var(--border)] rounded p-2 text-[10.5px] max-h-32 overflow-y-auto">
+          <div className="text-[var(--text-dim)] mb-1">已发现工具({tools.length})</div>
+          {tools.map((t) => (
+            <div key={t.fullName} className="truncate">
+              <span className="text-[var(--text-strong)]">{t.fullName}</span>
+              {t.description && (
+                <span className="text-[var(--text-faint)] ml-1">— {t.description}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 结构化事件日志查看器(只读):关键字/级别过滤 + 刷新,数据来自 logs-read-structured IPC。 */
+function LogViewer() {
+  const safeSet = useMounted()
+  const [events, setEvents] = useState<StructuredEvent[]>([])
+  const [filter, setFilter] = useState("")
+  const [level, setLevel] = useState<"all" | "info" | "warn" | "error">("all")
+
+  const refresh = useCallback(async () => {
+    try {
+      const list = await window.dave.logs.readStructured(200)
+      safeSet(() => setEvents(list))
+    } catch {
+      /* 静默:查看器失败不影响设置面板 */
+    }
+  }, [safeSet])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  const visible = events.filter((e) => {
+    if (level !== "all" && e.level !== level) return false
+    if (filter && !JSON.stringify(e).toLowerCase().includes(filter.toLowerCase())) return false
+    return true
+  })
+
+  return (
+    <div className="w-full mt-2">
+      <div className="flex items-center gap-2 mb-1.5">
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="过滤关键字…"
+          className="input !py-1 !text-[11px] flex-1"
+          aria-label="日志过滤"
+        />
+        <select
+          value={level}
+          onChange={(e) => setLevel(e.target.value as "all" | "info" | "warn" | "error")}
+          className="input !py-1 !text-[11px] w-24"
+          aria-label="日志级别"
+        >
+          <option value="all">全部</option>
+          <option value="info">info</option>
+          <option value="warn">warn</option>
+          <option value="error">error</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          className="btn btn-ghost !py-1 text-[11px]"
+        >
+          刷新
+        </button>
+      </div>
+      <div className="bg-[var(--bg)] border border-[var(--border)] rounded p-2 max-h-40 overflow-y-auto text-[10.5px] font-mono space-y-1">
+        {visible.length === 0 ? (
+          <div className="text-[var(--text-faint)]">暂无事件(写入 userData/logs/events.jsonl)</div>
+        ) : (
+          visible.map((e, i) => (
+            <div key={i} className="flex items-baseline gap-2 min-w-0">
+              <span className="text-[var(--text-faint)] shrink-0">
+                {new Date(e.ts).toLocaleTimeString()}
+              </span>
+              <span
+                className={`shrink-0 ${
+                  e.level === "error"
+                    ? "text-[var(--diff-del)]"
+                    : e.level === "warn"
+                      ? "text-[var(--warning)]"
+                      : "text-[var(--text-dim)]"
+                }`}
+              >
+                {e.level}
+              </span>
+              <span className="truncate text-[var(--text)]">{e.msg}</span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

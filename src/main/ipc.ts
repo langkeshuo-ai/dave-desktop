@@ -24,6 +24,10 @@ import {
 } from "./telemetry-store"
 import { TELEMETRY_EVENT_NAMES, type TelemetryEventName } from "../shared/telemetry"
 import { isAllowedStoreKey, sanitizeSessionTitle, STORE_VALUE_MAX } from "../shared/store-policy"
+import { appendEvent, readStructuredEvents } from "./structured-log"
+import { exportDiagnostics } from "./diagnostics"
+import { mcpManager } from "./mcp-client"
+import { parseMcpServers } from "../shared/mcp"
 import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
 import { sanitizeMessagesForReplace } from "../shared/session-edit"
 import { getSecure, setSecure } from "./store"
@@ -116,6 +120,7 @@ export function registerIpcHandlers(deps: Deps) {
     if (!validateSender(event)) return
     if (!storeSetLimiter.allow()) {
       log.warn("IPC rate limited: store-set")
+      appendEvent("warn", "ipc_rate_limited", { channel: "store-set" })
       return
     }
     // 白名单 + 长度校验:value 上限 STORE_VALUE_MAX,防止渲染端写超长字符串撑爆 store 文件。
@@ -223,6 +228,7 @@ export function registerIpcHandlers(deps: Deps) {
     if (!validateSender(event)) return
     if (!chatStreamLimiter.allow()) {
       log.warn("IPC rate limited: chat-stream")
+      appendEvent("warn", "ipc_rate_limited", { channel: "chat-stream" })
       return
     }
     await handleChatStream(event, message, sessionId)
@@ -272,6 +278,7 @@ export function registerIpcHandlers(deps: Deps) {
     }
     if (!storeSetLimiter.allow()) {
       log.warn("IPC rate limited: session-replace-messages")
+      appendEvent("warn", "ipc_rate_limited", { channel: "session-replace-messages" })
       return false
     }
     const safe = sanitizeMessagesForReplace(messages)
@@ -302,6 +309,7 @@ export function registerIpcHandlers(deps: Deps) {
     if (!validateSender(event)) return null
     if (!applyPatchLimiter.allow()) {
       log.warn("IPC rate limited: workspace-apply-patch")
+      appendEvent("warn", "ipc_rate_limited", { channel: "workspace-apply-patch" })
       return { ok: false, output: "操作过于频繁，请稍后再试", paths: [] }
     }
     const workspace = (getStore().get("cwd") as string) || ""
@@ -316,6 +324,33 @@ export function registerIpcHandlers(deps: Deps) {
     const dir = app.getPath("userData")
     await shell.openPath(dir)
     return dir
+  })
+
+  // 结构化事件日志读取(Settings 日志查看器)
+  ipcMain.handle("logs-read-structured", (event, opts?: { limit?: number }) => {
+    if (!validateSender(event)) return []
+    const limit = typeof opts?.limit === "number" ? Math.min(Math.max(opts.limit, 1), 500) : 200
+    return readStructuredEvents(limit)
+  })
+
+  // 诊断导出:打包日志 + 系统信息 + 会话元数据为单个文本文件
+  ipcMain.handle("diagnostics-export", (event) => {
+    if (!validateSender(event)) return null
+    return exportDiagnostics()
+  })
+
+  // ---- MCP 工具集成(复用官方 SDK) -----------------------------------
+  ipcMain.handle("mcp-list-tools", (event) => {
+    if (!validateSender(event)) return []
+    return mcpManager.listTools()
+  })
+  // 保存 MCP 服务器配置(校验 + 去重)并全量重连;单个失败不阻断
+  ipcMain.handle("mcp-servers-set", async (event, raw: unknown) => {
+    if (!validateSender(event)) return false
+    const configs = parseMcpServers(raw)
+    getStore().set("mcp-servers", JSON.stringify(configs))
+    await mcpManager.connectAll(configs)
+    return true
   })
 
   // ---- 本地遥测(无第三方,只存 electron-store) ------------------------

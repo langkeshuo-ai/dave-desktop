@@ -24,6 +24,8 @@ import { autoTitleSession, getSessionMessages, saveSessionMessages } from "./ses
 import { sessionRuntime } from "./session-runtime"
 import { fetchPublicHttps } from "./provider-url-policy"
 import { isMockMode, mockReplyText, buildMockAgentScript } from "./mock-provider"
+import { mcpManager } from "./mcp-client"
+import { isMcpToolName } from "../shared/mcp"
 import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 
 const partialBySession = new Map<string, string>()
@@ -285,7 +287,54 @@ async function runToolCalls(
     if (sessionRuntime.getSignal(sessionId)?.aborted) {
       throw new DOMException("aborted", "AbortError")
     }
+    let args: Record<string, unknown> = {}
+    try {
+      args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>
+    } catch {
+      log.debug("malformed tool_call arguments from LLM:", tc.function.arguments)
+      args = {}
+    }
+
     const tool = getTool(tc.function.name)
+    if (!tool && isMcpToolName(tc.function.name)) {
+      // MCP 动态工具(来自外部 MCP server):一律审批后调用。
+      // 保守策略:MCP 工具可能读写外部系统,视为 mutates,任何模式都需批准。
+      event.sender.send("chat-stream-approval", {
+        sessionId,
+        tool: tc.function.name,
+        arguments: args,
+        mutates: true,
+        isShell: false,
+      })
+      const approved = await sessionRuntime.waitApproval(sessionId)
+      if (!approved) {
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: "用户拒绝了此操作（或会话已中止）",
+        })
+        continue
+      }
+      try {
+        const output = await mcpManager.callTool(tc.function.name, args)
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: clampToolOutput(output),
+        })
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: `工具失败：${msg}`,
+        })
+      }
+      continue
+    }
     if (!tool) {
       messages.push({
         role: "tool",
@@ -294,13 +343,6 @@ async function runToolCalls(
         content: `错误：未知工具 ${tc.function.name}`,
       })
       continue
-    }
-    let args: Record<string, unknown> = {}
-    try {
-      args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>
-    } catch {
-      log.debug("malformed tool_call arguments from LLM:", tc.function.arguments)
-      args = {}
     }
 
     if (needsApproval(tool, mode, args)) {

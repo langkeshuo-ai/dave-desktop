@@ -21,6 +21,8 @@ const STORE_KEY_WHITELIST = new Set<string>([
   "deepseek-api-key",
   "onboarding_completed",
   "onboarding_skipped",
+  // MCP 服务器配置(JSON 数组,见 shared/mcp.ts;写操作走 mcp-servers-set IPC)
+  "mcp-servers",
 ])
 
 const STORE_KEY_API_KEY_RE = /^(openai|anthropic|deepseek|custom)-api-key$/

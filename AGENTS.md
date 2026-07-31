@@ -48,6 +48,18 @@ The quit-flag (`setQuitting`/`isAppQuitting`) lives in its own module. Moving it
 
 Electron 42 的 `safeStorage.decryptStringAsync` 返回 `{ shouldReEncrypt, result }` — 字段名是 **`result`**,不是 `plainText`(electron.d.ts 确认)。取错字段会静默返回 undefined → `secure-storage: decrypt failed for <key>` → 渲染端守卫误判"未配置 API Key"。另:encrypt/decrypt 必须走**同一** API 路径(async 或 sync),初始化时一次性决定 `useAsyncApi`,不能运行时探测混用(async 密文与 sync 解密格式不兼容)。详见 `src/main/secure-storage.ts` 注释。
 
+### MCP 集成(2026-07-31,复用官方 SDK)
+
+- 复用 `@modelcontextprotocol/sdk`(MIT/活跃),stdio 连接外部工具服务器,工具以
+  `mcp__<server>__<tool>` 全名并入 agent 循环(`runToolCalls` 的 MCP 分支),**一律审批**
+  (视为 mutates,任何模式都需批准)。
+- SDK `CallToolResult.content` 的 TS 推断为 `{}`,读取时必须显式标注
+  `as Array<{ type?: string; text?: string }>` 再 filter/map,否则 tsc 报 TS2339。
+- 配置存 store key `mcp-servers`(JSON 数组,白名单已加);写操作走 `mcp-servers-set` IPC
+  (parseMcpServers 校验+去重),渲染端不直接 store.set。
+- Settings「扩展」tab 管理服务器;新增 IPC/preload 通道必须同步在 `KeyboardHelp` 与
+  SELF_CHECK 的盲测小节登记(若为快捷键/用户可见功能)。
+
 ### Windows auto-launch sentinel
 
 `isEnabled()` requires both the `.lnk` shortcut AND a `.dave-sentinel` file beside it. Legacy marker files from an old broken version are auto-cleaned.

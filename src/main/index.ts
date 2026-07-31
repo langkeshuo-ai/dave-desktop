@@ -10,6 +10,7 @@ import { checkStartupBudget, COLD_WINDOW_BUDGET_MS } from "../shared/telemetry"
 import { isAllowedAppNavigation } from "../shared/navigation-policy"
 import log from "electron-log"
 import { initSecureStorage } from "./secure-storage"
+import { appendEvent } from "./structured-log"
 
 // 自动更新:electron-updater 已依赖(^6.0.0),仅在 packaged 生产构建中启用。
 // 实际部署需要代码签名 + GitHub Releases 托管策略,当前为接线预留。
@@ -103,6 +104,7 @@ if (!initialized) {
     log.transports.file.resolvePathFn = () => join(app.getPath("userData"), "dave-desktop.log")
     log.transports.file.level = "info"
     log.info("Dave Desktop starting up…")
+    appendEvent("info", "app_started", { version: app.getVersion() })
 
     ensureDefaultIcon()
     setupAppMenu()
@@ -195,8 +197,18 @@ if (!initialized) {
   app.setAppUserModelId("com.dave.desktop")
 
   // Render unhandled errors / crashes to the log file so users can attach it to bug reports.
-  process.on("uncaughtException", (err) => log.error("uncaughtException:", err))
-  process.on("unhandledRejection", (reason) => log.error("unhandledRejection:", reason))
+  process.on("uncaughtException", (err) => {
+    log.error("uncaughtException:", err)
+    appendEvent("error", "uncaught_exception", {
+      message: err instanceof Error ? err.message : String(err),
+    })
+  })
+  process.on("unhandledRejection", (reason) => {
+    log.error("unhandledRejection:", reason)
+    appendEvent("error", "unhandled_rejection", {
+      message: reason instanceof Error ? reason.message : String(reason),
+    })
+  })
 } // end if (!initialized)
 
 /* =========================================================================
@@ -344,6 +356,7 @@ function createWindow(): BrowserWindow {
   })
   win.webContents.on("render-process-gone", (_e, details) => {
     log.error("render-process-gone:", details)
+    appendEvent("error", "render_process_gone", { reason: details.reason })
     // 渲染进程崩溃(OOM / 渲染死锁)时主动重载,避免用户面对永久白屏。
     // 仅在非退出状态下重载,且只重试一次以防重载循环。
     if (details.reason !== "crashed" || isAppQuitting()) return

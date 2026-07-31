@@ -32,6 +32,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@tanstack/react-virtual": "^3.14.7",
     "diff": "^9.0.0",
     "electron-log": "^5.0.0",

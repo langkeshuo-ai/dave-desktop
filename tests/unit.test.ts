@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { createTwoFilesPatch, parsePatch } from "diff"
 import { resolveDefaultExport } from "../src/main/esm-interop"
 import {
@@ -61,6 +61,21 @@ import {
 import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
 import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
 import { isMockMode, mockReplyText, buildMockAgentScript } from "../src/main/mock-provider"
+import {
+  appendEvent,
+  formatEventLine,
+  parseEventLine,
+  readStructuredEvents,
+  setStructuredLogDir,
+} from "../src/main/structured-log"
+import { formatSystemInfo, formatSessionSummary } from "../src/main/diagnostics"
+import {
+  isMcpToolName,
+  mcpToolName,
+  parseMcpServers,
+  splitMcpToolName,
+  validateMcpServerConfig,
+} from "../src/shared/mcp"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -1935,5 +1950,134 @@ describe("mock-provider helpers", () => {
     expect(isMockMode()).toBe(true)
     if (prev) process.env.DAVE_TEST_MOCK_PROVIDER = prev
     else delete process.env.DAVE_TEST_MOCK_PROVIDER
+  })
+})
+
+// =====================================================================
+// structured-log — 结构化事件日志(JSON Lines,可观测性 §3.1)
+// =====================================================================
+describe("structured-log", () => {
+  let dir: string
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "dave-structlog-"))
+    setStructuredLogDir(dir)
+  })
+  afterEach(() => {
+    setStructuredLogDir(null)
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it("formatEventLine / parseEventLine roundtrip and reject malformed lines", () => {
+    const line = formatEventLine({ ts: 123, level: "info", msg: "hello", extra: "x" })
+    expect(parseEventLine(line)).toEqual({ ts: 123, level: "info", msg: "hello", extra: "x" })
+    expect(parseEventLine("")).toBeNull()
+    expect(parseEventLine("not json")).toBeNull()
+    expect(parseEventLine('{"ts":"a","msg":"x","level":"info"}')).toBeNull()
+    expect(parseEventLine('{"ts":1,"msg":"x","level":"debug"}')).toBeNull()
+  })
+
+  it("appendEvent + readStructuredEvents returns newest-first with limit", () => {
+    appendEvent("info", "a")
+    appendEvent("warn", "b", { channel: "x" })
+    appendEvent("error", "c")
+    const events = readStructuredEvents(10)
+    expect(events.map((e) => e.msg)).toEqual(["c", "b", "a"])
+    expect(events[1].level).toBe("warn")
+    expect(events[1].channel).toBe("x")
+    expect(readStructuredEvents(2).length).toBe(2)
+    // limit<=0 时 slice(-0) 返回全部(JS 语义);IPC 层已保证 limit ≥ 1
+    expect(readStructuredEvents(0).length).toBe(3)
+  })
+
+  it("recovers from a corrupt line without losing other events", () => {
+    appendEvent("info", "ok")
+    writeFileSync(join(dir, "logs", "events.jsonl"), "garbage\n", { flag: "a" })
+    appendEvent("error", "after")
+    const msgs = readStructuredEvents(10).map((e) => e.msg)
+    expect(msgs).toContain("ok")
+    expect(msgs).toContain("after")
+  })
+})
+
+// =====================================================================
+// diagnostics — 本地诊断导出(§3.2)
+// =====================================================================
+describe("diagnostics helpers", () => {
+  it("formatSystemInfo includes platform/versions/memory", () => {
+    const text = formatSystemInfo({
+      platform: "win32",
+      arch: "x64",
+      appVersion: "0.1.0",
+      electronVersion: "42.0.0",
+      nodeVersion: "22.0.0",
+      chromeVersion: "140.0.0",
+      totalMemoryMB: 16384,
+      userData: "C:/x",
+    })
+    expect(text).toContain("win32 (x64)")
+    expect(text).toContain("0.1.0")
+    expect(text).toContain("16384 MB")
+    expect(text).toContain("C:/x")
+  })
+
+  it("formatSessionSummary lists sessions with message counts", () => {
+    const text = formatSessionSummary(
+      [
+        { id: "s1", title: "会话一", updatedAt: 1700000000000 },
+        { id: "s2", title: "会话二", updatedAt: 1700000001000 },
+      ],
+      (id) => (id === "s1" ? 5 : 0),
+    )
+    expect(text).toContain("会话数: 2")
+    expect(text).toContain("会话一 (5 条消息")
+    expect(text).toContain("会话二 (0 条消息")
+  })
+})
+
+// =====================================================================
+// mcp — MCP 工具集成(复用官方 SDK,§5)
+// =====================================================================
+describe("mcp helpers", () => {
+  it("mcpToolName / splitMcpToolName roundtrip", () => {
+    expect(isMcpToolName("mcp__fs__read_file")).toBe(true)
+    expect(isMcpToolName("toolShell")).toBe(false)
+    const full = mcpToolName("fs", "read_file")
+    expect(full).toBe("mcp__fs__read_file")
+    expect(splitMcpToolName(full)).toEqual({ server: "fs", tool: "read_file" })
+    expect(splitMcpToolName("mcp__x")).toBeNull()
+    expect(splitMcpToolName("mcp____")).toBeNull()
+    expect(splitMcpToolName("toolShell")).toBeNull()
+  })
+
+  it("validateMcpServerConfig accepts valid and rejects invalid configs", () => {
+    expect(validateMcpServerConfig({ name: "fs", command: "npx", args: ["-y"] })).toEqual({
+      name: "fs",
+      command: "npx",
+      args: ["-y"],
+    })
+    expect(validateMcpServerConfig({ name: "fs", command: "npx" })).toEqual({
+      name: "fs",
+      command: "npx",
+      args: [],
+    })
+    expect(validateMcpServerConfig(null)).toBeNull()
+    expect(validateMcpServerConfig({ name: "", command: "npx" })).toBeNull()
+    expect(validateMcpServerConfig({ name: "a b", command: "npx" })).toBeNull()
+    expect(validateMcpServerConfig({ name: "fs", command: "   " })).toBeNull()
+    expect(validateMcpServerConfig({ name: "fs", command: "npx", args: "x" })).toBeNull()
+  })
+
+  it("parseMcpServers filters invalid and dedupes by name", () => {
+    const raw = [
+      { name: "fs", command: "npx", args: ["-y", "pkg"] },
+      { name: "fs", command: "other" },
+      { name: "bad name", command: "x" },
+      { name: "git", command: "npx" },
+    ]
+    const out = parseMcpServers(raw)
+    expect(out.map((s) => s.name)).toEqual(["fs", "git"])
+    expect(out[0].args).toEqual(["-y", "pkg"])
+    expect(parseMcpServers("not array")).toEqual([])
+    expect(parseMcpServers(null)).toEqual([])
   })
 })

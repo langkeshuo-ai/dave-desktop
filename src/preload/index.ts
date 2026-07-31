@@ -13,6 +13,8 @@ import type {
 } from "../shared/types"
 import type { FileTreeNode } from "../shared/workspace"
 import type { FunnelSnapshot, TelemetryEvent, TelemetryEventName } from "../shared/telemetry"
+import type { StructuredEvent } from "../shared/structured-log"
+import type { McpDiscoveredTool, McpServerConfig } from "../shared/mcp"
 
 const api = {
   store: {
@@ -151,6 +153,18 @@ const api = {
 
   logs: {
     openDir: () => ipcRenderer.invoke("open-log-dir") as Promise<string>,
+    readStructured: (limit?: number) =>
+      ipcRenderer.invoke("logs-read-structured", { limit }) as Promise<StructuredEvent[]>,
+  },
+
+  diagnostics: {
+    export: () => ipcRenderer.invoke("diagnostics-export") as Promise<string | null>,
+  },
+
+  mcp: {
+    listTools: () => ipcRenderer.invoke("mcp-list-tools") as Promise<McpDiscoveredTool[]>,
+    saveServers: (configs: McpServerConfig[]) =>
+      ipcRenderer.invoke("mcp-servers-set", configs) as Promise<boolean>,
   },
 
   telemetry: {

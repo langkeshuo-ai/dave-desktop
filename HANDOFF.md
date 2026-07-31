@@ -1,8 +1,8 @@
 # 项目交接文档
 
 > **更新**: 2026-07-31  
-> **本节**: 冷启动实测 1726ms(3s 预算内)/ 大 patch 分批内存优化 / 视觉回归基线(light/night)/ 远端 CI 触发受阻:本地无 git remote  
-> **下游**: 需代码签名证书 + 真实 API Key 全链路 E2E + 配置 git remote 后 push 触发远端 CI + 跨平台
+> **本节**: 可观测性补齐(结构化 JSON Lines 日志 + Settings 查看器 + 诊断一键导出)/ MCP 工具集成(复用官方 SDK,stdio,工具并入 Agent 循环,一律审批,Settings「扩展」tab)/ 差距矩阵与重构评估(不重构)已记录于 OPTIMIZATION_ROADMAP §十  
+> **下游**: MCP 真实 server 连接需手动验证;远端 CI 触发需配置 git remote 后 push;代码签名证书 + 真实 API Key E2E + 跨平台
 
 ## 1. 当前任务背景
 

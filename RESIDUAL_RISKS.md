@@ -9,26 +9,29 @@
 
 ## 当前已关闭
 
-| ID               | 根因                                                             | 已实施方案                                                    | 验证                              |
-| ---------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------- |
-| VIRTUAL-LIST     | 长会话完整 DOM 渲染                                              | 接入 `@tanstack/react-virtual`，使用 chat anchor/follow 策略  | production build                  |
-| BUNDLE-MARKDOWN  | Markdown 全链静态进入主包                                        | `MarkdownContent` 通过 React lazy 按需加载                    | bundle 产物检查                   |
-| DEV-PERF-IN-PROD | 压测工具静态 import                                              | `import.meta.env.DEV` + 动态 import                           | production 主 chunk 无压测实现    |
-| FPS-MATH         | 对逐帧 FPS 求算术平均导致高估                                    | 以总帧数/总时长计算，报告 P50/P95/P99 与慢帧                  | `calculateFpsStats` 单测          |
-| PERF-STATE-RACE  | 压测覆盖消息、双击/卸载/切会话竞态                               | 快照恢复、启动锁、mounted/session guard、RAF 清理             | lint/typecheck/test               |
-| IPC-SENDER       | 部分 IPC 未统一验证来源                                          | 所有 preload 暴露 handler 均执行 `validateSender`             | typecheck/test                    |
-| NAVIGATION       | 未显式限制 renderer 导航/弹窗                                    | `will-navigate` 同源策略 + `setWindowOpenHandler` deny        | 导航策略单测                      |
-| MD-XSS           | Markdown HTML/高亮 class 边界                                    | `rehype-sanitize` schema 白名单                               | production build                  |
-| VITEST-RUNNER    | Vitest 4.1.10 在当前环境 runner 初始化失败，3.2.4 又有已披露漏洞 | 固定到兼容且修复漏洞的 3.2.6                                  | 144 tests                         |
-| IPC-RATE         | 敏感 IPC 无频率上限                                              | `createRateLimiter` 作用于 store-set/chat-stream/apply-patch  | unit + lint                       |
-| MD-STREAM-CPU    | 流式每个 chunk 全量重解析 Markdown                               | memo + 120ms 节流（`shouldUpdateMarkdown`）                   | unit + production build           |
-| KBD-STOP         | 只能点按钮停止流式                                               | Esc 停止；Ctrl+1-9 / Ctrl+N / Ctrl+, 快捷键                   | electron smoke + 帮助面板         |
-| CI-BASELINE      | 无自动化门禁                                                     | `.github/workflows/ci.yml` verify + smoke                     | workflow 文件入库                 |
-| MSG-EDIT         | 无法编辑历史 user 再生成                                         | `session-edit` + `session-replace-messages` + 就地编辑 UI     | unit + verify + smoke             |
-| MSG-SEARCH       | 仅侧栏标题搜索，会话内无法全文定位                               | `message-search` + Ctrl+F 条 + 命中高亮 + Ctrl+↑/↓ 导航       | unit + verify + smoke             |
-| COLD-START-MEAS  | 冷启动重排无实测数据                                             | `tests/electron-coldstart.mjs` 读取 first_window_shown 遥测点 | 实测 1726ms,3s 预算内(2026-07-31) |
-| PATCH-MEMORY     | 大 patch Promise.all 全量并行,所有文件原文+结果同时驻留内存      | `toolApplyPatch` 分批并发(每批 ≤4 文件),应用/回滚语义不变     | unit + verify                     |
-| VISUAL-BASELINE  | 主题样式无回归基线                                               | `tests/electron-screenshot.mjs` 生成 light/night 基线 PNG     | 基线入库,对比工具待接             |
+| ID               | 根因                                                             | 已实施方案                                                       | 验证                                     |
+| ---------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------- |
+| VIRTUAL-LIST     | 长会话完整 DOM 渲染                                              | 接入 `@tanstack/react-virtual`，使用 chat anchor/follow 策略     | production build                         |
+| BUNDLE-MARKDOWN  | Markdown 全链静态进入主包                                        | `MarkdownContent` 通过 React lazy 按需加载                       | bundle 产物检查                          |
+| DEV-PERF-IN-PROD | 压测工具静态 import                                              | `import.meta.env.DEV` + 动态 import                              | production 主 chunk 无压测实现           |
+| FPS-MATH         | 对逐帧 FPS 求算术平均导致高估                                    | 以总帧数/总时长计算，报告 P50/P95/P99 与慢帧                     | `calculateFpsStats` 单测                 |
+| PERF-STATE-RACE  | 压测覆盖消息、双击/卸载/切会话竞态                               | 快照恢复、启动锁、mounted/session guard、RAF 清理                | lint/typecheck/test                      |
+| IPC-SENDER       | 部分 IPC 未统一验证来源                                          | 所有 preload 暴露 handler 均执行 `validateSender`                | typecheck/test                           |
+| NAVIGATION       | 未显式限制 renderer 导航/弹窗                                    | `will-navigate` 同源策略 + `setWindowOpenHandler` deny           | 导航策略单测                             |
+| MD-XSS           | Markdown HTML/高亮 class 边界                                    | `rehype-sanitize` schema 白名单                                  | production build                         |
+| VITEST-RUNNER    | Vitest 4.1.10 在当前环境 runner 初始化失败，3.2.4 又有已披露漏洞 | 固定到兼容且修复漏洞的 3.2.6                                     | 144 tests                                |
+| IPC-RATE         | 敏感 IPC 无频率上限                                              | `createRateLimiter` 作用于 store-set/chat-stream/apply-patch     | unit + lint                              |
+| MD-STREAM-CPU    | 流式每个 chunk 全量重解析 Markdown                               | memo + 120ms 节流（`shouldUpdateMarkdown`）                      | unit + production build                  |
+| KBD-STOP         | 只能点按钮停止流式                                               | Esc 停止；Ctrl+1-9 / Ctrl+N / Ctrl+, 快捷键                      | electron smoke + 帮助面板                |
+| CI-BASELINE      | 无自动化门禁                                                     | `.github/workflows/ci.yml` verify + smoke                        | workflow 文件入库                        |
+| MSG-EDIT         | 无法编辑历史 user 再生成                                         | `session-edit` + `session-replace-messages` + 就地编辑 UI        | unit + verify + smoke                    |
+| MSG-SEARCH       | 仅侧栏标题搜索，会话内无法全文定位                               | `message-search` + Ctrl+F 条 + 命中高亮 + Ctrl+↑/↓ 导航          | unit + verify + smoke                    |
+| COLD-START-MEAS  | 冷启动重排无实测数据                                             | `tests/electron-coldstart.mjs` 读取 first_window_shown 遥测点    | 实测 1726ms,3s 预算内(2026-07-31)        |
+| PATCH-MEMORY     | 大 patch Promise.all 全量并行,所有文件原文+结果同时驻留内存      | `toolApplyPatch` 分批并发(每批 ≤4 文件),应用/回滚语义不变        | unit + verify                            |
+| VISUAL-BASELINE  | 主题样式无回归基线                                               | `tests/electron-screenshot.mjs` 生成 light/night 基线 PNG        | 基线入库,对比工具待接                    |
+| STRUCTURED-LOG   | 仅文本日志,不可过滤/搜索                                         | `structured-log.ts` JSON Lines 落盘 + Settings 查看器(过滤/级别) | unit + verify                            |
+| DIAGNOSTICS      | 排障需手工翻日志/系统信息                                        | `diagnostics.ts` 一键导出报告(系统信息+会话元数据+双日志)        | unit + verify                            |
+| MCP-TOOLS        | 无外部工具生态接入                                               | 复用官方 SDK:stdio 客户端 + 工具并入 Agent 循环 + 一律审批       | unit + verify;真实 server 连接待手动验证 |
 
 既有已关闭项（摘要）：store key 白名单、API Key safeStorage、shell hard-deny/elevated 审批、patch 工作区边界、会话运行时清理、流式 abort partial 保留、ErrorBoundary、焦点恢复、键盘帮助、命令面板、消息操作、滚动到底按钮、遥测边界。
 
