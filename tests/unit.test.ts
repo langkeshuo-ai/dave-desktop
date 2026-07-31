@@ -77,6 +77,7 @@ import {
   validateMcpServerConfig,
 } from "../src/shared/mcp"
 import { mcpManager } from "../src/main/mcp-client"
+import { isValidLogLevel, LOG_LEVELS } from "../src/shared/log-level"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -2114,5 +2115,22 @@ describe("mcp client integration", () => {
     await expect(mcpManager.callTool("mcp__echo__nope", {})).rejects.toThrow(
       /MCP 工具未连接|callTool|Error/i,
     )
+  })
+})
+
+// =====================================================================
+// log-level — 日志输出级别白名单(N1b)
+// =====================================================================
+describe("log-level", () => {
+  it("isValidLogLevel accepts the four known levels and rejects others", () => {
+    expect(isValidLogLevel("debug")).toBe(true)
+    expect(isValidLogLevel("info")).toBe(true)
+    expect(isValidLogLevel("warn")).toBe(true)
+    expect(isValidLogLevel("error")).toBe(true)
+    expect(isValidLogLevel("silly")).toBe(false)
+    expect(isValidLogLevel("")).toBe(false)
+    expect(isValidLogLevel(123)).toBe(false)
+    expect(isValidLogLevel(null)).toBe(false)
+    expect(LOG_LEVELS).toEqual(["debug", "info", "warn", "error"])
   })
 })

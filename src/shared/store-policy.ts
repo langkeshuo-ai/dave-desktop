@@ -23,6 +23,8 @@ const STORE_KEY_WHITELIST = new Set<string>([
   "onboarding_skipped",
   // MCP 服务器配置(JSON 数组,见 shared/mcp.ts;写操作走 mcp-servers-set IPC)
   "mcp-servers",
+  // electron-log 输出级别(见 shared/log-level.ts;logs-set-level IPC 写入)
+  "log-level",
 ])
 
 const STORE_KEY_API_KEY_RE = /^(openai|anthropic|deepseek|custom)-api-key$/

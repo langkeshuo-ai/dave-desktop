@@ -11,6 +11,9 @@ import { isAllowedAppNavigation } from "../shared/navigation-policy"
 import log from "electron-log"
 import { initSecureStorage } from "./secure-storage"
 import { appendEvent } from "./structured-log"
+import { mcpManager } from "./mcp-client"
+import { parseMcpServers } from "../shared/mcp"
+import { isValidLogLevel } from "../shared/log-level"
 
 // 自动更新:electron-updater 已依赖(^6.0.0),仅在 packaged 生产构建中启用。
 // 实际部署需要代码签名 + GitHub Releases 托管策略,当前为接线预留。
@@ -145,6 +148,22 @@ if (!initialized) {
       import("./session").then(({ pruneOldBackups }) => pruneOldBackups()).catch(() => {})
     } catch (err) {
       log.error("getStore() failed during startup:", err)
+    }
+
+    // 应用持久化日志级别 + 启动时自动连接已配置的 MCP 服务器(均静默,不阻塞启动)
+    try {
+      const savedLevel = (getStore().get("log-level") as string) || "info"
+      if (isValidLogLevel(savedLevel)) {
+        log.transports.file.level = savedLevel
+        log.transports.console.level = savedLevel
+      }
+      const rawMcp = getStore().get("mcp-servers") as string | undefined
+      if (rawMcp) {
+        const configs = parseMcpServers(JSON.parse(rawMcp) as unknown)
+        if (configs.length > 0) void mcpManager.connectAll(configs)
+      }
+    } catch {
+      // 配置损坏等:静默,设置里可重新保存
     }
 
     // 初始化 safeStorage(OS 级加密),用于 API Key 等敏感字段的安全存储。

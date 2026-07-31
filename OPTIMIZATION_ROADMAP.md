@@ -125,7 +125,7 @@
 **方案**:
 
 - [x] **结构化日志** — JSON Lines 格式(2026-07-31):`src/main/structured-log.ts` 落盘 userData/logs/events.jsonl(2000 行/512KB 截断),关键事件打点(启动/崩溃/渲染进程退出/IPC 限流)
-- [x] **日志级别控制** — Settings 增加"日志级别"选择器(2026-07-31:LogViewer 输出级别,同步文件+控制台)
+- [x] **日志级别控制** — Settings 增加"日志级别"选择器(2026-07-31:LogViewer 输出级别,同步文件+控制台,持久化重启保持)
 - [x] **日志查看器** — Settings「关于」内嵌查看器(关键字/级别过滤 + 刷新,2026-07-31)
 - [x] **性能日志** — 记录关键路径耗时(2026-07-31:first_window_shown elapsedMs 已落盘 structured-log;TTFB/token 走遥测事件)
 
@@ -359,7 +359,7 @@ jobs:
 - **插件系统** — 允许用户自定义工具 / provider
   - ✅ **MCP 支持已落地基础版(2026-07-31)**:复用官方 `@modelcontextprotocol/sdk`(MIT/活跃),
     stdio 连接外部工具服务器,工具以 `mcp__<server>__<tool>` 并入 Agent 工具集,调用一律审批;
-    Settings「扩展」tab 配置与工具展示。零自定义协议,生态可复用。
+    Settings「扩展」tab 配置与工具展示,启动时自动连接已配置服务器。零自定义协议,生态可复用。
   - 后续:工具市场 / skill 模板 / 手机接入
 - **多语言支持** — i18n 国际化（英文 / 中文）
 - **协作模式** — 多人共享会话（WebRTC P2P）

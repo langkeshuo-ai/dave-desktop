@@ -28,6 +28,7 @@ import { appendEvent, readStructuredEvents } from "./structured-log"
 import { exportDiagnostics } from "./diagnostics"
 import { mcpManager } from "./mcp-client"
 import { parseMcpServers } from "../shared/mcp"
+import { isValidLogLevel } from "../shared/log-level"
 import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
 import { sanitizeMessagesForReplace } from "../shared/session-edit"
 import { getSecure, setSecure } from "./store"
@@ -333,14 +334,14 @@ export function registerIpcHandlers(deps: Deps) {
     return readStructuredEvents(limit)
   })
 
-  // 日志输出级别控制(roadmap §3.1):debug/info/warn/error,同步文件与控制台
+  // 日志输出级别控制(roadmap §3.1):debug/info/warn/error,同步文件与控制台并持久化
   ipcMain.handle("logs-set-level", (event, level: unknown) => {
     if (!validateSender(event)) return false
-    const lvl = typeof level === "string" ? level : ""
-    if (lvl !== "debug" && lvl !== "info" && lvl !== "warn" && lvl !== "error") return false
-    log.transports.file.level = lvl
-    log.transports.console.level = lvl
-    appendEvent("info", "log_level_changed", { level: lvl })
+    if (!isValidLogLevel(level)) return false
+    log.transports.file.level = level
+    log.transports.console.level = level
+    getStore().set("log-level", level) // 持久化,重启后保持
+    appendEvent("info", "log_level_changed", { level })
     return true
   })
 
