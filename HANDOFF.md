@@ -1,8 +1,8 @@
 # 项目交接文档
 
 > **更新**: 2026-07-31  
-> **本节**: R3 冷启动重排(窗口先显)/ R4 Markdown chunk 瘦身(738→608KB,highlight 20 语言子集)/ R2 mock 流式全链路 E2E(免真实 Key)/ secure-storage async 解密字段名修复(真实 bug)/ FPS 真机采集(60fps,关闭 FPS-REAL)/ 发布 workflow(签名配置就绪)/ FunnelView 补 7 日回访  
-> **下游**: 需代码签名证书 + 真实 API Key 全链路 E2E + 远端 CI 首绿 + 跨平台
+> **本节**: 冷启动实测 1726ms(3s 预算内)/ 大 patch 分批内存优化 / 视觉回归基线(light/night)/ 远端 CI 触发受阻:本地无 git remote  
+> **下游**: 需代码签名证书 + 真实 API Key 全链路 E2E + 配置 git remote 后 push 触发远端 CI + 跨平台
 
 ## 1. 当前任务背景
 

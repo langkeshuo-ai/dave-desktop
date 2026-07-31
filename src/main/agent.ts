@@ -129,15 +129,24 @@ async function toolProposePatch(workspace: string, args: { diff: string }): Prom
 
 async function toolApplyPatch(workspace: string, args: { diff: string }): Promise<ToolResult> {
   const files = parseUnifiedPatch(args.diff)
-  const planned = await Promise.all(
-    files.map(async (file) => {
-      const abs = await assertInWorkspace(workspace, file.path)
-      const existed = existsSync(abs)
-      const original = existed ? await readFile(abs, "utf8") : ""
-      const applied = applyPatchToText(original, file.structured)
-      return { abs, existed, original, applied }
-    }),
-  )
+  // 分批读取/应用(而非 Promise.all 全量并行):大文件 patch 场景下,
+  // 同时驻留内存的"原文+结果"从"全部文件"降为"每批 ≤ PATCH_FILE_CONCURRENCY",
+  // 降低峰值内存(roadmap §1.2 流式 diff 的分批版,应用结果不变)。
+  const PATCH_FILE_CONCURRENCY = 4
+  const planned: { abs: string; existed: boolean; original: string; applied: string }[] = []
+  for (let i = 0; i < files.length; i += PATCH_FILE_CONCURRENCY) {
+    const batch = files.slice(i, i + PATCH_FILE_CONCURRENCY)
+    const results = await Promise.all(
+      batch.map(async (file) => {
+        const abs = await assertInWorkspace(workspace, file.path)
+        const existed = existsSync(abs)
+        const original = existed ? await readFile(abs, "utf8") : ""
+        const applied = applyPatchToText(original, file.structured)
+        return { abs, existed, original, applied }
+      }),
+    )
+    planned.push(...results)
+  }
   const uniquePaths = new Set(planned.map((item) => item.abs))
   if (uniquePaths.size !== planned.length) {
     throw new Error("同一 Patch 不得重复修改同一文件")

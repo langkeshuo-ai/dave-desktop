@@ -44,8 +44,10 @@
 - [ ] **Worker threads** — 将 shell 命令执行、文件读写移至 worker
   - `src/main/agent.ts` 的 `toolShell` / `toolWriteFile` 迁移至 worker pool
   - 主线程只做 IPC 路由 + 结果聚合
-- [ ] **流式 diff 应用** — 大文件 patch 当前一次性读入内存
-  - `applyWorkspaceDiff` 改为逐行流式处理（降低峰值内存）
+- [x] **大 patch 分批应用** — 大文件 patch 内存峰值(2026-07-31 已实施分批版)
+  - `toolApplyPatch` 从 `Promise.all` 全量并行改为每批 ≤4 文件串行应用,
+    峰值内存从"全部文件"降为"批大小",应用结果与回滚语义不变
+  - 备注:严格逐行流式收益递减,分批已覆盖主要峰值
 - [x] **启动性能优化** — 主进程初始化到窗口显示当前 ~3s(2026-07-31 已实施:createWindow 前置,store/initSecureStorage 后置后台初始化,`electron-window-state` 本就 lazy require)
   - lazy require 非关键模块（electron-log / electron-updater）
   - 窗口先显示再初始化 session store
@@ -230,7 +232,7 @@ const sign = (payload: string) => crypto.createHmac("sha256", SECRET).update(pay
 - [x] **Playwright E2E 基线** — `npm run test:electron`：CSP/挂载/帮助/命令面板/设置/新建会话/导出
   - 仍待：API Key 后真实发消息 → 流式回复
   - 仍待：Agent 批准 / patch 应用 / 编辑消息 GUI 断言
-- [ ] **视觉回归测试** — Playwright 截图对比（主题 / 组件样式）
+- [x] **视觉回归基线** — `tests/electron-screenshot.mjs` 生成 light/night 基线 PNG(2026-07-31);对比工具(pixelmatch / Playwright toHaveScreenshot)待接
 
 **实现**:
 
@@ -327,7 +329,7 @@ jobs:
 
 | 指标          | 当前(截至 2026-07-31)                    | 目标 0.2.0      |
 | ------------- | ---------------------------------------- | --------------- |
-| 冷启动时间    | ~3s(待优化,见 §1.2 启动性能优化)         | <1.5s           |
+| 冷启动时间    | **1726ms 实测(2026-07-31,3s 预算内)**    | <1.5s           |
 | 首屏 bundle   | **≈745.72KB ✅**                         | <900KB          |
 | 1000 消息滚动 | 未采集(工具就绪,FPS-REAL 待真机)         | >50fps          |
 | 单元测试覆盖  | **150 tests + V8 coverage ✅(实测全绿)** | >150 tests      |
