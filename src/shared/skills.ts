@@ -46,3 +46,48 @@ export function parseSkills(raw: unknown): SkillDefinition[] {
   }
   return out
 }
+
+/** 技能工具命名空间:`skill__<name>`(与 MCP 的 `mcp__server__tool` 同款隔离)。 */
+export const SKILL_TOOL_PREFIX = "skill__"
+
+export function isSkillToolName(name: string): boolean {
+  return name.startsWith(SKILL_TOOL_PREFIX)
+}
+
+export function skillToolName(skillName: string): string {
+  return `${SKILL_TOOL_PREFIX}${skillName}`
+}
+
+export function splitSkillToolName(name: string): string | null {
+  if (!isSkillToolName(name)) return null
+  const rest = name.slice(SKILL_TOOL_PREFIX.length)
+  return rest.length > 0 ? rest : null
+}
+
+/** 按技能名查找(供 agent 工具分支用)。 */
+export function findSkill(skills: SkillDefinition[], name: string): SkillDefinition | undefined {
+  return skills.find((s) => s.name === name)
+}
+
+/** 技能 → LLM 工具定义(agent 循环 advertise 用,纯函数可单测)。 */
+export function skillToolDefs(skills: SkillDefinition[]): Record<string, unknown>[] {
+  return skills.map((s) => ({
+    type: "function",
+    function: {
+      name: skillToolName(s.name),
+      description: s.description || `技能：${s.name}`,
+      parameters: { type: "object", properties: {} },
+    },
+  }))
+}
+
+/** 技能工具结果内容(纯函数,可单测;与 chat-loop runToolCalls 技能分支对齐)。 */
+export function skillNotFoundContent(name: string): string {
+  return `错误：未知技能 ${name}`
+}
+export function skillAppliedContent(skill: SkillDefinition): string {
+  return `技能「${skill.name}」已启用：${skill.description}\n\n${skill.content}`
+}
+export function skillDeniedContent(): string {
+  return "用户拒绝了此操作（或会话已中止）"
+}

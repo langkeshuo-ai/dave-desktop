@@ -78,7 +78,18 @@ import {
 } from "../src/shared/mcp"
 import { mcpManager } from "../src/main/mcp-client"
 import { isValidLogLevel, LOG_LEVELS } from "../src/shared/log-level"
-import { parseSkills, validateSkill } from "../src/shared/skills"
+import {
+  findSkill,
+  isSkillToolName,
+  parseSkills,
+  skillAppliedContent,
+  skillDeniedContent,
+  skillNotFoundContent,
+  skillToolDefs,
+  skillToolName,
+  splitSkillToolName,
+  validateSkill,
+} from "../src/shared/skills"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -2161,5 +2172,33 @@ describe("skills helpers", () => {
     expect(parseSkills(raw).map((s) => s.name)).toEqual(["a", "b"])
     expect(parseSkills("x")).toEqual([])
     expect(parseSkills(null)).toEqual([])
+  })
+
+  it("skill tool name helpers roundtrip", () => {
+    expect(isSkillToolName("skill__review")).toBe(true)
+    expect(isSkillToolName("toolShell")).toBe(false)
+    expect(skillToolName("review")).toBe("skill__review")
+    expect(splitSkillToolName("skill__review")).toBe("review")
+    expect(splitSkillToolName("skill__")).toBeNull()
+    expect(splitSkillToolName("toolShell")).toBeNull()
+  })
+
+  it("findSkill locates by name and skillToolDefs advertises to LLM", () => {
+    const list = [
+      { name: "a", description: "desc a", content: "1" },
+      { name: "b", description: "", content: "2" },
+    ]
+    expect(findSkill(list, "b")?.content).toBe("2")
+    expect(findSkill(list, "missing")).toBeUndefined()
+    const defs = skillToolDefs(list)
+    expect(defs.map((d) => (d.function as { name: string }).name)).toEqual(["skill__a", "skill__b"])
+    expect((defs[0].function as { description: string }).description).toBe("desc a")
+  })
+
+  it("skill outcome content helpers cover not-found / denied / applied paths", () => {
+    const skill = { name: "review", description: "desc", content: "请审查" }
+    expect(skillNotFoundContent("skill__nope")).toBe("错误：未知技能 skill__nope")
+    expect(skillDeniedContent()).toBe("用户拒绝了此操作（或会话已中止）")
+    expect(skillAppliedContent(skill)).toBe("技能「review」已启用：desc\n\n请审查")
   })
 })

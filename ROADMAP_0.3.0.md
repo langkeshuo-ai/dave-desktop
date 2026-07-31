@@ -29,8 +29,9 @@
 ### M1:skills 市场(P0,约 1-2 周)
 
 - ✅ **第一步(基础能力)已实施(2026-08-01)**:`src/shared/skills.ts`(SkillDefinition + validateSkill/parseSkills 纯函数)、store `skills` 白名单、`skills-list`/`skills-set` IPC(校验+去重)、Settings「扩展」tab `SkillsPanel`(增删 + 复制内容取用)、单测 2 条(166 全过)
-- ⏳ **完整版(发布后)**:`src/main/skills-loader.ts`(扫描 skills 目录→注册到 agent 工具循环,命名空间 `skill__<name>`)+ UAT 追加"已安装 skills 展示"步骤
-- 设计约束:skill 工具默认需审批(与 MCP 一致);复用 `runToolCalls` 分支
+- ✅ **第二步(agent 工具集成)已实施(2026-08-01)**:`skill__<name>` 命名空间 + `skillToolDefs` 注册到 runAgentLoop + runToolCalls 技能分支(无条件审批,技能内容注入工具结果)+ code_review 修复(内容纯函数 + 安全注释)+ 单测 169 全过
+- ⏳ **剩余(发布后)**:skills 目录扫描(`skills-loader.ts`)+ UAT 追加"已安装 skills 展示"步骤
+- 设计约束:skill 工具一律需审批(技能内容为任意 prompt,潜在注入载体;与 MCP 一致);复用 `runToolCalls` 分支
 - **验证标准**:单测 ≥5 条;verify 全绿;UAT 追加"已安装 skills 展示"步骤
 
 ### M2:i18n(P1,约 1-2 周,可并行 M1)

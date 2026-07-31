@@ -26,6 +26,17 @@ import { fetchPublicHttps } from "./provider-url-policy"
 import { isMockMode, mockReplyText, buildMockAgentScript } from "./mock-provider"
 import { mcpManager } from "./mcp-client"
 import { isMcpToolName } from "../shared/mcp"
+import {
+  findSkill,
+  isSkillToolName,
+  parseSkills,
+  skillAppliedContent,
+  skillDeniedContent,
+  skillNotFoundContent,
+  skillToolDefs,
+  splitSkillToolName,
+  type SkillDefinition,
+} from "../shared/skills"
 import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 
 const partialBySession = new Map<string, string>()
@@ -189,6 +200,16 @@ async function runAskMode(
 /** 软上限 — 模型故障时循环兜底,避免烧 token / 内存。 */
 const MAX_AGENT_ITERATIONS = 50
 
+/** 从 store 读取技能列表(损坏配置静默返回空)。 */
+function readSkillsFromStore(): SkillDefinition[] {
+  try {
+    const raw = getStore().get("skills") as string | undefined
+    return parseSkills(raw ? (JSON.parse(raw) as unknown) : [])
+  } catch {
+    return []
+  }
+}
+
 /** suggest / auto / full-auto — agent tool loop, with a hard iteration cap. */
 async function runAgentLoop(
   event: IpcMainInvokeEvent,
@@ -201,7 +222,7 @@ async function runAgentLoop(
   endpoint: string,
   headers: Record<string, string>,
 ): Promise<void> {
-  const tools = toolDefsFor(provider)
+  const tools = [...toolDefsFor(provider), ...skillToolDefs(readSkillsFromStore())]
   let iteration = 0
 
   while (true) {
@@ -333,6 +354,36 @@ async function runToolCalls(
           content: `工具失败：${msg}`,
         })
       }
+      continue
+    }
+    if (!tool && isSkillToolName(tc.function.name)) {
+      // 技能内容为任意 prompt 文本(潜在提示注入载体),任何模式启用前必须人工确认;
+      // 与 MCP 分支一致的无条件审批策略(mutates:false 也不跳过)。
+      const skillName = splitSkillToolName(tc.function.name)
+      const skill = skillName ? findSkill(readSkillsFromStore(), skillName) : undefined
+      if (!skill) {
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: skillNotFoundContent(tc.function.name),
+        })
+        continue
+      }
+      event.sender.send("chat-stream-approval", {
+        sessionId,
+        tool: tc.function.name,
+        arguments: args,
+        mutates: false,
+        isShell: false,
+      })
+      const approved = await sessionRuntime.waitApproval(sessionId)
+      messages.push({
+        role: "tool",
+        tool_call_id: tc.id,
+        name: tc.function.name,
+        content: clampToolOutput(approved ? skillAppliedContent(skill) : skillDeniedContent()),
+      })
       continue
     }
     if (!tool) {
