@@ -23,6 +23,7 @@ import {
 import { autoTitleSession, getSessionMessages, saveSessionMessages } from "./session"
 import { sessionRuntime } from "./session-runtime"
 import { fetchPublicHttps } from "./provider-url-policy"
+import { isMockMode, mockReplyText, buildMockAgentScript } from "./mock-provider"
 import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
 
 const partialBySession = new Map<string, string>()
@@ -133,6 +134,29 @@ function finishErr(event: IpcMainInvokeEvent, sessionId: string, error: string):
   partialBySession.delete(sessionId)
   sessionRuntime.clearAbort(sessionId)
   event.sender.send("chat-stream-error", { error, sessionId })
+}
+
+/** 统一失败处理:AbortError → 保存 partial 并发 `done { aborted: true }`;
+ *  其他错误 → `chat-stream-error`。真实路径与 mock 路径共用,语义一致。 */
+function handleStreamFailure(event: IpcMainInvokeEvent, sessionId: string, err: unknown): void {
+  if (
+    (err instanceof DOMException && err.name === "AbortError") ||
+    (err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message)))
+  ) {
+    const partial = partialBySession.get(sessionId) || ""
+    partialBySession.delete(sessionId)
+    if (partial) {
+      const persisted = getSessionMessages(sessionId)
+      persisted.push({ role: "assistant", content: partial })
+      saveSessionMessages(sessionId, persisted)
+    }
+    sessionRuntime.clearAbort(sessionId)
+    event.sender.send("chat-stream-done", { sessionId, aborted: true })
+    return
+  }
+  const msg = err instanceof Error ? err.message : String(err)
+  log.error("chat-stream failure:", msg)
+  finishErr(event, sessionId, msg)
 }
 
 /** ask mode — single streamed call, no tools. */
@@ -326,11 +350,95 @@ async function runToolCalls(
   }
 }
 
+/** mock provider 编排:一轮工具(审批/patch)+ 一轮最终流式回复。
+ *  不触网、不需 API Key / workspace,渲染端 UI 链路(chunk/tools/approval/
+ *  patch/done)全真实。abort / error 语义与真实路径一致(抛给 handleStreamFailure)。 */
+async function runMockStream(
+  event: IpcMainInvokeEvent,
+  sessionId: string,
+  messages: ChatMessage[],
+  userText: string,
+): Promise<void> {
+  const mode = getSessionMode()
+  const script = buildMockAgentScript(mode, getSessionWorkspace())
+
+  if (mode !== "ask") {
+    // 轮 1:模拟工具调用 + 审批 + patch 预览
+    event.sender.send("chat-stream-tools", { sessionId, tools: [script.tool] })
+    event.sender.send("chat-stream-approval", {
+      sessionId,
+      tool: script.tool,
+      arguments: script.approvalArgs,
+      mutates: false,
+      isShell: false,
+    })
+    const approved = await sessionRuntime.waitApproval(sessionId)
+    messages.push({
+      role: "assistant",
+      content: "",
+      tool_calls: [
+        {
+          id: "mock_call_1",
+          type: "function" as const,
+          function: { name: script.tool, arguments: JSON.stringify(script.approvalArgs) },
+        },
+      ],
+    })
+    if (approved) {
+      event.sender.send("chat-stream-patch", {
+        sessionId,
+        patch: script.patch,
+        paths: script.patchPaths,
+      })
+      messages.push({
+        role: "tool",
+        tool_call_id: "mock_call_1",
+        name: script.tool,
+        content: "mock: file_tree 返回 1 个条目（未真实执行）",
+      })
+    } else {
+      messages.push({
+        role: "tool",
+        tool_call_id: "mock_call_1",
+        name: script.tool,
+        content: "用户拒绝了此操作（或会话已中止）",
+      })
+    }
+    saveSessionMessages(sessionId, messages)
+  }
+
+  // 轮 2:最终回复流式输出
+  const reply = mockReplyText(userText, mode)
+  await emitLocalStream(event, sessionId, reply)
+  messages.push({ role: "assistant", content: reply })
+  saveSessionMessages(sessionId, messages)
+  autoTitleSession(sessionId, messages)
+  finishOk(event, sessionId)
+}
+
 export async function handleChatStream(
   event: IpcMainInvokeEvent,
   message: string,
   sessionId: string,
 ): Promise<void> {
+  if (isMockMode()) {
+    // mock 模式:不需 API Key / workspace,直接走本地模拟全链路。
+    log.info(`mock-mode: sessionId=${sessionId} message=${message.slice(0, 40)}`)
+    const mockMessages = truncateMessages(getSessionMessages(sessionId))
+    mockMessages.push({ role: "user", content: message })
+    saveSessionMessages(sessionId, mockMessages)
+    log.info(`mock-mode: saved user msg, count=${mockMessages.length}`)
+    partialBySession.delete(sessionId)
+    try {
+      await runMockStream(event, sessionId, mockMessages, message)
+      log.info(`mock-mode: runMockStream finished for ${sessionId}`)
+    } catch (err) {
+      log.warn("mock-mode: runMockStream failed:", err instanceof Error ? err.message : String(err))
+      handleStreamFailure(event, sessionId, err)
+    }
+    return
+  }
+
   const store = getStore()
   const provider = (store.get("provider") as string) || "openai"
   // 使用 secure storage 读取 API Key(支持 safeStorage 解密)
@@ -382,23 +490,6 @@ export async function handleChatStream(
       headers,
     )
   } catch (err) {
-    if (
-      (err instanceof DOMException && err.name === "AbortError") ||
-      (err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message)))
-    ) {
-      const partial = partialBySession.get(sessionId) || ""
-      partialBySession.delete(sessionId)
-      if (partial) {
-        const persisted = getSessionMessages(sessionId)
-        persisted.push({ role: "assistant", content: partial })
-        saveSessionMessages(sessionId, persisted)
-      }
-      sessionRuntime.clearAbort(sessionId)
-      event.sender.send("chat-stream-done", { sessionId, aborted: true })
-      return
-    }
-    const msg = err instanceof Error ? err.message : String(err)
-    log.error("chat-stream failure:", msg)
-    finishErr(event, sessionId, msg)
+    handleStreamFailure(event, sessionId, err)
   }
 }

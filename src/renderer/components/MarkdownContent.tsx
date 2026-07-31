@@ -5,8 +5,8 @@ import type { PluggableList } from "unified"
 
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import rehypeHighlight from "rehype-highlight"
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
+import rehypeHighlightSubset from "../lib/rehype-highlight-subset"
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -26,7 +26,7 @@ export const MarkdownContent = memo(function MarkdownContent({ content }: { cont
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeSanitizePlugin, rehypeHighlight] as PluggableList}
+      rehypePlugins={[rehypeSanitizePlugin, rehypeHighlightSubset] as PluggableList}
       components={{ pre: CodeBlockPre, code: InlineCodeRenderer }}
     >
       {content}

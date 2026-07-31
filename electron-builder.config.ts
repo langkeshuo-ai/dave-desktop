@@ -22,6 +22,16 @@ const config: Configuration = {
   extraMetadata: { type: "commonjs" },
   files: ["out/**/*", "resources/**/*"],
   extraResources: [],
+  // 发布策略:GitHub Releases(供 electron-updater 消费)。
+  // 打包时生成 latest.yml;tag 推送由 .github/workflows/release.yml 触发打包+上传。
+  // 代码签名:证书经 CI 环境变量 WIN_CSC_LINK(WIN_CSC_KEY_PASSWORD)注入,
+  // 未配置证书时 electron-builder 自动跳过签名,不阻塞本地打包。
+  publish: {
+    provider: "github",
+    owner: "alchaincyf",
+    repo: "dave-desktop",
+    releaseType: "release",
+  },
   win: {
     icon: "resources/icon.ico",
     target: ["nsis", "portable"],

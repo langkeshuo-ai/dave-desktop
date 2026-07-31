@@ -7,7 +7,7 @@ import { setTimeout as delay } from "node:timers/promises"
 
 const electronPath = join(process.cwd(), "node_modules", "electron", "dist", "electron.exe")
 const userDataDir = await mkdtemp(join(tmpdir(), "dave-electron-smoke-"))
-const env = { ...process.env, DAVE_TEST_USER_DATA: userDataDir }
+const env = { ...process.env, DAVE_TEST_USER_DATA: userDataDir, DAVE_TEST_MOCK_PROVIDER: "1" }
 delete env.ELECTRON_RUN_AS_NODE
 const app = await electron.launch({ executablePath: electronPath, args: [process.cwd()], env })
 try {
@@ -112,6 +112,62 @@ try {
   await searchBox.fill("dave")
   await window.keyboard.press("Escape")
   await searchBox.waitFor({ state: "hidden", timeout: 5_000 })
+
+  // ============ mock 流式全链路（R2,免真实 API Key） ============
+  // 渲染端 handleSendMessage 有 key/cwd 守卫,预置假 key 与工作区绕过;
+  // 主进程 DAVE_TEST_MOCK_PROVIDER=1 时本地模拟,不触网。
+  await window.evaluate(async (cwd) => {
+    await window.dave.store.set("openai-api-key", "sk-mock-00000000000000000000")
+    await window.dave.store.set("cwd", cwd)
+  }, process.cwd())
+
+  // 场景 1：ask 流式回复
+  const composer = window.getByPlaceholder(/输入问题|描述任务/)
+  await composer.fill("你好 Dave")
+  await window.getByRole("button", { name: "发送" }).click()
+  await window
+    .locator(".msg-row")
+    .filter({ hasText: "这是 mock 回复" })
+    .first()
+    .waitFor({ state: "visible", timeout: 20_000 })
+  process.stdout.write("mock ask streaming passed\n")
+  const userMsg = window.locator(".msg-bubble.user").first()
+  await userMsg.hover()
+  await userMsg.getByRole("button", { name: "编辑消息" }).click()
+  const editArea = userMsg.getByRole("textbox", { name: "编辑消息" })
+  await editArea.fill("你好 Dave 改一版")
+  await userMsg.getByRole("button", { name: "保存并重新生成" }).click()
+  await window
+    .locator(".msg-row")
+    .filter({ hasText: "这是 mock 回复：你好 Dave 改一版" })
+    .first()
+    .waitFor({ state: "visible", timeout: 20_000 })
+  process.stdout.write("mock edit + regenerate passed\n")
+
+  // 场景 3：agent 模式工具审批 + patch 预览
+  await window.evaluate(async () => {
+    await window.dave.store.set("mode", "auto")
+  })
+  const composer2 = window.getByPlaceholder(/描述任务|输入问题/)
+  await composer2.fill("帮我处理文件")
+  await window.keyboard.press("Enter")
+  const approval = window.getByRole("dialog", { name: "工具批准" })
+  await approval.waitFor({ state: "visible", timeout: 10_000 })
+  await approval.getByRole("button", { name: "批准" }).click()
+  await window
+    .locator(".msg-row")
+    .filter({ hasText: "这是 mock 回复：帮我处理文件" })
+    .first()
+    .waitFor({ state: "visible", timeout: 20_000 })
+  // patch 事件只发不落库(与真实路径一致):onDone 的 loadSession 会用主进程
+  // store 覆盖渲染端临时的 patch 预览消息,故断言落库的 tool 消息
+  // (mock 工具执行结果)——patch 事件链路的一部分
+  await window
+    .locator(".msg-row")
+    .filter({ hasText: "未真实执行" })
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 })
+  process.stdout.write("mock agent approval + patch passed\n")
 
   process.stdout.write(`Electron smoke passed: ${title}\n`)
 } finally {

@@ -60,6 +60,7 @@ import {
 } from "../src/shared/message-search"
 import { isAllowedAppNavigation } from "../src/shared/navigation-policy"
 import { isPublicIpAddress, normalizeCustomProviderBase } from "../src/main/provider-url-policy"
+import { isMockMode, mockReplyText, buildMockAgentScript } from "../src/main/mock-provider"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -1900,5 +1901,39 @@ describe("message-search helpers", () => {
     expect(findAdjacentAssistantIndex(msgs, 5, -1)).toBe(3)
     expect(findAdjacentAssistantIndex(msgs, 3, -1)).toBe(1)
     expect(findAdjacentAssistantIndex(msgs, 1, -1)).toBeNull()
+  })
+})
+
+// =====================================================================
+// mock-provider — E2E 免真实 API Key 全链路测试模式(R2)
+// =====================================================================
+describe("mock-provider helpers", () => {
+  it("mockReplyText echoes user input and marks ask vs agent mode", () => {
+    expect(mockReplyText("你好", "ask")).toBe("这是 mock 回复：你好")
+    expect(mockReplyText("你好", "auto")).toBe(
+      "这是 mock 回复：你好 （mock 工具轮已完成，模式=auto）",
+    )
+    expect(mockReplyText("", "ask")).toBe("这是 mock 回复：")
+  })
+
+  it("buildMockAgentScript uses a safe read-only tool with a valid minimal patch", () => {
+    const turn = buildMockAgentScript("auto", "")
+    expect(turn.tool).toBe("file_tree")
+    expect(turn.approvalArgs).toEqual({ depth: 1 })
+    expect(turn.patchPaths).toEqual(["mock.md"])
+    // 最小合法 unified diff:头部 +++ / hunk / 新增行齐全
+    expect(turn.patch).toContain("+++ b/mock.md")
+    expect(turn.patch).toContain("@@ -0,0 +1,1 @@")
+    expect(turn.patch).toContain("+mock 内容")
+  })
+
+  it("isMockMode is off unless DAVE_TEST_MOCK_PROVIDER=1", () => {
+    const prev = process.env.DAVE_TEST_MOCK_PROVIDER
+    delete process.env.DAVE_TEST_MOCK_PROVIDER
+    expect(isMockMode()).toBe(false)
+    process.env.DAVE_TEST_MOCK_PROVIDER = "1"
+    expect(isMockMode()).toBe(true)
+    if (prev) process.env.DAVE_TEST_MOCK_PROVIDER = prev
+    else delete process.env.DAVE_TEST_MOCK_PROVIDER
   })
 })

@@ -512,7 +512,8 @@ function FunnelView() {
     onboarded: number
     workspaceReady: number
     firstMessage: number
-    rates: { onboardRate: number; firstMessageRate: number }
+    sevenDayRetained: number
+    rates: { onboardRate: number; firstMessageRate: number; retentionRate: number }
   } | null>(null)
   const [clearing, setClearing] = useState(false)
 
@@ -565,7 +566,7 @@ function FunnelView() {
           {clearing ? "清空中…" : "清空"}
         </button>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
         <div>
           <div className="text-[var(--text-dim)]">启动</div>
           <div className="text-[var(--text-strong)] font-medium">{funnel.launched}</div>
@@ -587,6 +588,15 @@ function FunnelView() {
             {funnel.firstMessage}
             <span className="text-[var(--text-faint)] ml-1">
               ({pct(funnel.rates.firstMessageRate)})
+            </span>
+          </div>
+        </div>
+        <div>
+          <div className="text-[var(--text-dim)]">7 日回访</div>
+          <div className="text-[var(--text-strong)] font-medium">
+            {funnel.sevenDayRetained}
+            <span className="text-[var(--text-faint)] ml-1">
+              ({pct(funnel.rates.retentionRate)})
             </span>
           </div>
         </div>

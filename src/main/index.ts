@@ -105,6 +105,34 @@ if (!initialized) {
     log.info("Dave Desktop starting up…")
 
     ensureDefaultIcon()
+    setupAppMenu()
+
+    // Dave does not need camera, microphone, geolocation, notifications, MIDI,
+    // clipboard-read, or other Chromium permissions. Deny by default in both the
+    // request and preflight paths so future renderer code cannot silently expand scope.
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+      callback(false)
+    })
+    session.defaultSession.setPermissionCheckHandler(() => false)
+
+    // IPC handlers must be registered before the renderer boots, otherwise the
+    // renderer's early IPC calls (theme/cwd/mode/sessions) hit "No handler registered".
+    registerIpcHandlers({
+      getMainWindow: () => mainWindow,
+      showWindow: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      },
+    })
+
+    // 冷启动优化:先创建窗口,再在后台初始化 store。
+    // electron-store 首次 getStore() 会同步读取并解析整个配置文件(含会话与
+    // 最多 5000 条遥测事件),把它移出 ready-to-show 关键路径,让主窗口先行显示;
+    // 渲染端挂载时的 IPC 调用会按需触发 store 加载,因此功能不受影响。
+    mainWindow = createWindow()
+
     // Store init used to throw "ElectronStore is not a constructor" under the
     // packaged CJS main + pure-ESM electron-store, which aborted this then()
     // before createWindow — the portable .exe looked "dead". Fail loudly in
@@ -126,27 +154,6 @@ if (!initialized) {
       )
     })
 
-    setupAppMenu()
-
-    // Dave does not need camera, microphone, geolocation, notifications, MIDI,
-    // clipboard-read, or other Chromium permissions. Deny by default in both the
-    // request and preflight paths so future renderer code cannot silently expand scope.
-    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-      callback(false)
-    })
-    session.defaultSession.setPermissionCheckHandler(() => false)
-
-    registerIpcHandlers({
-      getMainWindow: () => mainWindow,
-      showWindow: () => {
-        if (mainWindow) {
-          mainWindow.show()
-          mainWindow.focus()
-        }
-      },
-    })
-
-    mainWindow = createWindow()
     if (!testUserData) {
       _tray = createTray(mainWindow, iconPath("ico") || iconPath("png"))
       // Win has no native File menu — re-bind Cmd/Ctrl+N / , as focus-scoped shortcuts
