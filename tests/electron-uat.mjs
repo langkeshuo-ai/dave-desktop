@@ -23,11 +23,9 @@ function step(name, ok, extra = "") {
 
 try {
   const window = await app.firstWindow({ timeout: 45_000 })
-  await window.waitForFunction(
-    "() => !!document.getElementById('root')?.childElementCount",
-    null,
-    { timeout: 20_000 },
-  )
+  await window.waitForFunction("() => !!document.getElementById('root')?.childElementCount", null, {
+    timeout: 20_000,
+  })
   step("应用启动,主界面渲染", true)
 
   // 跳过首启引导/向导,并预置 onboarding_completed:
@@ -35,7 +33,12 @@ try {
   const welcome = window.getByRole("dialog", { name: "欢迎使用 Dave Desktop" })
   if (await welcome.isVisible().catch(() => false)) await window.keyboard.press("Escape")
   const wizard = window.getByRole("dialog").filter({ hasText: /API|密钥|Provider/i })
-  if (await wizard.first().isVisible().catch(() => false)) {
+  if (
+    await wizard
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     await window.keyboard.press("Escape")
     await delay(300)
   }
@@ -65,7 +68,10 @@ try {
   await delay(250)
   step(
     "扩展 tab:MCP 服务器名称输入框可见",
-    await settings.getByLabel("MCP 服务器名称").isVisible().catch(() => false),
+    await settings
+      .getByLabel("MCP 服务器名称")
+      .isVisible()
+      .catch(() => false),
   )
 
   // 3. 关于 tab:FunnelView / LogViewer / 诊断导出可见
@@ -73,19 +79,31 @@ try {
   await delay(400)
   step(
     "关于 tab:漏斗看板(本地使用统计)可见",
-    await window.getByText("本地使用统计", { exact: false }).isVisible().catch(() => false),
+    await window
+      .getByText("本地使用统计", { exact: false })
+      .isVisible()
+      .catch(() => false),
   )
   step(
     "关于 tab:日志查看器(过滤输入)可见",
-    await window.getByPlaceholder("过滤关键字…").isVisible().catch(() => false),
+    await window
+      .getByPlaceholder("过滤关键字…")
+      .isVisible()
+      .catch(() => false),
   )
   step(
     "关于 tab:日志输出级别选择器可见",
-    await window.getByLabel("日志输出级别").isVisible().catch(() => false),
+    await window
+      .getByLabel("日志输出级别")
+      .isVisible()
+      .catch(() => false),
   )
   step(
     "关于 tab:导出诊断报告按钮可见",
-    await window.getByRole("button", { name: "导出诊断报告" }).isVisible().catch(() => false),
+    await window
+      .getByRole("button", { name: "导出诊断报告" })
+      .isVisible()
+      .catch(() => false),
   )
   await window.keyboard.press("Escape")
   await settings.waitFor({ state: "hidden", timeout: 5_000 })
@@ -156,11 +174,9 @@ try {
     await window.dave.store.set("theme", t)
   }, "night")
   await window.reload()
-  await window.waitForFunction(
-    "() => !!document.getElementById('root')?.childElementCount",
-    null,
-    { timeout: 20_000 },
-  )
+  await window.waitForFunction("() => !!document.getElementById('root')?.childElementCount", null, {
+    timeout: 20_000,
+  })
   await delay(800)
   const isNight = await window.evaluate(() =>
     globalThis.document.documentElement.classList.contains("night"),
@@ -170,11 +186,9 @@ try {
     await window.dave.store.set("theme", t)
   }, "light")
   await window.reload()
-  await window.waitForFunction(
-    "() => !!document.getElementById('root')?.childElementCount",
-    null,
-    { timeout: 20_000 },
-  )
+  await window.waitForFunction("() => !!document.getElementById('root')?.childElementCount", null, {
+    timeout: 20_000,
+  })
   await delay(800)
   step("主题切回 light", true)
 
@@ -184,5 +198,13 @@ try {
   if (passed !== results.length) process.exitCode = 1
 } finally {
   await app.close().catch(() => {})
-  await rm(userDataDir, { recursive: true, force: true })
+  // teardown 清理:Windows 下文件偶发 EBUSY(瞬态锁定),重试 3 次;仍失败则宽容
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await rm(userDataDir, { recursive: true, force: true })
+      break
+    } catch {
+      if (attempt < 2) await delay(500)
+    }
+  }
 }

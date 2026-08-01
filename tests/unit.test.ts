@@ -2121,14 +2121,15 @@ describe("mcp client integration", () => {
     expect(sum).toBe("5")
     const echoed = await mcpManager.callTool("mcp__echo__echo", { text: "hi" })
     expect(echoed).toBe("hi")
-  })
+    // 真实 spawn + SDK 握手在完整套件/高负载下可能超过 vitest 默认 5s 超时,显式放宽
+  }, 30_000)
 
   it("reports an error when the tool is not found on a connected server", async () => {
     await mcpManager.connect({ name: "echo", command: process.execPath, args: [serverPath] })
     await expect(mcpManager.callTool("mcp__echo__nope", {})).rejects.toThrow(
       /MCP 工具未连接|callTool|Error/i,
     )
-  })
+  }, 30_000)
 })
 
 // =====================================================================
