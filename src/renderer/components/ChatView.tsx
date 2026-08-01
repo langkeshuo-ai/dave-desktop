@@ -590,7 +590,7 @@ export function ChatView({
         )}
         {error && (
           <div
-            className="mx-3 mb-2 p-2.5 bg-[var(--diff-del-bg)] border border-[rgba(207,34,46,0.35)] rounded text-xs text-[var(--diff-del)]"
+            className="mx-3 mb-2 p-2.5 bg-[var(--diff-del-bg)] border border-[color-mix(in srgb,var(--diff-del) 35%,transparent)] rounded text-xs text-[var(--diff-del)]"
             role="alert"
             aria-live="assertive"
           >

@@ -63,7 +63,7 @@ export default function App() {
   // 设计成显式状态机,避免布尔嵌套 + state 不同步。
   const [onboarding, setOnboarding] = useState<"welcome" | "apikey" | "off">("off")
   const [mode, setMode] = useState<Mode>("ask")
-  const [theme, setTheme] = useState<Theme>("light")
+  const [theme, setTheme] = useState<Theme>("night")
   // 新建会话的 in-flight 守卫,防止双击 / 菜单 + 按钮并发触发
   // 产生"孤儿会话"(后者覆盖前者,但前者已落库)。
   const creatingSessionRef = useRef(false)
@@ -105,7 +105,7 @@ export default function App() {
   // 若这里先写回,会把持久化的 night 覆盖成初始 light(重启/重载后主题丢失)。
   const themeAppliedRef = useRef(false)
   useEffect(() => {
-    document.documentElement.classList.toggle("night", theme === "night")
+    document.documentElement.classList.toggle("light", theme === "light")
     if (!themeAppliedRef.current) {
       themeAppliedRef.current = true
       return
@@ -124,7 +124,7 @@ export default function App() {
   useEffect(() => {
     window.dave.store.get("theme").then(
       (t: string | null) => {
-        if (t === "night") setTheme("night")
+        if (t === "light") setTheme("light")
       },
       () => {
         /* IPC 失败时静默走 light 默认值 */
