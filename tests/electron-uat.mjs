@@ -30,6 +30,8 @@ try {
 
   // 跳过首启引导/向导,并预置 onboarding_completed:
   // isFirstRun 只认 completed 事件(skipped 不算),否则 reload 后向导会重弹。
+  // 负载下欢迎页/向导可能晚于 root 挂载渲染——先等待出现再跳过,避免误判"不存在"。
+  await delay(800)
   const welcome = window.getByRole("dialog", { name: "欢迎使用 Dave Desktop" })
   if (await welcome.isVisible().catch(() => false)) await window.keyboard.press("Escape")
   const wizard = window.getByRole("dialog").filter({ hasText: /API|密钥|Provider/i })

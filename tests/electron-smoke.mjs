@@ -179,8 +179,17 @@ try {
       }),
     ])
   } catch (err) {
-    // 关闭超时非致命:功能断言已通过,记录即可
-    process.stdout.write(`smoke: app close warning (non-fatal): ${err.message}\n`)
+    // 关闭超时/失败:功能断言(三场景)才是 smoke 的核心门禁——真正的功能回归
+    // 会先在那里失败;close 阶段(teardown)在负载下 electron 慢关闭是常态,
+    // 判失败会导致验证无法进行。此处强制 kill 确保脚本不因 close 挂起而无限
+    // 等待(playwright 保持 stdio 管道),记录警告即可。
+    const msg = err instanceof Error ? err.message : String(err)
+    process.stdout.write(`smoke: app close timeout/error (non-fatal): ${msg}\n`)
+    try {
+      app.process().kill()
+    } catch {
+      /* ignore */
+    }
   } finally {
     // teardown 清理:Windows 下 Chromium DIPS 等文件偶发 EBUSY(瞬态锁定),
     // 重试 3 次;仍失败则宽容(清理失败不影响功能验证结果)。

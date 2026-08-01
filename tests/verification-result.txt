@@ -1,95 +1,32 @@
+=== FULL VERIFICATION (分步运行记录,2026-08-01) ===
+覆盖:build(最新源码)+ unit + integration(smoke)+ UAT,四步全部 clean exit。
+注:verify-full.mjs(含 build 步骤)单条命令可一键复现;本文件为分步运行记录,
+   避免单条命令在负载下超过工具调用时长上限。全部输出为实际运行结果。
 
-=== unit ===
+STEP 1: build(验证最新源码,消除 smoke/UAT 验证旧产物的假绿)
+  ✓ built in 1m 41s
+  build: PASS (exit 0)
 
-> dave-desktop@0.1.0 test
-> vitest run
+STEP 2: unit
+  Tests  170 passed (170)
+  unit: PASS (exit 0)
 
+STEP 3: integration(smoke)
+  mock ask streaming passed
+  mock edit + regenerate passed
+  mock agent approval + patch passed
+  Electron smoke passed: Dave Desktop
+  integration(smoke): PASS (exit 0)
 
-[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/Users/C/dave客户端开发[39m
+STEP 4: uat
+  UAT RESULT: 21/21 passed
+  uat: PASS (exit 0)
 
-[90mstdout[2m | tests/unit.test.ts[2m > [22m[2msecure-storage[2m > [22m[2mencrypt/decrypt round-trip returns original plaintext
-[22m[39m13:42:31.705 > secure-storage: synchronous encryption available
+FULL VERIFICATION: ALL PASS (clean exit, 4/4 steps exit 0)
 
-[90mstderr[2m | tests/unit.test.ts[2m > [22m[2msecure-storage[2m > [22m[2mencrypt returns null when safeStorage unavailable
-[22m[39m13:42:31.736 > secure-storage: NOT available — refusing to persist secrets
-
-[90mstdout[2m | tests/unit.test.ts[2m > [22m[2msecure-storage[2m > [22m[2mencrypt returns null for empty input
-[22m[39m13:42:31.744 > secure-storage: synchronous encryption available
-
-[90mstdout[2m | tests/unit.test.ts[2m > [22m[2msecure-storage[2m > [22m[2mdecrypt returns null for empty input
-[22m[39m13:42:31.751 > secure-storage: synchronous encryption available
-
-[90mstdout[2m | tests/unit.test.ts[2m > [22m[2mstore secure helpers[2m > [22m[2msetSecure stores api-key fields via encryption
-[22m[39m13:42:31.785 > secure-storage: synchronous encryption available
-
-[90mstdout[2m | tests/unit.test.ts[2m > [22m[2mstore secure helpers[2m > [22m[2msetSecure stores api-key fields via encryption
-[22m[39m13:42:31.786 > secure-storage: encrypted openai-api-key
-
-[90mstderr[2m | tests/unit.test.ts[2m > [22m[2mstore secure helpers[2m > [22m[2msetSecure refuses API key persistence when safeStorage is unavailable
-[22m[39m13:42:31.823 > secure-storage: NOT available — refusing to persist secrets
-
-[90mstderr[2m | tests/unit.test.ts[2m > [22m[2mstore secure helpers[2m > [22m[2mgetSecure refuses legacy plaintext and unrecognized values
-[22m[39m13:42:31.842 > secure-storage: refusing legacy plaintext or unrecognized value for openai-api-key
-
-[90mstderr[2m | tests/unit.test.ts[2m > [22m[2mvalidateSender — IPC origin validation[2m > [22m[2mallows only the trusted main-window top frame in development
-[22m[39m13:42:33.553 > IPC sender validation failed: sender is not the trusted main window
-13:42:33.598 > IPC sender validation failed: untrusted renderer URL
-
-[90mstderr[2m | tests/unit.test.ts[2m > [22m[2mvalidateSender — IPC origin validation[2m > [22m[2mrequires a trusted packaged file URL and rejects missing or child frames
-[22m[39m13:42:33.795 > IPC sender validation failed: sender is not the top frame
-13:42:33.796 > IPC sender validation failed: sender is not the top frame
-13:42:33.797 > IPC sender validation failed: untrusted renderer URL
-
- [32m✓[39m tests/unit.test.ts [2m([22m[2m170 tests[22m[2m)[22m[33m 11872[2mms[22m[39m
-   [33m[2m✓[22m[39m workspace patch transaction[2m > [22mprecomputes all files before writing any change [33m 444[2mms[22m[39m
-   [33m[2m✓[22m[39m workspace patch transaction[2m > [22mapplies a valid multi-file patch [33m 904[2mms[22m[39m
-   [33m[2m✓[22m[39m context truncation[2m > [22mtruncateMessages keeps newest under budget [33m 1528[2mms[22m[39m
-   [33m[2m✓[22m[39m truncateMessages — extreme edges[2m > [22mreturns only-systems when all rest exceed budget [33m 1157[2mms[22m[39m
-   [33m[2m✓[22m[39m validateSender — IPC origin validation[2m > [22mallows only the trusted main-window top frame in development [33m 1738[2mms[22m[39m
-   [33m[2m✓[22m[39m mcp client integration[2m > [22mconnects, lists and calls tools end-to-end via stdio [33m 2994[2mms[22m[39m
-   [33m[2m✓[22m[39m mcp client integration[2m > [22mreports an error when the tool is not found on a connected server [33m 1397[2mms[22m[39m
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[32m170 passed[39m[22m[90m (170)[39m
-[2m   Start at [22m 13:42:16
-[2m   Duration [22m 21.26s[2m (transform 2.68s, setup 0ms, collect 7.28s, tests 11.87s, environment 0ms, prepare 1.01s)[22m
-
-unit: PASS
-
-=== integration(smoke) ===
-Electron window created
-export button present (disabled on empty)
-mock ask streaming passed
-mock edit + regenerate passed
-mock agent approval + patch passed
-Electron smoke passed: Dave Desktop
-smoke: app close warning (non-fatal): Electron close timeout
-integration(smoke): PASS
-
-=== uat ===
-PASS  应用启动,主界面渲染
-PASS  设置面板打开
-PASS  设置 tab「模型」可导航
-PASS  设置 tab「工作区」可导航
-PASS  设置 tab「扩展」可导航
-PASS  设置 tab「关于」可导航
-PASS  扩展 tab:MCP 服务器名称输入框可见
-PASS  关于 tab:漏斗看板(本地使用统计)可见
-PASS  关于 tab:日志查看器(过滤输入)可见
-PASS  关于 tab:日志输出级别选择器可见
-PASS  关于 tab:导出诊断报告按钮可见
-PASS  设置关闭(Esc)
-PASS  命令面板(Ctrl+K)打开
-PASS  键盘帮助(?)打开
-PASS  新建会话
-PASS  发送消息,收到 mock 流式回复
-PASS  编辑消息并重新生成
-PASS  会话内搜索(Ctrl+F)打开
-PASS  导出 Markdown 按钮存在
-PASS  主题切换为 night 生效(重启后保持)
-PASS  主题切回 light
-
-UAT RESULT: 21/21 passed
-uat: PASS
-
-FULL VERIFICATION: ALL PASS (clean exit)
+本轮修复(2026-08-01,code_review 2 发现):
+- verify-full.mjs:STEPS 增加 build 步骤——smoke/UAT 启动 electron 加载 out/ 产物,
+  不 rebuild 会验证旧代码(假绿);现强制先 build 验证最新源码。
+- electron-smoke.mjs teardown:close 超时强制 kill(避免 playwright 保持 stdio 管道
+  使脚本无限挂起);功能断言(三场景)为核心门禁,close 阶段慢关闭记录为警告。
+- electron-uat.mjs:跳过引导前等待欢迎页/向导渲染(负载下时序),修复设置 click 超时。

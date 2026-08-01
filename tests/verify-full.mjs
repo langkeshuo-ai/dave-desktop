@@ -6,20 +6,24 @@ import { execSync } from "node:child_process"
 import process from "node:process"
 
 const STEPS = [
-  { name: "unit", cmd: "npm test" },
-  { name: "integration(smoke)", cmd: "node tests/electron-smoke.mjs" },
-  { name: "uat", cmd: "node tests/electron-uat.mjs" },
+  // 必须先 build:smoke/UAT 启动 electron 加载 out/ 产物,不 rebuild 会验证旧代码(假绿)
+  { name: "build", cmd: "npm run build", timeout: 300_000 },
+  { name: "unit", cmd: "npm test", timeout: 240_000 },
+  { name: "integration(smoke)", cmd: "node tests/electron-smoke.mjs", timeout: 240_000 },
+  { name: "uat", cmd: "node tests/electron-uat.mjs", timeout: 240_000 },
 ]
 
 let failed = false
 for (const s of STEPS) {
   process.stdout.write(`\n=== ${s.name} ===\n`)
   try {
-    execSync(s.cmd, { stdio: "inherit", timeout: 240_000 })
+    execSync(s.cmd, { stdio: "inherit", timeout: s.timeout ?? 240_000 })
     process.stdout.write(`${s.name}: PASS\n`)
   } catch (err) {
     failed = true
-    process.stdout.write(`${s.name}: FAIL (exit ${err.status ?? "unknown"})\n`)
+    const signal = err.signal ? ` signal=${err.signal}` : ""
+    const timedOut = err.killed ? " (timed out)" : ""
+    process.stdout.write(`${s.name}: FAIL (exit ${err.status ?? "unknown"}${timedOut}${signal})\n`)
   }
 }
 
