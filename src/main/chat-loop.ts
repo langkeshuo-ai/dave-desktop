@@ -27,14 +27,10 @@ import { isMockMode, mockReplyText, buildMockAgentScript } from "./mock-provider
 import { mcpManager } from "./mcp-client"
 import { isMcpToolName } from "../shared/mcp"
 import {
-  findSkill,
   isSkillToolName,
   parseSkills,
-  skillAppliedContent,
-  skillDeniedContent,
-  skillNotFoundContent,
+  skillToolCallOutcome,
   skillToolDefs,
-  splitSkillToolName,
   type SkillDefinition,
 } from "../shared/skills"
 import { getTool, needsApproval, toolDefsFor, type ToolResult } from "./agent"
@@ -359,14 +355,15 @@ async function runToolCalls(
     if (!tool && isSkillToolName(tc.function.name)) {
       // 技能内容为任意 prompt 文本(潜在提示注入载体),任何模式启用前必须人工确认;
       // 与 MCP 分支一致的无条件审批策略(mutates:false 也不跳过)。
-      const skillName = splitSkillToolName(tc.function.name)
-      const skill = skillName ? findSkill(readSkillsFromStore(), skillName) : undefined
-      if (!skill) {
+      // 决策逻辑抽为纯函数 skillToolCallOutcome(可单测);未知技能不触发审批。
+      const skills = readSkillsFromStore()
+      const pre = skillToolCallOutcome(tc.function.name, skills, false)
+      if (pre.kind === "not-found") {
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
           name: tc.function.name,
-          content: skillNotFoundContent(tc.function.name),
+          content: pre.content,
         })
         continue
       }
@@ -378,11 +375,12 @@ async function runToolCalls(
         isShell: false,
       })
       const approved = await sessionRuntime.waitApproval(sessionId)
+      const final = skillToolCallOutcome(tc.function.name, skills, approved)
       messages.push({
         role: "tool",
         tool_call_id: tc.id,
         name: tc.function.name,
-        content: clampToolOutput(approved ? skillAppliedContent(skill) : skillDeniedContent()),
+        content: clampToolOutput(final.content),
       })
       continue
     }

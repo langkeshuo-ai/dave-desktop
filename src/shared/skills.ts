@@ -16,6 +16,8 @@ export interface SkillDefinition {
 export const SKILL_NAME_RE = /^[a-zA-Z0-9_-]{1,48}$/
 export const SKILL_DESC_MAX = 200
 export const SKILL_CONTENT_MAX = 2_000
+/** 技能数量上限(与 store-set 的大小上限配合,防 store 膨胀)。 */
+export const SKILL_MAX_COUNT = 50
 
 /** 校验单个技能;非法返回 null。 */
 export function validateSkill(raw: unknown): SkillDefinition | null {
@@ -90,4 +92,28 @@ export function skillAppliedContent(skill: SkillDefinition): string {
 }
 export function skillDeniedContent(): string {
   return "用户拒绝了此操作（或会话已中止）"
+}
+
+/** 技能工具调用决策结果(纯函数,可单测;覆盖未知/拒绝/通过三条决策路径)。 */
+export type SkillToolOutcome =
+  | { kind: "not-found"; content: string }
+  | { kind: "denied"; content: string }
+  | { kind: "applied"; content: string }
+
+/**
+ * 决策:按全名解析技能,未找到 → not-found(审批无关);找到 → 由 approved 决定
+ * denied/applied。chat-loop runToolCalls 技能分支两阶段使用:
+ * 先以 approved=false 检查 not-found(不触发审批),审批后以真实 approved 生成最终内容。
+ */
+export function skillToolCallOutcome(
+  name: string,
+  skills: SkillDefinition[],
+  approved: boolean,
+): SkillToolOutcome {
+  const skillName = splitSkillToolName(name)
+  const skill = skillName ? findSkill(skills, skillName) : undefined
+  if (!skill) return { kind: "not-found", content: skillNotFoundContent(name) }
+  return approved
+    ? { kind: "applied", content: skillAppliedContent(skill) }
+    : { kind: "denied", content: skillDeniedContent() }
 }

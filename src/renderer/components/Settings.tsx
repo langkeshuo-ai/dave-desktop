@@ -915,9 +915,14 @@ function SkillsPanel() {
   }, [refresh])
 
   const save = useCallback(async () => {
-    const ok = await window.dave.skills.save(skills)
-    setStatus(ok ? "已保存" : "保存失败")
-  }, [skills])
+    try {
+      const ok = await window.dave.skills.save(skills)
+      safeSet(() => setStatus(ok ? "已保存" : "保存失败"))
+    } catch {
+      // IPC 失败(磁盘错误等):明确告知用户,避免静默
+      safeSet(() => setStatus("保存失败"))
+    }
+  }, [skills, safeSet])
 
   const addDraft = () => {
     const s = validateSkill(draft)

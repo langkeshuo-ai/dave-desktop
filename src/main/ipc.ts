@@ -29,7 +29,7 @@ import { exportDiagnostics } from "./diagnostics"
 import { mcpManager } from "./mcp-client"
 import { parseMcpServers } from "../shared/mcp"
 import { isValidLogLevel } from "../shared/log-level"
-import { parseSkills } from "../shared/skills"
+import { parseSkills, SKILL_MAX_COUNT } from "../shared/skills"
 import { createRateLimiter, SENSITIVE_IPC_LIMIT } from "../shared/rate-limit"
 import { sanitizeMessagesForReplace } from "../shared/session-edit"
 import { getSecure, setSecure } from "./store"
@@ -369,12 +369,26 @@ export function registerIpcHandlers(deps: Deps) {
   // ---- Skills(用户自定义预置技能,0.3.0 M1 第一步) ----------------
   ipcMain.handle("skills-list", (event) => {
     if (!validateSender(event)) return []
-    const raw = getStore().get("skills") as string | undefined
-    return raw ? parseSkills(JSON.parse(raw) as unknown) : []
+    try {
+      const raw = getStore().get("skills") as string | undefined
+      return raw ? parseSkills(JSON.parse(raw) as unknown) : []
+    } catch {
+      // store 值损坏(非法 JSON):静默返回空,与 chat-loop readSkillsFromStore 一致
+      return []
+    }
   })
   ipcMain.handle("skills-set", (event, raw: unknown) => {
     if (!validateSender(event)) return false
-    getStore().set("skills", JSON.stringify(parseSkills(raw)))
+    // 写路径防御与 store-set 对齐:限流 + 总大小上限 + 数量上限,防注入渲染端撑爆 store
+    if (!storeSetLimiter.allow()) {
+      log.warn("IPC rate limited: skills-set")
+      return false
+    }
+    const list = parseSkills(raw)
+    if (list.length > SKILL_MAX_COUNT) return false
+    const serialized = JSON.stringify(list)
+    if (serialized.length > STORE_VALUE_MAX) return false
+    getStore().set("skills", serialized)
     return true
   })
 

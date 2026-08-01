@@ -85,6 +85,7 @@ import {
   skillAppliedContent,
   skillDeniedContent,
   skillNotFoundContent,
+  skillToolCallOutcome,
   skillToolDefs,
   skillToolName,
   splitSkillToolName,
@@ -2200,5 +2201,22 @@ describe("skills helpers", () => {
     expect(skillNotFoundContent("skill__nope")).toBe("错误：未知技能 skill__nope")
     expect(skillDeniedContent()).toBe("用户拒绝了此操作（或会话已中止）")
     expect(skillAppliedContent(skill)).toBe("技能「review」已启用：desc\n\n请审查")
+  })
+
+  it("skillToolCallOutcome covers not-found / denied / applied decision paths", () => {
+    const skills = [{ name: "review", description: "desc", content: "请审查" }]
+    // not-found 与审批无关(两阶段检查的第一阶段,不触发审批)
+    expect(skillToolCallOutcome("skill__missing", skills, false).kind).toBe("not-found")
+    expect(skillToolCallOutcome("skill__missing", skills, true).kind).toBe("not-found")
+    // denied(审批拒绝)
+    expect(skillToolCallOutcome("skill__review", skills, false)).toEqual({
+      kind: "denied",
+      content: "用户拒绝了此操作（或会话已中止）",
+    })
+    // applied(审批通过,技能内容注入)
+    const applied = skillToolCallOutcome("skill__review", skills, true)
+    expect(applied.kind).toBe("applied")
+    expect(applied.content).toContain("技能「review」已启用")
+    expect(applied.content).toContain("请审查")
   })
 })
