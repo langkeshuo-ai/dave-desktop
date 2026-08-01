@@ -67,7 +67,7 @@ export function Sidebar({
         <span>会话</span>
         <button
           onClick={onNewSession}
-          className="btn-icon-muted"
+          className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] transition-colors"
           title="新建会话"
           aria-label="新建会话"
         >
@@ -194,7 +194,7 @@ export function Sidebar({
                       <div className="title text-xs" title="双击重命名">
                         {session.title}
                       </div>
-                      <div className="time flex items-center gap-1">
+                      <div className="time flex items-center gap-1 ml-auto">
                         <Clock size={9} />
                         {formatDate(session.updatedAt)}
                       </div>

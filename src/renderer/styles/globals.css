@@ -1080,6 +1080,8 @@ pre,
   display: flex;
   gap: 0.75rem;
   padding: 0.875rem 1.25rem;
+  max-width: 860px;
+  margin: 0 auto;
 }
 .msg-row.user {
   flex-direction: row-reverse;
@@ -1171,7 +1173,7 @@ pre,
 .msg-body {
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 42px);
+  max-width: 720px;
 }
 .msg-body.user {
   display: flex;
@@ -1190,8 +1192,11 @@ pre,
   box-shadow: var(--shadow-sm);
 }
 .msg-bubble.assistant {
-  background: transparent;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
   color: var(--text);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Message action bar */
@@ -1235,9 +1240,9 @@ pre,
 .composer {
   background: var(--surface-input);
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.625rem 0.875rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;

@@ -81,7 +81,7 @@ export function MessageList({
               key="streaming-thinking"
               ref={virtualizer.measureElement}
               data-index={virtualItem.index}
-              className="msg-row px-3 py-2"
+              className="msg-row px-4 py-3"
               style={{
                 position: "absolute",
                 top: 0,
@@ -122,7 +122,7 @@ export function MessageList({
             data-index={virtualItem.index}
             data-search-hit={isHit ? "1" : undefined}
             data-search-active={isActiveHit ? "1" : undefined}
-            className={`px-3 py-2 ${isActiveHit ? "msg-search-active" : isHit ? "msg-search-hit" : ""}`}
+            className={`px-4 py-3 ${isActiveHit ? "msg-search-active" : isHit ? "msg-search-hit" : ""}`}
             style={{
               position: "absolute",
               top: 0,

@@ -109,11 +109,14 @@ export function MessageInput({
         <button
           onClick={handleButtonClick}
           disabled={disabled ? false : !input.trim()}
-          className={`btn text-xs ${canStop ? "btn-outline" : ""}`}
+          className={`shrink-0 flex items-center justify-center transition-colors ${
+            canStop
+              ? "px-2.5 py-1.5 rounded-lg border border-[var(--border-strong)] text-[var(--text-dim)] hover:bg-[var(--bg-active)]"
+              : "w-8 h-8 rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
+          }`}
           aria-label={canStop ? "停止" : "发送"}
         >
-          {canStop ? <Square size={12} /> : <Send size={12} />}
-          {canStop ? "停止" : "发送"}
+          {canStop ? <Square size={12} /> : <Send size={13} />}
         </button>
       </div>
     </div>
