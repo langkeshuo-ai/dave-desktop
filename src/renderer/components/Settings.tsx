@@ -278,7 +278,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
               {tab === "provider" && (
                 <>
                   <div>
-                    <label className="field-label">提供商</label>
+                    <label className="field-label">{t("settings.provider.providerLabel")}</label>
                     <div className="provider-grid">
                       {PROVIDERS.map((p) => (
                         <button
@@ -299,14 +299,19 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
                   <div>
                     <label className="field-label">
-                      {provider === "custom" ? "API Key" : `${currentProvider?.name} API Key`}
+                      {t(
+                        provider === "custom"
+                          ? "settings.provider.apiKeyLabel"
+                          : "settings.provider.apiKeyLabelFor",
+                        { name: currentProvider?.name ?? "" },
+                      )}
                     </label>
                     <div className="relative">
                       <input
                         type={showKey ? "text" : "password"}
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="sk-…"
+                        placeholder={t("settings.provider.skPlaceholder")}
                         className="input w-full !pr-9"
                         autoComplete="off"
                         spellCheck={false}
@@ -315,8 +320,10 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                         type="button"
                         onClick={() => setShowKey(!showKey)}
                         className="absolute right-2 top-1/2 -translate-y-1/2 btn-icon-muted !p-1"
-                        title={showKey ? "隐藏" : "显示"}
-                        aria-label={showKey ? "隐藏密钥" : "显示密钥"}
+                        title={t(showKey ? "settings.provider.hide" : "settings.provider.show")}
+                        aria-label={t(
+                          showKey ? "settings.provider.hideKey" : "settings.provider.showKey",
+                        )}
                       >
                         {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
@@ -325,7 +332,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
                   {currentProvider && currentProvider.models.length > 0 && (
                     <div>
-                      <label className="field-label">模型</label>
+                      <label className="field-label">{t("settings.provider.model")}</label>
                       <select
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
@@ -343,32 +350,34 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                   {provider === "custom" && (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
-                        <label className="field-label">Host</label>
+                        <label className="field-label">{t("settings.provider.hostLabel")}</label>
                         <input
                           type="text"
                           value={customHost}
                           onChange={(e) => setCustomHost(e.target.value)}
-                          placeholder="https://api.openai.com/v1"
+                          placeholder={t("settings.provider.hostPlaceholder")}
                           className="input w-full"
                         />
                       </div>
                       <div>
-                        <label className="field-label">模型名</label>
+                        <label className="field-label">
+                          {t("settings.provider.customModelLabel")}
+                        </label>
                         <input
                           type="text"
                           value={customModel}
                           onChange={(e) => setCustomModel(e.target.value)}
-                          placeholder="gpt-4o"
+                          placeholder={t("settings.provider.modelPlaceholder")}
                           className="input w-full"
                         />
                       </div>
                       <div>
-                        <label className="field-label">备用 API Key</label>
+                        <label className="field-label">{t("settings.provider.fallbackKey")}</label>
                         <input
                           type="password"
                           value={customApiKey}
                           onChange={(e) => setCustomApiKey(e.target.value)}
-                          placeholder="可选"
+                          placeholder={t("settings.provider.optional")}
                           className="input w-full"
                         />
                       </div>
@@ -382,7 +391,11 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                       disabled={probeBusy}
                       onClick={() => void handleProbe()}
                     >
-                      {probeBusy ? "测试中…" : "测试连接"}
+                      {t(
+                        probeBusy
+                          ? "settings.provider.testing"
+                          : "settings.provider.testConnection",
+                      )}
                     </button>
                     {probeMsg && (
                       <span
@@ -407,13 +420,13 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
               {tab === "workspace" && (
                 <>
                   <div>
-                    <label className="field-label">工作区目录</label>
+                    <label className="field-label">{t("settings.workspace.dirLabel")}</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={cwd}
                         onChange={(e) => setCwd(e.target.value)}
-                        placeholder="未设置 · 仅询问模式"
+                        placeholder={t("settings.workspace.dirPlaceholder")}
                         className="input flex-1 min-w-0"
                       />
                       <button
@@ -421,23 +434,23 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                         onClick={() => void pickDirectory()}
                         className="btn btn-outline text-xs shrink-0"
                       >
-                        <FolderOpen size={13} /> 浏览
+                        <FolderOpen size={13} /> {t("settings.workspace.browse")}
                       </button>
                     </div>
-                    <p className="field-hint">suggest / auto / full-auto 下用于读写与 shell。</p>
+                    <p className="field-hint">{t("settings.workspace.hintShell")}</p>
                   </div>
 
                   <div className="settings-row">
                     <div className="settings-row-text">
-                      <div className="settings-row-title">切换会话时清空上下文</div>
-                      <div className="settings-row-desc">避免跨会话污染</div>
+                      <div className="settings-row-title">{t("settings.workspace.clearTitle")}</div>
+                      <div className="settings-row-desc">{t("settings.workspace.clearDesc")}</div>
                     </div>
                     <input
                       type="checkbox"
                       checked={autoclear}
                       onChange={(e) => setAutoclear(e.target.checked)}
                       className="accent-[var(--accent)] w-4 h-4 shrink-0"
-                      aria-label="切换会话时清空上下文"
+                      aria-label={t("settings.workspace.clearTitle")}
                     />
                   </div>
 
@@ -445,8 +458,12 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                     <div className="settings-row-text flex items-start gap-2 min-w-0">
                       <Power size={14} className="text-[var(--text-dim)] shrink-0 mt-0.5" />
                       <div>
-                        <div className="settings-row-title">开机自启</div>
-                        <div className="settings-row-desc">登录系统时启动 Dave</div>
+                        <div className="settings-row-title">
+                          {t("settings.workspace.autostartTitle")}
+                        </div>
+                        <div className="settings-row-desc">
+                          {t("settings.workspace.autostartDesc")}
+                        </div>
                       </div>
                     </div>
                     <button
@@ -476,7 +493,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                       value={locale}
                       onChange={(e) => void handleLocaleChange(e.target.value)}
                       className="input !py-1 !text-[11px] w-32"
-                      aria-label="界面语言"
+                      aria-label={t("settings.language")}
                     >
                       {SUPPORTED_LOCALES.map((l) => (
                         <option key={l} value={l}>
@@ -494,17 +511,17 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                         Dave Desktop
                       </div>
                       <div className="text-[11px] text-[var(--text-dim)] mt-0.5">
-                        {version ? `v${version}` : "版本读取中"} · 本地 Agent
+                        {version ? `v${version}` : t("settings.about.versionLoading")} · 本地 Agent
                       </div>
                     </div>
                   </div>
                   <p className="text-xs text-[var(--text-dim)] leading-relaxed max-w-md">
-                    浅白 Cursor UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff
+                    {t("settings.about.tagline")}
                   </p>
                   <div className="empty-state-meta !mb-0 !justify-start">
-                    <span className="chip">ask / suggest / auto / full-auto</span>
-                    <span className="chip">patch · shell · AST</span>
-                    <span className="chip chip-accent">Electron</span>
+                    <span className="chip">{t("settings.about.chipModes")}</span>
+                    <span className="chip">{t("settings.about.chipTools")}</span>
+                    <span className="chip chip-accent">{t("settings.about.chipElectron")}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -512,7 +529,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                       className="btn btn-outline text-xs"
                       onClick={() => void window.dave.logs.openDir()}
                     >
-                      打开日志目录
+                      {t("settings.about.openLogDir")}
                     </button>
                     <button
                       type="button"
@@ -521,9 +538,13 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
                         void (async () => {
                           try {
                             const path = await window.dave.diagnostics.export()
-                            setDiagMsg(path ? `已导出:${path}` : "导出失败")
+                            setDiagMsg(
+                              path
+                                ? t("settings.about.exported", { path })
+                                : t("settings.about.exportFailed"),
+                            )
                           } catch {
-                            setDiagMsg("导出失败")
+                            setDiagMsg(t("settings.about.exportFailed"))
                           }
                         })()
                       }
@@ -560,16 +581,16 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
               <div className="min-h-[1.25rem]">
                 {saved && (
                   <span className="flex items-center gap-1.5 text-[var(--diff-add)] text-xs">
-                    <Check size={13} /> 已保存
+                    <Check size={13} /> {t("settings.common.saved")}
                   </span>
                 )}
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={onClose} className="btn btn-ghost text-xs">
-                  取消
+                  {t("settings.common.cancel")}
                 </button>
                 <button type="button" onClick={() => void handleSave()} className="btn text-xs">
-                  保存
+                  {t("settings.common.save")}
                 </button>
               </div>
             </div>
@@ -582,6 +603,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
 /** 本地使用统计面板:只读,不上报,清空可一键重置。 */
 function FunnelView() {
+  const { t } = useTranslation()
   const [funnel, setFunnel] = useState<{
     launched: number
     onboarded: number
@@ -606,7 +628,7 @@ function FunnelView() {
   }, [refresh])
 
   const clear = useCallback(async () => {
-    if (!window.confirm("清空全部本地使用统计?不可恢复。")) return
+    if (!window.confirm(t("settings.funnel.clearConfirm"))) return
     setClearing(true)
     try {
       await window.dave.telemetry.clear()
@@ -619,7 +641,7 @@ function FunnelView() {
   if (!funnel) {
     return (
       <button type="button" className="btn btn-ghost text-xs" onClick={() => void refresh()}>
-        查看本地统计
+        {t("settings.funnel.viewStats")}
       </button>
     )
   }
@@ -630,7 +652,7 @@ function FunnelView() {
     <div className="w-full mt-2 p-3 bg-[var(--bg-sunk)] border border-[var(--border)] rounded-md">
       <div className="flex items-center justify-between mb-2">
         <div className="text-[11px] font-medium text-[var(--text-strong)]">
-          本地使用统计(只存本机,不上报)
+          {t("settings.funnel.title")}
         </div>
         <button
           type="button"
@@ -638,27 +660,27 @@ function FunnelView() {
           onClick={() => void clear()}
           disabled={clearing}
         >
-          {clearing ? "清空中…" : "清空"}
+          {t(clearing ? "settings.funnel.clearing" : "settings.funnel.clear")}
         </button>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
         <div>
-          <div className="text-[var(--text-dim)]">启动</div>
+          <div className="text-[var(--text-dim)]">{t("settings.funnel.launched")}</div>
           <div className="text-[var(--text-strong)] font-medium">{funnel.launched}</div>
         </div>
         <div>
-          <div className="text-[var(--text-dim)]">完成引导</div>
+          <div className="text-[var(--text-dim)]">{t("settings.funnel.onboarded")}</div>
           <div className="text-[var(--text-strong)] font-medium">
             {funnel.onboarded}
             <span className="text-[var(--text-faint)] ml-1">({pct(funnel.rates.onboardRate)})</span>
           </div>
         </div>
         <div>
-          <div className="text-[var(--text-dim)]">工作区就绪</div>
+          <div className="text-[var(--text-dim)]">{t("settings.funnel.workspaceReady")}</div>
           <div className="text-[var(--text-strong)] font-medium">{funnel.workspaceReady}</div>
         </div>
         <div>
-          <div className="text-[var(--text-dim)]">首问</div>
+          <div className="text-[var(--text-dim)]">{t("settings.funnel.firstMessage")}</div>
           <div className="text-[var(--text-strong)] font-medium">
             {funnel.firstMessage}
             <span className="text-[var(--text-faint)] ml-1">
@@ -667,7 +689,7 @@ function FunnelView() {
           </div>
         </div>
         <div>
-          <div className="text-[var(--text-dim)]">7 日回访</div>
+          <div className="text-[var(--text-dim)]">{t("settings.funnel.sevenDay")}</div>
           <div className="text-[var(--text-strong)] font-medium">
             {funnel.sevenDayRetained}
             <span className="text-[var(--text-faint)] ml-1">
@@ -682,6 +704,7 @@ function FunnelView() {
 
 /** MCP 服务器配置面板:服务器增删 + 保存重连 + 已发现工具展示。 */
 function McpPanel() {
+  const { t } = useTranslation()
   const safeSet = useMounted()
   const [servers, setServers] = useState<McpServerConfig[]>([])
   const [tools, setTools] = useState<McpDiscoveredTool[]>([])
@@ -707,36 +730,37 @@ function McpPanel() {
   }, [refresh])
 
   const save = useCallback(async () => {
-    setStatus("连接中…")
+    setStatus(t("settings.extensions.connecting"))
     const ok = await window.dave.mcp.saveServers(servers)
     await refresh()
-    setStatus(ok ? "已保存并重连" : "保存失败")
+    setStatus(ok ? t("settings.extensions.savedReconnected") : t("settings.extensions.saveFailed"))
   }, [servers, refresh])
 
   const addDraft = () => {
     if (!draft.name.trim() || !draft.command.trim()) {
-      setStatus("名称与命令必填")
+      setStatus(t("settings.extensions.nameCommandRequired"))
       return
     }
     const cfg = validateMcpServerConfig(draft)
     if (!cfg) {
-      setStatus("配置无效(名称限字母数字-_ ,≤48 字符)")
+      setStatus(t("settings.extensions.configInvalid"))
       return
     }
     setServers([...servers, cfg])
     setDraft({ name: "", command: "", args: [] })
-    setStatus("已加入列表,点击「保存并连接」生效")
+    setStatus(t("settings.extensions.addedToList"))
   }
 
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
-        通过 MCP(Model Context Protocol)连接外部工具服务器(如 filesystem / git),
-        发现到的工具会自动并入 Agent 工具集,调用前一律需批准。协议:stdio。
+        {t("settings.extensions.desc")}
       </p>
 
       {servers.length === 0 ? (
-        <div className="text-[11px] text-[var(--text-faint)]">尚未配置 MCP 服务器</div>
+        <div className="text-[11px] text-[var(--text-faint)]">
+          {t("settings.extensions.noServers")}
+        </div>
       ) : (
         <div className="space-y-1.5">
           {servers.map((s) => (
@@ -748,7 +772,7 @@ function McpPanel() {
               <button
                 type="button"
                 className="btn-icon-muted !p-1 ml-auto"
-                aria-label={`删除 ${s.name}`}
+                aria-label={t("settings.extensions.deleteServer", { name: s.name })}
                 onClick={() => setServers(servers.filter((x) => x.name !== s.name))}
               >
                 <X size={12} />
@@ -761,49 +785,51 @@ function McpPanel() {
       <div className="space-y-1.5">
         <input
           className="input !py-1 !text-[11px]"
-          placeholder="服务器名称(如 filesystem)"
-          aria-label="MCP 服务器名称"
+          placeholder={t("settings.extensions.namePlaceholder")}
+          aria-label={t("settings.extensions.nameAria")}
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         />
         <input
           className="input !py-1 !text-[11px] w-full"
-          placeholder="启动命令(如 npx)"
-          aria-label="MCP 启动命令"
+          placeholder={t("settings.extensions.commandPlaceholder")}
+          aria-label={t("settings.extensions.commandAria")}
           value={draft.command}
           onChange={(e) => setDraft({ ...draft, command: e.target.value })}
         />
         <input
           className="input !py-1 !text-[11px] w-full"
-          placeholder="参数(空格分隔,如 -y @modelcontextprotocol/server-filesystem C:/workspace)"
-          aria-label="MCP 命令参数"
+          placeholder={t("settings.extensions.argsPlaceholder")}
+          aria-label={t("settings.extensions.argsAria")}
           value={draft.args.join(" ")}
           onChange={(e) =>
             setDraft({ ...draft, args: e.target.value.split(/\s+/).filter(Boolean) })
           }
         />
         <button type="button" className="btn btn-outline !py-1 text-[11px]" onClick={addDraft}>
-          加入列表
+          {t("settings.extensions.addToList")}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
         <button type="button" className="btn !py-1 text-[11px]" onClick={() => void save()}>
-          保存并连接
+          {t("settings.extensions.saveAndConnect")}
         </button>
         <button
           type="button"
           className="btn btn-ghost !py-1 text-[11px]"
           onClick={() => void refresh()}
         >
-          刷新工具
+          {t("settings.extensions.refreshTools")}
         </button>
         {status && <span className="text-[10px] text-[var(--text-dim)]">{status}</span>}
       </div>
 
       {tools.length > 0 && (
         <div className="bg-[var(--bg-sunk)] border border-[var(--border)] rounded p-2 text-[10.5px] max-h-32 overflow-y-auto">
-          <div className="text-[var(--text-dim)] mb-1">已发现工具({tools.length})</div>
+          <div className="text-[var(--text-dim)] mb-1">
+            {t("settings.extensions.discoveredTools", { count: tools.length })}
+          </div>
           {tools.map((t) => (
             <div key={t.fullName} className="truncate">
               <span className="text-[var(--text-strong)]">{t.fullName}</span>
@@ -820,6 +846,7 @@ function McpPanel() {
 
 /** 结构化事件日志查看器(只读):关键字/级别过滤 + 刷新,数据来自 logs-read-structured IPC。 */
 function LogViewer() {
+  const { t } = useTranslation()
   const safeSet = useMounted()
   const [events, setEvents] = useState<StructuredEvent[]>([])
   const [filter, setFilter] = useState("")
@@ -880,7 +907,7 @@ function LogViewer() {
           onChange={(e) => void changeLevel(e.target.value as "debug" | "info" | "warn" | "error")}
           className="input !py-1 !text-[11px] w-24"
           aria-label="日志输出级别"
-          title="调整 electron-log 输出级别(文件 + 控制台)"
+          title={t("settings.log.levelTitle")}
         >
           <option value="debug">debug</option>
           <option value="info">info</option>
@@ -897,7 +924,7 @@ function LogViewer() {
       </div>
       <div className="bg-[var(--bg)] border border-[var(--border)] rounded p-2 max-h-40 overflow-y-auto text-[10.5px] font-mono space-y-1">
         {visible.length === 0 ? (
-          <div className="text-[var(--text-faint)]">暂无事件(写入 userData/logs/events.jsonl)</div>
+          <div className="text-[var(--text-faint)]">{t("settings.log.none")}</div>
         ) : (
           visible.map((e, i) => (
             <div key={i} className="flex items-baseline gap-2 min-w-0">
@@ -926,6 +953,7 @@ function LogViewer() {
 
 /** 自定义预置技能面板(0.3.0 M1 第一步):增删 + 复制内容取用。 */
 function SkillsPanel() {
+  const { t } = useTranslation()
   const safeSet = useMounted()
   const [skills, setSkills] = useState<SkillDefinition[]>([])
   const [draft, setDraft] = useState<SkillDefinition>({ name: "", description: "", content: "" })
@@ -947,32 +975,32 @@ function SkillsPanel() {
   const save = useCallback(async () => {
     try {
       const ok = await window.dave.skills.save(skills)
-      safeSet(() => setStatus(ok ? "已保存" : "保存失败"))
+      safeSet(() => setStatus(ok ? t("settings.skills.saved") : t("settings.skills.saveFailed")))
     } catch {
       // IPC 失败(磁盘错误等):明确告知用户,避免静默
-      safeSet(() => setStatus("保存失败"))
+      safeSet(() => setStatus(t("settings.skills.saveFailed")))
     }
   }, [skills, safeSet])
 
   const addDraft = () => {
     const s = validateSkill(draft)
     if (!s) {
-      setStatus("配置无效(名称限字母数字-_ ≤48;内容必填 ≤2000 字符)")
+      setStatus(t("settings.skills.invalid"))
       return
     }
     if (skills.some((x) => x.name === s.name)) {
-      setStatus("技能名已存在")
+      setStatus(t("settings.skills.exists"))
       return
     }
     setSkills([...skills, s])
     setDraft({ name: "", description: "", content: "" })
-    setStatus("已加入列表,点击「保存技能」生效")
+    setStatus(t("settings.skills.added"))
   }
 
   const copy = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content)
-      setStatus("已复制到剪贴板")
+      setStatus(t("settings.skills.copied"))
     } catch {
       /* file:// 下剪贴板可能受限,静默 */
     }
@@ -981,8 +1009,7 @@ function SkillsPanel() {
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-[var(--text-dim)] leading-relaxed">
-        自定义预置技能:命名 prompt(名称/描述/内容),管理后点击复制图标取用。 0.3.0 完整版将注册到
-        Agent 工具循环。
+        {t("settings.skills.desc")}
       </p>
 
       {skills.length === 0 ? (
@@ -996,7 +1023,7 @@ function SkillsPanel() {
               <button
                 type="button"
                 className="btn-icon-muted !p-1"
-                aria-label={`复制 ${s.name}`}
+                aria-label={t("settings.skills.copy", { name: s.name })}
                 onClick={() => void copy(s.content)}
               >
                 <Copy size={11} />
@@ -1004,7 +1031,7 @@ function SkillsPanel() {
               <button
                 type="button"
                 className="btn-icon-muted !p-1 ml-auto"
-                aria-label={`删除 ${s.name}`}
+                aria-label={t("settings.skills.delete", { name: s.name })}
                 onClick={() => setSkills(skills.filter((x) => x.name !== s.name))}
               >
                 <X size={12} />
@@ -1017,33 +1044,33 @@ function SkillsPanel() {
       <div className="space-y-1.5">
         <input
           className="input !py-1 !text-[11px]"
-          placeholder="技能名称(如 review-code)"
+          placeholder={t("settings.skills.namePlaceholder")}
           aria-label="技能名称"
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         />
         <input
           className="input !py-1 !text-[11px] w-full"
-          placeholder="描述(可选)"
+          placeholder={t("settings.skills.descPlaceholder")}
           aria-label="技能描述"
           value={draft.description}
           onChange={(e) => setDraft({ ...draft, description: e.target.value })}
         />
         <textarea
           className="input !py-1 !text-[11px] w-full min-h-[4rem] resize-y"
-          placeholder="技能内容(prompt,≤2000 字符)"
+          placeholder={t("settings.skills.contentPlaceholder")}
           aria-label="技能内容"
           value={draft.content}
           onChange={(e) => setDraft({ ...draft, content: e.target.value })}
         />
         <button type="button" className="btn btn-outline !py-1 text-[11px]" onClick={addDraft}>
-          加入列表
+          {t("settings.skills.addToList")}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
         <button type="button" className="btn !py-1 text-[11px]" onClick={() => void save()}>
-          保存技能
+          {t("settings.skills.save")}
         </button>
         {status && <span className="text-[10px] text-[var(--text-dim)]">{status}</span>}
       </div>

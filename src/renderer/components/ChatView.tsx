@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { MessageList } from "./MessageList"
 import { MessageInput } from "./MessageInput"
@@ -66,6 +67,7 @@ export function ChatView({
   insertSnippet,
   onInsertConsumed,
 }: ChatViewProps) {
+  const { t } = useTranslation()
   const scrollRef = useRef<HTMLDivElement>(null)
   const modeMenuRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -394,12 +396,12 @@ export function ChatView({
           <span title={`约 ${tokenCount} tokens`}>
             ~{tokenCount < 1000 ? tokenCount : `${Math.round(tokenCount / 1000)}k`} tok
           </span>
-          <span>{messages.length} 条</span>
+          <span>{t("settings.chat.messageCount", { count: messages.length })}</span>
           <button
             type="button"
             className={`btn-icon-muted !p-1 ${searchOpen ? "text-[var(--accent)]" : ""}`}
-            title="搜索消息 (Ctrl+F)"
-            aria-label="搜索消息"
+            title={t("settings.chat.searchMessages")}
+            aria-label={t("settings.chat.searchMessages")}
             aria-pressed={searchOpen}
             onClick={() => (searchOpen ? closeSearch() : openSearch())}
           >
@@ -419,8 +421,8 @@ export function ChatView({
           <button
             type="button"
             className="btn-icon-muted !p-1"
-            title="导出 Markdown"
-            aria-label="导出 Markdown"
+            title={t("settings.chat.exportMarkdown")}
+            aria-label={t("settings.chat.exportMarkdown")}
             disabled={messages.length === 0}
             onClick={handleExport}
           >
@@ -506,8 +508,8 @@ export function ChatView({
           <button
             type="button"
             className="btn-icon-muted !p-1"
-            title="上一处 (Shift+Enter)"
-            aria-label="上一处匹配"
+            title={t("settings.chat.prevOccurrence")}
+            aria-label={t("settings.chat.prevOccurrence")}
             disabled={searchHits.length === 0}
             onClick={() => goToSearchMatch(-1)}
           >
@@ -516,8 +518,8 @@ export function ChatView({
           <button
             type="button"
             className="btn-icon-muted !p-1"
-            title="下一处 (Enter)"
-            aria-label="下一处匹配"
+            title={t("settings.chat.nextOccurrence")}
+            aria-label={t("settings.chat.nextOccurrence")}
             disabled={searchHits.length === 0}
             onClick={() => goToSearchMatch(1)}
           >
@@ -549,10 +551,10 @@ export function ChatView({
                 {modeDesc[mode]}
               </p>
               <div className="empty-state-meta">
-                <span className="chip">Enter 发送</span>
+                <span className="chip">{t("settings.chat.enterSend")}</span>
                 <span className="chip">@path</span>
-                <span className="chip">Cmd+K 命令</span>
-                <span className="chip">? 快捷键</span>
+                <span className="chip">{t("settings.chat.cmdK")}</span>
+                <span className="chip">{t("settings.chat.keyboardHelp")}</span>
                 <span className="chip">
                   ~{Math.round(DEFAULT_CONTEXT_TOKEN_BUDGET / 1000)}k 上下文
                 </span>

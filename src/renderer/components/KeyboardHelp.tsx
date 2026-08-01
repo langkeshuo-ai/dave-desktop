@@ -1,30 +1,31 @@
 import { useEffect } from "react"
 import { X, Keyboard } from "lucide-react"
 import { useFocusRestore } from "../lib/useFocusRestore"
+import { useTranslation } from "react-i18next"
 
 interface Shortcut {
   keys: string[]
-  desc: string
+  descKey: string
 }
 
 const SHORTCUTS: Shortcut[] = [
-  { keys: ["Ctrl", "K"], desc: "打开命令面板" },
-  { keys: ["Ctrl", "N"], desc: "新建会话" },
-  { keys: ["Ctrl", ","], desc: "打开设置" },
-  { keys: ["Ctrl", "1-9"], desc: "跳转到第 N 个会话" },
-  { keys: ["Ctrl", "F"], desc: "搜索当前会话消息" },
-  { keys: ["Ctrl", "↑"], desc: "上一条 assistant 消息" },
-  { keys: ["Ctrl", "↓"], desc: "下一条 assistant 消息" },
-  { keys: ["Alt", "↑"], desc: "上一个会话(全局)" },
-  { keys: ["Alt", "↓"], desc: "下一个会话(全局)" },
-  { keys: ["↑", "↓"], desc: "在会话列表中切换(侧栏聚焦时)" },
-  { keys: ["Enter", "/", "Space"], desc: "选中当前会话(侧栏聚焦时)" },
-  { keys: ["Ctrl", "Delete"], desc: "删除当前会话(侧栏聚焦时)" },
-  { keys: ["Ctrl", "Enter"], desc: "在批准对话框中确认" },
-  { keys: ["Esc"], desc: "关闭弹窗；无弹窗时停止生成" },
-  { keys: ["Enter"], desc: "发送消息" },
-  { keys: ["Shift", "Enter"], desc: "在消息框中换行" },
-  { keys: ["?"], desc: "显示本快捷键帮助" },
+  { keys: ["Ctrl", "K"], descKey: "openPalette" },
+  { keys: ["Ctrl", "N"], descKey: "newSession" },
+  { keys: ["Ctrl", ","], descKey: "openSettings" },
+  { keys: ["Ctrl", "1-9"], descKey: "jumpToSession" },
+  { keys: ["Ctrl", "F"], descKey: "searchMessages" },
+  { keys: ["Ctrl", "↑"], descKey: "prevAssistant" },
+  { keys: ["Ctrl", "↓"], descKey: "nextAssistant" },
+  { keys: ["Alt", "↑"], descKey: "prevSession" },
+  { keys: ["Alt", "↓"], descKey: "nextSession" },
+  { keys: ["↑", "↓"], descKey: "navigateSidebar" },
+  { keys: ["Enter", "/", "Space"], descKey: "selectSession" },
+  { keys: ["Ctrl", "Delete"], descKey: "deleteSession" },
+  { keys: ["Ctrl", "Enter"], descKey: "confirmApproval" },
+  { keys: ["Esc"], descKey: "escClose" },
+  { keys: ["Enter"], descKey: "sendMessage" },
+  { keys: ["Shift", "Enter"], descKey: "newline" },
+  { keys: ["?"], descKey: "showHelp" },
 ]
 
 interface KeyboardHelpProps {
@@ -34,6 +35,7 @@ interface KeyboardHelpProps {
 
 /** 键盘帮助面板:`?` 键(非输入态时)触发。焦点恢复模式与 CommandPalette 一致。 */
 export function KeyboardHelp({ open, onClose }: KeyboardHelpProps) {
+  const { t } = useTranslation()
   const panelRef = useFocusRestore<HTMLDivElement>(open)
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function KeyboardHelp({ open, onClose }: KeyboardHelpProps) {
       className="cmdk-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="键盘快捷键"
+      aria-label={t("settings.help.title")}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -63,14 +65,14 @@ export function KeyboardHelp({ open, onClose }: KeyboardHelpProps) {
         <div className="flex items-center justify-between px-3.5 py-2 border-b border-[var(--border)]">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Keyboard size={14} />
-            键盘快捷键
+            {t("settings.help.title")}
           </div>
           <button
             type="button"
             onClick={onClose}
             className="btn-icon-muted"
-            title="关闭"
-            aria-label="关闭"
+            title={t("settings.help.close")}
+            aria-label={t("settings.help.close")}
           >
             <X size={14} />
           </button>
@@ -78,7 +80,7 @@ export function KeyboardHelp({ open, onClose }: KeyboardHelpProps) {
         <div className="cmdk-list">
           {SHORTCUTS.map((s, i) => (
             <div key={i} className="cmdk-item" style={{ cursor: "default" }}>
-              <span className="flex-1">{s.desc}</span>
+              <span className="flex-1">{t(`settings.help.shortcuts.${s.descKey}`)}</span>
               <span className="flex items-center gap-1">
                 {s.keys.map((k, ki) => (
                   <kbd

@@ -35,11 +35,13 @@
 - **验证标准**:单测 ≥5 条;verify 全绿;UAT 追加"已安装 skills 展示"步骤
 
 ### M2:i18n(P1,约 1-2 周,可并行 M1)
+
 - ✅ **第一步(基础设施)已实施(2026-08-01)**:接入 i18next 26.3.6 + react-i18next 17(MIT/活跃);
   `shared/locale.ts`(SUPPORTED_LOCALES zh-CN/en + validateLocale);renderer i18n 基础设施
   (initI18n/changeLocale + zh-CN/en 资源);Settings 界面语言选择(持久化 store locale,重启保持);
   设置标题/选项卡/sectionTitle 迁移至 t();单测 2 条(172 全过)、build 42.68s 正常
-- ⏳ **剩余(后续)**:全量用户可见文案抽取(en 完整翻译);脚本扫描硬编码中文;UAT 追加语言切换步骤
+- ✅ **第二步(核心组件文案迁移)已实施(2026-08-01)**:Settings 全量(模型/工作区/扩展/MCP/技能/漏斗/日志/诊断/通用按钮)、ChatView/MessageInput(状态栏/搜索/导出/输入提示)、KeyboardHelp(17 条快捷键 descKey 化)迁移至 t(),en 完整翻译;`scripts/scan-hardcoded-zh.mjs` 扫描脚本(报告剩余候选:App.tsx 状态消息/模式标签等);UAT 追加语言切换步骤(en 标题变 Settings 再切回)
+- ⏳ **剩余(后续)**:App.tsx 状态消息/模式标签等剩余文案抽取;UAT 全量运行验证
 - **验证标准**:语言切换即时生效且持久化(UAT 步骤);全部用户可见文案经 t() 提取(脚本扫描硬编码中文);verify 全绿
 
 ### M3:跨平台(P1,需机器)

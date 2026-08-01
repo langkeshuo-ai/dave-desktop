@@ -65,6 +65,14 @@ try {
     step(`设置 tab「${tab}」可导航`, true)
   }
 
+  // 1.5 语言切换:i18n 集成验证(en 标题变 Settings,再切回 zh-CN;aria-label 随语言变)
+  await settings.getByLabel("界面语言").selectOption("en")
+  await settings.getByText("Settings", { exact: true }).waitFor({ timeout: 10_000 })
+  step("语言切换:设置标题变英文(Settings)", true)
+  await settings.getByLabel("Language").selectOption("zh-CN")
+  await settings.getByText("设置", { exact: true }).waitFor({ timeout: 10_000 })
+  step("语言切换:切回中文(设置)", true)
+
   // 2. 扩展 tab:MCP 配置面板可见(用 aria-label 定位)
   await settings.getByRole("button", { name: "扩展" }).click()
   await delay(250)

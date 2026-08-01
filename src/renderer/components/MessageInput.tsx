@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Send, Square, Command } from "lucide-react"
 import type { Mode } from "../App"
 
@@ -22,6 +23,7 @@ export function MessageInput({
   insertSnippet,
   onInsertConsumed,
 }: MessageInputProps) {
+  const { t } = useTranslation()
   const [input, setInput] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -101,7 +103,7 @@ export function MessageInput({
       <div className="mt-1.5 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-dim)]">
           <Command size={10} />
-          <span>Enter 发送 · Shift+Enter 换行 · 点文件插入 @path</span>
+          <span>{t("settings.chat.enterSendHint")}</span>
           <span className="chip ml-1">{modeLabel}</span>
         </div>
         <button
