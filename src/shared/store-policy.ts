@@ -27,6 +27,8 @@ const STORE_KEY_WHITELIST = new Set<string>([
   "log-level",
   // 用户自定义技能(JSON 数组,见 shared/skills.ts;写操作走 skills-set IPC)
   "skills",
+  // 界面语言(见 shared/locale.ts;Settings 语言选择持久化)
+  "locale",
 ])
 
 const STORE_KEY_API_KEY_RE = /^(openai|anthropic|deepseek|custom)-api-key$/

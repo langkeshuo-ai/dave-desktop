@@ -35,8 +35,11 @@
 - **验证标准**:单测 ≥5 条;verify 全绿;UAT 追加"已安装 skills 展示"步骤
 
 ### M2:i18n(P1,约 1-2 周,可并行 M1)
-
-- 实现:接入 i18next + react-i18next;文案抽取(组件 + shared 纯函数返回值);`zh-CN` 默认 + `en` 初版;Settings 加语言选择(持久化 `locale` store key,白名单同步)
+- ✅ **第一步(基础设施)已实施(2026-08-01)**:接入 i18next 26.3.6 + react-i18next 17(MIT/活跃);
+  `shared/locale.ts`(SUPPORTED_LOCALES zh-CN/en + validateLocale);renderer i18n 基础设施
+  (initI18n/changeLocale + zh-CN/en 资源);Settings 界面语言选择(持久化 store locale,重启保持);
+  设置标题/选项卡/sectionTitle 迁移至 t();单测 2 条(172 全过)、build 42.68s 正常
+- ⏳ **剩余(后续)**:全量用户可见文案抽取(en 完整翻译);脚本扫描硬编码中文;UAT 追加语言切换步骤
 - **验证标准**:语言切换即时生效且持久化(UAT 步骤);全部用户可见文案经 t() 提取(脚本扫描硬编码中文);verify 全绿
 
 ### M3:跨平台(P1,需机器)

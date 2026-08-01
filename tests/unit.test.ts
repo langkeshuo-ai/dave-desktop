@@ -91,6 +91,8 @@ import {
   splitSkillToolName,
   validateSkill,
 } from "../src/shared/skills"
+import { SUPPORTED_LOCALES, validateLocale, DEFAULT_LOCALE } from "../src/shared/locale"
+import { resources } from "../src/renderer/i18n/index"
 import { MAX_SSE_EVENT_CHARS, SseParser } from "../src/shared/sse-parser"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
@@ -2219,5 +2221,41 @@ describe("skills helpers", () => {
     expect(applied.kind).toBe("applied")
     expect(applied.content).toContain("技能「review」已启用")
     expect(applied.content).toContain("请审查")
+  })
+})
+
+// =====================================================================
+// locale + i18n resources — 0.3.0 M2 i18n 第一步
+// =====================================================================
+describe("locale helpers", () => {
+  it("validateLocale accepts supported locales and rejects others", () => {
+    expect(validateLocale("zh-CN")).toBe(true)
+    expect(validateLocale("en")).toBe(true)
+    expect(validateLocale("fr")).toBe(false)
+    expect(validateLocale("")).toBe(false)
+    expect(validateLocale(null)).toBe(false)
+    expect(SUPPORTED_LOCALES).toEqual(["zh-CN", "en"])
+    expect(DEFAULT_LOCALE).toBe("zh-CN")
+  })
+})
+
+describe("i18n resources", () => {
+  it("zh-CN and en translation keys are identical (no missing translations)", () => {
+    const collectKeys = (obj: Record<string, unknown>, prefix = ""): string[] => {
+      const keys: string[] = []
+      for (const [k, v] of Object.entries(obj)) {
+        const path = prefix ? `${prefix}.${k}` : k
+        if (v && typeof v === "object") {
+          keys.push(...collectKeys(v as Record<string, unknown>, path))
+        } else {
+          keys.push(path)
+        }
+      }
+      return keys
+    }
+    const zh = collectKeys(resources["zh-CN"].translation as unknown as Record<string, unknown>)
+    const en = collectKeys(resources.en.translation as unknown as Record<string, unknown>)
+    expect(zh.length).toBeGreaterThan(0)
+    expect(en.sort()).toEqual(zh.sort())
   })
 })

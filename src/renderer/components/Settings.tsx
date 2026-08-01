@@ -24,6 +24,9 @@ import {
   type McpServerConfig,
 } from "../../shared/mcp"
 import { validateSkill, type SkillDefinition } from "../../shared/skills"
+import { useTranslation } from "react-i18next"
+import { initI18n, changeLocale } from "../i18n"
+import { SUPPORTED_LOCALES, validateLocale, type Locale } from "../../shared/locale"
 
 interface SettingsProps {
   onClose: () => void
@@ -65,6 +68,8 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
   const [diagMsg, setDiagMsg] = useState<string | null>(null)
+  const { t } = useTranslation()
+  const [locale, setLocaleState] = useState<Locale>("zh-CN")
   const [customHost, setCustomHost] = useState("")
   const [customModel, setCustomModel] = useState("")
   const [customApiKey, setCustomApiKey] = useState("")
@@ -115,6 +120,13 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
       const w = (await window.dave.store.get("cwd")) || ""
       const ac = await window.dave.store.get("autoclear")
       const appVersion = await window.dave.version()
+      // i18n:初始化并应用持久化语言(非法回退默认 zh-CN)
+      const savedLocale = await window.dave.store.get("locale")
+      initI18n()
+      if (validateLocale(savedLocale)) {
+        changeLocale(savedLocale)
+        safeSet(() => setLocaleState(savedLocale))
+      }
       safeSet(() => {
         setCwd(w)
         setAutoclear(ac !== "false")
@@ -210,14 +222,17 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
   }
 
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
-  const sectionTitle =
-    tab === "provider"
-      ? "模型与密钥"
-      : tab === "workspace"
-        ? "工作区与启动"
-        : tab === "extensions"
-          ? "扩展与 MCP"
-          : "关于"
+  const sectionTitle = t(`settings.section.${tab}`)
+  const handleLocaleChange = useCallback(async (l: string) => {
+    if (!validateLocale(l)) return
+    setLocaleState(l)
+    changeLocale(l)
+    try {
+      await window.dave.store.set("locale", l) // 持久化,重启后保持
+    } catch {
+      /* 静默 */
+    }
+  }, [])
 
   return (
     <div className="modal-scrim" role="presentation" onClick={onClose}>
@@ -232,7 +247,7 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
         style={{ outline: "none" }}
       >
         <div className="modal-header">
-          <h2 className="modal-title">设置</h2>
+          <h2 className="modal-title">{t("settings.title")}</h2>
           <button onClick={onClose} className="btn-icon-muted" title="关闭 (Esc)" aria-label="关闭">
             <X size={16} />
           </button>
@@ -240,17 +255,17 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
         <div className="settings-layout">
           <nav className="settings-nav" aria-label="设置分类">
-            {TABS.map((t) => {
-              const Icon = t.icon
+            {TABS.map((tabDef) => {
+              const Icon = tabDef.icon
               return (
                 <button
-                  key={t.id}
+                  key={tabDef.id}
                   type="button"
-                  onClick={() => setTab(t.id)}
-                  className={`settings-nav-item ${tab === t.id ? "active" : ""}`}
+                  onClick={() => setTab(tabDef.id)}
+                  className={`settings-nav-item ${tab === tabDef.id ? "active" : ""}`}
                 >
                   <Icon size={14} />
-                  {t.label}
+                  {t(`settings.tabs.${tabDef.id}`)}
                 </button>
               )
             })}
@@ -455,6 +470,21 @@ export function Settings({ onClose, onReopenWelcome }: SettingsProps) {
 
               {tab === "about" && (
                 <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-dim)]">{t("settings.language")}</span>
+                    <select
+                      value={locale}
+                      onChange={(e) => void handleLocaleChange(e.target.value)}
+                      className="input !py-1 !text-[11px] w-32"
+                      aria-label="界面语言"
+                    >
+                      {SUPPORTED_LOCALES.map((l) => (
+                        <option key={l} value={l}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="empty-state-icon !w-11 !h-11 !mb-0 !rounded-lg">
                       <Bot size={20} />
