@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // 负载下真实 spawn(如 mcp client integration)/慢环境可能超过 vitest 默认 5s:
+    // 全局放宽到 30s,避免瞬态超时误判失败(validateSender 曾 5356ms 超时)。
+    testTimeout: 30_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
