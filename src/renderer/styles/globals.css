@@ -3,50 +3,50 @@
 /* =========================================================================
    Dave Desktop — Clean, Light-first Professional Theme
    =========================================================================
-   Design principles (Cursor/Codex-style):
-     1. Dark-first: default is Cursor-style dark, light mode is the override (.light)
-     2. Single vivid accent (#0A84FF blue for buttons/links)
-     3. Three surface levels: near-black → dark-gray → subtle-gray
-     4. Text hierarchy: white → light-gray → mid-gray → faint-gray (4 levels)
+   Design principles (Apple/Linear-style):
+     1. Light-first: default is clean white, dark mode is the override (.night)
+     2. Single vivid accent (#0071E3 Apple-blue for buttons/links)
+     3. Three surface levels: white → light-gray → subtle-gray
+     4. Text hierarchy: black → dark-gray → mid-gray → light-gray (4 levels)
      5. Generous whitespace, larger font, cleaner borders
-     6. No light components in dark mode — dark gray tones only
+     6. No dark components in light mode — pure white and soft gray only
      7. All color values via CSS variables — no hardcoded hex in components
 
    ---------------------------------------------------------------------------
-   Color palette (dark-first, Cursor aesthetic)
+   Color palette (light-first, Apple aesthetic)
    ---------------------------------------------------------------------------
 
-   【Surface layers — near-black + dark gray foundation】
-   --bg              #1E1E1E   Canvas
-   --bg-panel        #252526   Raised card/sidebar/apple-panel
-   --bg-sunk         #2D2D30   Sunken layer (code block, table header)
-   --bg-active       #333338   Hover/active row
-   --bg-title        #1E1E1E   Titlebar (matches panel)
-   --surface-input   #2D2D30   Input/textarea/composer
+   【Surface layers — pure white + warm gray foundation】
+   --bg              #FFFFFF   Pure white canvas
+   --bg-panel        #F5F5F7   Raised card/sidebar/apple-panel
+   --bg-sunk         #EBEBED   Sunken layer (code block, table header)
+   --bg-active       #E8E8EC   Hover/active row
+   --bg-title        #F5F5F7   Titlebar (matches panel)
+   --surface-input   #FFFFFF   Input/textarea/composer
 
    【Border layers — subtle, not harsh】
-   --border          #3A3A3D   Default hairline
-   --border-strong   #4A4A4F   Input/composer strong border
+   --border          #E5E5E7   Default hairline
+   --border-strong   #D1D1D6   Input/composer strong border
 
    【Text layers — crisp, high readability】
-   --text            #E4E4E7   Body text
-   --text-strong     #FFFFFF   Headings/emphasis
-   --text-dim        #9D9DA3   Secondary
-   --text-faint      #6F6F76   Placeholder/timestamp
+   --text            #1D1D1F   Body text (near-black, not pure black)
+   --text-strong     #000000   Headings/emphasis
+   --text-dim        #86868B   Secondary
+   --text-faint      #AEAEB2   Placeholder/timestamp
    --text-on-accent  #FFFFFF   White text on accent button
 
-   【Accent — Cursor blue, single source of truth】
-   --accent          #0A84FF   Primary brand blue
-   --accent-hover    #409CFF   Hover state
-   --accent-soft     rgba(10, 132, 255, 0.14)   Selected row bg
+   【Accent — Apple blue, single source of truth】
+   --accent          #0071E3   Primary brand blue
+   --accent-hover    #0077ED   Hover state
+   --accent-soft     rgba(0, 113, 227, 0.08)   Selected row bg
 
    【Semantic colors】
-   --success         #30D158   Success/diff-add
-   --success-bg      rgba(48, 209, 88, 0.14)
-   --danger          #FF453A   Error/diff-del
-   --danger-bg       rgba(255, 69, 58, 0.14)
-   --warning         #FF9F0A   Warning
-   --warning-bg      rgba(255, 159, 10, 0.14)
+   --success         #34C759   Success/diff-add (Apple green)
+   --success-bg      rgba(52, 199, 89, 0.12)
+   --danger          #FF3B30   Error/diff-del (Apple red)
+   --danger-bg       rgba(255, 59, 48, 0.12)
+   --warning         #FF9500   Warning (Apple orange)
+   --warning-bg      rgba(255, 149, 0, 0.12)
 
    【diff aliases — map to semantic colors】
    --diff-add        var(--success)
@@ -54,29 +54,29 @@
    --diff-del        var(--danger)
    --diff-del-bg     var(--danger-bg)
 
-   【Syntax highlighting — clean, readable on dark】
-   --syntax-fn       #D2A8FF   Function name (purple)
-   --syntax-str      #A1D9B4   String (green)
-   --syntax-kw       #FF7B72   Keyword (red)
-   --syntax-comment  #8B949E   Comment (gray)
-   --syntax-num      #79C0FF   Number (blue)
-   --syntax-built-in #79C0FF   Built-in type (blue)
-   --syntax-variable #FFA657   Variable (orange)
-   --syntax-name     #D2A8FF   Section/name (purple)
+   【Syntax highlighting — clean, readable on white】
+   --syntax-fn       #881391   Function name (purple)
+   --syntax-str      #1A7F37   String (green)
+   --syntax-kw       #CF222E   Keyword (red)
+   --syntax-comment  #656D76   Comment (gray)
+   --syntax-num      #0550AE   Number (blue)
+   --syntax-built-in #0969DA   Built-in type (blue)
+   --syntax-variable #953800   Variable (brown)
+   --syntax-name     #8250DF   Section/name (purple)
 
    【Tool icon semantics】
-   --tool-shell      #FF9F0A   Shell tool amber
+   --tool-shell      #FF9500   Shell tool amber
 
-   【Scrollbar — dark-adapted】
-   --scrollbar-thumb        #48484A
-   --scrollbar-thumb-hover  #5A5A5E
+   【Scrollbar — light-adapted】
+   --scrollbar-thumb        #C8C8CC
+   --scrollbar-thumb-hover  #A8A8AD
 
-   【Shadow / scrim / radius — Cursor-style】
-   --shadow-sm       0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.24)
-   --shadow-md       0 2px 8px rgba(0, 0, 0, 0.36), 0 8px 20px rgba(0, 0, 0, 0.28)
-   --shadow-lg       0 8px 24px rgba(0, 0, 0, 0.42), 0 24px 56px rgba(0, 0, 0, 0.32)
-   --scrim           rgba(0, 0, 0, 0.5)
-   --scrim-strong    rgba(0, 0, 0, 0.7)
+   【Shadow / scrim / radius — Apple-style】
+   --shadow-sm       0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04)
+   --shadow-md       0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.06)
+   --shadow-lg       0 8px 24px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.08)
+   --scrim           rgba(0, 0, 0, 0.3)
+   --scrim-strong    rgba(0, 0, 0, 0.5)
    --radius          10px
    --radius-sm       7px
 
@@ -90,74 +90,7 @@
    ========================================================================= */
 
 :root {
-  /* === Surface layers (dark-first, Cursor-style) === */
-  --bg: #1e1e1e;
-  --bg-panel: #252526;
-  --bg-sunk: #2d2d30;
-  --bg-active: #333338;
-  --bg-title: #1e1e1e;
-  --surface-input: #2d2d30;
-
-  /* === Border layers === */
-  --border: #3a3a3d;
-  --border-strong: #4a4a4f;
-
-  /* === Text layers === */
-  --text: #e4e4e7;
-  --text-strong: #ffffff;
-  --text-dim: #9d9da3;
-  --text-faint: #6f6f76;
-  --text-on-accent: #ffffff;
-
-  /* === Accent (Cursor-style blue) === */
-  --accent: #0a84ff;
-  --accent-hover: #409cff;
-  --accent-soft: rgba(10, 132, 255, 0.14);
-
-  /* === Semantic colors === */
-  --success: #30d158;
-  --success-bg: rgba(48, 209, 88, 0.14);
-  --danger: #ff453a;
-  --danger-bg: rgba(255, 69, 58, 0.14);
-  --warning: #ff9f0a;
-  --warning-bg: rgba(255, 159, 10, 0.14);
-
-  /* === diff aliases === */
-  --diff-add: var(--success);
-  --diff-add-bg: var(--success-bg);
-  --diff-del: var(--danger);
-  --diff-del-bg: var(--danger-bg);
-
-  /* === Syntax highlighting (dark-adapted) === */
-  --syntax-fn: #d2a8ff;
-  --syntax-str: #a1d9b4;
-  --syntax-kw: #ff7b72;
-  --syntax-comment: #8b949e;
-  --syntax-num: #79c0ff;
-  --syntax-built-in: #79c0ff;
-  --syntax-variable: #ffa657;
-  --syntax-name: #d2a8ff;
-
-  /* === Tool icon semantics === */
-  --tool-shell: #ff9f0a;
-
-  /* === Scrollbar === */
-  --scrollbar-thumb: #48484a;
-  --scrollbar-thumb-hover: #5a5a5e;
-
-  /* === Shadow / scrim / radius === */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.36), 0 8px 20px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.42), 0 24px 56px rgba(0, 0, 0, 0.32);
-  --scrim: rgba(0, 0, 0, 0.5);
-  --scrim-strong: rgba(0, 0, 0, 0.7);
-  --radius: 10px;
-  --radius-sm: 7px;
-}
-
-/* Light mode — override for users who prefer light theme */
-html.light {
-  /* === Surface layers === */
+  /* === Surface layers (light-first) === */
   --bg: #ffffff;
   --bg-panel: #f5f5f7;
   --bg-sunk: #ebebed;
@@ -176,7 +109,7 @@ html.light {
   --text-faint: #aeaeb2;
   --text-on-accent: #ffffff;
 
-  /* === Accent (light-adapted) === */
+  /* === Accent (Apple blue) === */
   --accent: #0071e3;
   --accent-hover: #0077ed;
   --accent-soft: rgba(0, 113, 227, 0.08);
@@ -189,6 +122,12 @@ html.light {
   --warning: #ff9500;
   --warning-bg: rgba(255, 149, 0, 0.12);
 
+  /* === diff aliases === */
+  --diff-add: var(--success);
+  --diff-add-bg: var(--success-bg);
+  --diff-del: var(--danger);
+  --diff-del-bg: var(--danger-bg);
+
   /* === Syntax highlighting (light-adapted) === */
   --syntax-fn: #881391;
   --syntax-str: #1a7f37;
@@ -199,16 +138,77 @@ html.light {
   --syntax-variable: #953800;
   --syntax-name: #8250df;
 
+  /* === Tool icon semantics === */
+  --tool-shell: #ff9500;
+
   /* === Scrollbar === */
   --scrollbar-thumb: #c8c8cc;
   --scrollbar-thumb-hover: #a8a8ad;
 
-  /* === Shadow / scrim === */
+  /* === Shadow / scrim / radius === */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.08);
   --scrim: rgba(0, 0, 0, 0.3);
   --scrim-strong: rgba(0, 0, 0, 0.5);
+  --radius: 10px;
+  --radius-sm: 7px;
+}
+
+/* Night mode — override for users who prefer dark theme */
+html.night {
+  /* === Surface layers === */
+  --bg: #1e1e1e;
+  --bg-panel: #252526;
+  --bg-sunk: #2d2d30;
+  --bg-active: #333338;
+  --bg-title: #1e1e1e;
+  --surface-input: #2d2d30;
+
+  /* === Border layers === */
+  --border: #3a3a3d;
+  --border-strong: #4a4a4f;
+
+  /* === Text layers === */
+  --text: #e4e4e7;
+  --text-strong: #ffffff;
+  --text-dim: #9d9da3;
+  --text-faint: #6f6f76;
+  --text-on-accent: #ffffff;
+
+  /* === Accent (night-adapted) === */
+  --accent: #0a84ff;
+  --accent-hover: #409cff;
+  --accent-soft: rgba(10, 132, 255, 0.14);
+
+  /* === Semantic colors === */
+  --success: #30d158;
+  --success-bg: rgba(48, 209, 88, 0.14);
+  --danger: #ff453a;
+  --danger-bg: rgba(255, 69, 58, 0.14);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255, 159, 10, 0.14);
+
+  /* === Syntax highlighting (dark-adapted) === */
+  --syntax-fn: #d2a8ff;
+  --syntax-str: #a1d9b4;
+  --syntax-kw: #ff7b72;
+  --syntax-comment: #8b949e;
+  --syntax-num: #79c0ff;
+  --syntax-built-in: #79c0ff;
+  --syntax-variable: #ffa657;
+  --syntax-name: #d2a8ff;
+
+  /* === Scrollbar === */
+  --scrollbar-thumb: #48484a;
+  --scrollbar-thumb-hover: #5a5a5e;
+
+  /* === Shadow / scrim === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.36), 0 8px 20px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.42), 0 24px 56px rgba(0, 0, 0, 0.32);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --scrim-strong: rgba(0, 0, 0, 0.7);
 }
 
 /* Focus ring — keyboard accessibility, unified */

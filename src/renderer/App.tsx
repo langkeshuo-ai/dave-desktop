@@ -63,7 +63,7 @@ export default function App() {
   // 设计成显式状态机,避免布尔嵌套 + state 不同步。
   const [onboarding, setOnboarding] = useState<"welcome" | "apikey" | "off">("off")
   const [mode, setMode] = useState<Mode>("ask")
-  const [theme, setTheme] = useState<Theme>("night")
+  const [theme, setTheme] = useState<Theme>("light")
   // 新建会话的 in-flight 守卫,防止双击 / 菜单 + 按钮并发触发
   // 产生"孤儿会话"(后者覆盖前者,但前者已落库)。
   const creatingSessionRef = useRef(false)
@@ -105,7 +105,7 @@ export default function App() {
   // 若这里先写回,会把持久化的 night 覆盖成初始 light(重启/重载后主题丢失)。
   const themeAppliedRef = useRef(false)
   useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light")
+    document.documentElement.classList.toggle("night", theme === "night")
     if (!themeAppliedRef.current) {
       themeAppliedRef.current = true
       return
@@ -124,7 +124,7 @@ export default function App() {
   useEffect(() => {
     window.dave.store.get("theme").then(
       (t: string | null) => {
-        if (t === "light") setTheme("light")
+        if (t === "night") setTheme("night")
       },
       () => {
         /* IPC 失败时静默走 light 默认值 */
@@ -156,16 +156,10 @@ export default function App() {
       switchSession(pick)
       await loadSession(pick)
     })()
-    // 首启判定:从未完成过 onboarding_completed 即视为首启。
-    // 用 IPC 查询而不是 store.has,避免重复读 store。
+    // 启动引导已移除(面向专业用户,不做小白向导)。
+    // 保留首启遥测打点(isFirstRun 判定 ret 0/1),但不再弹出 Welcome/ApiKeyWizard。
     void window.dave.telemetry.isFirstRun().then((first) => {
-      if (first) {
-        track("app_launch", { ret: "0" })
-        setOnboarding("welcome")
-        track("onboarding_started")
-      } else {
-        track("app_launch", { ret: "1" })
-      }
+      track("app_launch", { ret: first ? "0" : "1" })
     })
   }, [loadSessions, switchSession, loadSession])
 
