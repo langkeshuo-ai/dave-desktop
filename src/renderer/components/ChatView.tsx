@@ -374,7 +374,7 @@ export function ChatView({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="relative flex items-center justify-between px-3 py-1.5 border-b border-[var(--border)] bg-[var(--bg-panel)]">
+      <div className="relative flex items-center justify-between px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-panel)]">
         <button
           data-mode-trigger
           onClick={() => setModeOpen(!modeOpen)}
