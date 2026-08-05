@@ -1,8 +1,9 @@
 # 项目交接文档
 
-> **更新**: 2026-08-05 16:45（Asia/Shanghai）  
-> **HEAD**: `857cbee` · 分支 `master` · **工作区**: 仅未跟踪 `CLAUDE.md`，无未提交代码改动  
-> **版本**: `package.json` 仍为 `0.1.0`（0.2.0 发布门槛未过；0.3.0 能力已部分落地）  
+> **更新**: 2026-08-05（Asia/Shanghai）— **卖机最终推送**  
+> **远端**: https://github.com/langkeshuo-ai/dave-desktop · 分支 `master`  
+> **版本**: `package.json` `0.1.0`（0.3.0 能力部分落地）  
+> **安装包**: 见 GitHub Releases（`dist/` 不进 git）；源码以 `master` 为准  
 > **本文件目标**: 新会话零上下文可读本文继续；旧 `HANDOFF.md`（2026-07-31）信息已并入并覆盖
 
 ---

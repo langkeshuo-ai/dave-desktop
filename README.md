@@ -2,7 +2,22 @@
 
 > **定位:** 本地 Agent · Cursor 风格 UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff  
 > **状态:** ✅ 可运行（Windows / macOS / Linux · Electron）  
-> **主题:** 深色优先（Cursor 风格）· 浅色模式可选
+> **主题:** light-first（浅色默认）· `html.night` 深色可选  
+> **仓库:** https://github.com/langkeshuo-ai/dave-desktop  
+> **最后推送:** 2026-08-05（卖机最终同步 — 源码 + Windows 安装包 Release）
+
+## 卖机最终推送说明（2026-08-05）
+
+本仓库在 **2026-08-05** 做了「卖出开发机前」的最终同步：
+
+| 项     | 说明                                                                           |
+| ------ | ------------------------------------------------------------------------------ |
+| 源码   | `master` 与本地一致；完整历史在 GitHub                                         |
+| 安装包 | **不进 git**（`dist/` 已 ignore）；发在 **GitHub Releases**                    |
+| 本机   | 推送后清除本目录构建产物与运行时密钥数据；新环境请 `git clone` + `npm install` |
+| 复刻   | 见下方「快速开始」；装包见 Releases 最新 tag                                   |
+
+> 旧文档若仍写 `alchaincyf/dave-desktop` 或 dark-first，以本 README 与 `HANDOFF.md`（2026-08-05）为准。
 
 ## 技术栈
 

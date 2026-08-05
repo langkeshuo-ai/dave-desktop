@@ -28,7 +28,7 @@ const config: Configuration = {
   // 未配置证书时 electron-builder 自动跳过签名,不阻塞本地打包。
   publish: {
     provider: "github",
-    owner: "alchaincyf",
+    owner: "langkeshuo-ai",
     repo: "dave-desktop",
     releaseType: "release",
   },
