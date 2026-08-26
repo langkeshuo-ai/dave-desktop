@@ -1,6 +1,6 @@
 # Desktop Merge Plan — zcode-client → dave-desktop 合并执行计划
 
-> 状态：**Phase 1+3 部分完成**（安全架构 4/4 模块 + 功能 6/7 模块已迁移，待集成到 ipc.ts 和 UI）
+> 状态：**Phase 1+3 模块全部完成**（安全 4/4 + 功能 7/7 模块已迁移，待集成到 ipc.ts 和 UI + 测试体系迁移）
 > 创建日期：2026-08-26
 > 最后更新：2026-08-26
 > 基础仓库：dave-desktop（目标）
@@ -12,7 +12,7 @@
 - ✅ `docs/merge/` 目录创建，合并计划文档就位
 - ✅ zcode-client 最新 commit SHA 备份：`ac86ab177a0017774d27149967859e373cb38d4f`
 
-### Phase 1 安全架构（4/4 模块已创建）
+### Phase 1 安全架构（4/4 模块 + 测试 全部完成）
 - ✅ `src/main/security/ipc-guard.ts` — IPC 安全守卫（发送者验证 + payload 递归检查 + zod schema + 路径信任根）
 - ✅ `src/main/security/rpc-hub.ts` — JSON-RPC 2.0 Hub（中间件 + 批量请求 + 标准错误码）
 - ✅ `src/main/security/tool-capability.ts` — HMAC-SHA256 一次性能力令牌
@@ -20,14 +20,15 @@
 - ✅ `src/main/security/index.ts` — 统一导出
 - ✅ `src/main/security/security.test.ts` — 综合测试 50+ 用例
 
-### Phase 3 功能模块（6/7 模块已创建）
-- ✅ `src/main/utils/paths.ts` — 统一路径管理（Dave 品牌 + .zcode 兼容 + safeJoin + 受信任根）
+### Phase 3 功能模块（7/7 模块 全部完成）
+- ✅ `src/main/utils/paths.ts` — 统一路径管理（Dave 品牌 + .zcode 兼容 + safeJoin 防穿越 + 受信任根）
+- ✅ `src/main/utils/paths.test.ts` — 路径工具测试 30+ 用例
 - ✅ `src/main/session/checkpoints.ts` — 会话检查点（git stash + 文件快照 + 回滚 + 级联回滚 + dirty 跟踪）
 - ✅ `src/main/skills/skills-manager.ts` — 技能管理器（Agent Skills 1.0 发现/加载/搜索/系统提示词）
-- ✅ `src/main/plugins/plugin-manager.ts` — 插件管理器（发现/加载/权限/IPC channel 注册/sandbox-ready）
+- ✅ `src/main/plugins/plugin-manager.ts` — 插件管理器（发现/加载/卸载 + manifest 验证 + 权限检查 + IPC channel 注册）
 - ✅ `src/main/telemetry/usage-tracker.ts` — 本地使用统计（模型调用/Token/费用 + 工具频率 + 会话 + 日聚合 + 7天汇总 + 导出/清除）
-- ⏳ `src/main/updater/updater-service.ts` — 更新器（待创建）
-- ⏳ `src/main/marketplace/marketplace-client.ts` — 技能市场（待创建）
+- ✅ `src/main/updater/updater-service.ts` — 自动更新服务（electron-updater 集成 + HTTPS-only feed + 开发模式元数据检查）
+- ✅ `src/main/marketplace/marketplace-client.ts` — 插件市场客户端（安装/卸载/更新/详情 + git clone + 本地复制）
 
 **待完成**：将安全模块集成到 `ipc.ts`、功能模块接入 IPC 和 UI、Phase 2 测试体系迁移、全量验证。
 
@@ -46,7 +47,7 @@
 | 依赖现代化 | Electron 42 / React 19.2 / Vite 6 | Electron 43 / React 19.2 / Vite 8 | 接近 |
 | 安全架构 | ✅ 独立 security/ 模块（已迁移） | ✅ 独立 ipc-security.mjs | 已吸收 |
 | 测试覆盖 | ⚠️ 主进程测试少 | ✅ 几乎每文件对应 .test.mjs | zcode-client（需吸收） |
-| 功能广度 | ✅ skills/plugins/checkpoints/paths/usage（已迁移） | ✅ marketplace/plugins/parity/remote/checkpoints/tool-capability | 大部分已吸收 |
+| 功能广度 | ✅ skills/plugins/checkpoints/paths/usage/updater/marketplace（已迁移） | ✅ marketplace/plugins/parity/remote/checkpoints/tool-capability | 已吸收 |
 
 **结论**：以 dave-desktop 为代码基础，分阶段吸收 zcode-client 的安全架构、测试体系和缺失功能模块。
 
@@ -65,15 +66,15 @@
 | 功能域 | dave-desktop | zcode-client | 合并动作 | 状态 |
 |--------|-------------|-------------|---------|------|
 | **应用入口** | `index.ts` | `index.mjs` | 保留 dave-desktop | ✅ |
-| **IPC 通信** | `ipc.ts` + `security/ipc-guard.ts` | `ipc-security.mjs` + `rpc.mjs` | 吸收 ipc-security | 🔄 模块已创建，待集成 |
+| **IPC 通信** | `ipc.ts` + `security/ipc-guard.ts` + `security/rpc-hub.ts` | `ipc-security.mjs` + `rpc.mjs` | 已吸收 | 🔄 模块已创建，待集成 |
 | **生命周期** | `lifecycle.ts` | `runtime.mjs` | 保留 dave-desktop | ✅ |
-| **会话管理** | `session.ts` + `session/checkpoints.ts` | `sessions.mjs` + `checkpoints.mjs` | 吸收 checkpoints | ✅ 模块已创建 |
-| **Agent 循环** | `agent.ts` + `chat-loop.ts` + `security/tool-capability.ts` | `tools.mjs` + `tool-capability.mjs` | 吸收 tool-capability | ✅ 模块已创建 |
+| **会话管理** | `session.ts` + `session/checkpoints.ts` | `sessions.mjs` + `checkpoints.mjs` | 已吸收 | ✅ 模块已创建 |
+| **Agent 循环** | `agent.ts` + `chat-loop.ts` + `security/tool-capability.ts` | `tools.mjs` + `tool-capability.mjs` | 已吸收 | ✅ 模块已创建 |
 | **Provider** | `providers.ts` + `secure-storage.ts` + `provider-url-policy.ts` | `providers.mjs` + `model.mjs` | 保留 dave-desktop（更完善） | ✅ |
 | **MCP** | `mcp-client.ts`（标准SDK） | `mcp.mjs`（自定义） | 保留 dave-desktop | ✅ |
-| **存储** | `store.ts` + `telemetry-store.ts` + `telemetry/usage-tracker.ts` | `usage.mjs` | 吸收 usage 统计 | ✅ 模块已创建 |
-| **更新** | （electron-updater 依赖） | `updater.mjs` + 完整测试 | 吸收 updater 逻辑 | ⏳ 待创建 |
-| **技能/插件** | `skills/skills-manager.ts` + `plugins/plugin-manager.ts` | `skills.mjs` + `plugins.mjs` + `marketplace.mjs` | 已吸收基础，市场待创建 | 🔄 |
+| **存储** | `store.ts` + `telemetry-store.ts` + `telemetry/usage-tracker.ts` | `usage.mjs` | 已吸收 | ✅ 模块已创建 |
+| **更新** | `updater/updater-service.ts` | `updater.mjs` + 完整测试 | 已吸收 | ✅ 模块已创建 |
+| **技能/插件** | `skills/skills-manager.ts` + `plugins/plugin-manager.ts` + `marketplace/marketplace-client.ts` | `skills.mjs` + `plugins.mjs` + `marketplace.mjs` | 已吸收 | ✅ 模块已创建 |
 | **远程/浏览器** | `security/browser-policy.ts` | `remote.mjs` + `browser.mjs`（BrowserHub） | 安全策略已吸收，BrowserHub 可选 | 🔄 |
 | **功能对齐** | ❌ 无 | `parity.mjs` | 可选吸收 | ⏳ 可选 |
 | **协议** | ❌ 无 | `protocol.mjs` | 可选吸收 | ⏳ 可选 |
@@ -153,7 +154,7 @@ security.test.ts ✅（50+ 测试用例）
 - [ ] 迁移 `providers.test.mjs` → 适配 dave-desktop 的 `providers.test.ts`
 - [ ] 迁移 `mcp.test.mjs` → 适配 dave-desktop 的 `mcp-client.test.ts`
 - [ ] 迁移 `updater.test.mjs` → 新增 `updater.test.ts`
-- [ ] 迁移 `paths.test.mjs` → 新增 `paths.test.ts`
+- [x] 迁移 `paths.test.mjs` → `src/main/utils/paths.test.ts`（30+ 用例）
 - [ ] 迁移 `checkpoints.test.mjs` → 新增 `checkpoints.test.ts`
 - [ ] 迁移 `model.test.mjs` → 新增 `model.test.ts`
 - [ ] 迁移 `protocol.test.mjs` → 新增 `protocol.test.ts`
@@ -188,7 +189,7 @@ security.test.ts ✅（50+ 测试用例）
 
 #### 3.3 技能市场（Marketplace）
 
-- [ ] 用 TypeScript 重写 `marketplace.mjs` → `src/main/marketplace/marketplace-client.ts`
+- [x] 用 TypeScript 重写 `marketplace.mjs` → `src/main/marketplace/marketplace-client.ts`
 - [ ] 迁移 `marketplace.test.mjs` → `src/main/marketplace/marketplace-client.test.ts`
 - [ ] Renderer 端新增 Marketplace UI 面板
 
@@ -201,12 +202,12 @@ security.test.ts ✅（50+ 测试用例）
 #### 3.5 路径统一管理（Paths）
 
 - [x] 用 TypeScript 重写 `paths.mjs` → `src/main/utils/paths.ts`
-- [ ] 迁移 `paths.test.mjs` → `src/main/utils/paths.test.ts`
+- [x] 迁移 `paths.test.mjs` → `src/main/utils/paths.test.ts`（30+ 用例）
 - [ ] 重构现有代码，将硬编码路径替换为 `paths.xxx`
 
 #### 3.6 更新器（Updater）
 
-- [ ] 用 TypeScript 重写 `updater.mjs` → `src/main/updater/updater-service.ts`
+- [x] 用 TypeScript 重写 `updater.mjs` → `src/main/updater/updater-service.ts`
 - [ ] 迁移 `updater.test.mjs` → `src/main/updater/updater-service.test.ts`
 
 #### 3.7 使用统计（Usage）
@@ -267,9 +268,9 @@ security.test.ts ✅（50+ 测试用例）
 | Phase | 内容 | 预估工时 | 优先级 | 状态 |
 |-------|------|---------|--------|------|
 | Phase 0 | 准备工作 | 0.5天 | P0 | 🔄 部分完成 |
-| Phase 1 | 安全架构迁移 | 2-3天 | P0 | 🔄 4/4模块已创建，待集成 |
-| Phase 2 | 测试体系迁移 | 1-2天 | P1 | ⏳ 待开始 |
-| Phase 3 | 功能模块迁移 | 3-5天 | P1 | 🔄 6/7模块已创建，待测试+UI |
+| Phase 1 | 安全架构迁移 | 2-3天 | P0 | 🔄 4/4模块+测试已创建，待集成ipc.ts |
+| Phase 2 | 测试体系迁移 | 1-2天 | P1 | 🔄 paths测试已完成，其余待迁移 |
+| Phase 3 | 功能模块迁移 | 3-5天 | P1 | ✅ 7/7模块已创建，待测试+UI |
 | Phase 4 | 远程与浏览器（可选） | 2-3天 | P2 | ⏳ 待开始 |
 | Phase 5 | 收尾与发布 | 1-2天 | P1 | ⏳ 待开始 |
 | **合计** | | **10-17天** | | |
@@ -294,7 +295,7 @@ security.test.ts ✅（50+ 测试用例）
 |-------|------|---------|------|
 | Phase 0 | 🔄 部分完成 | 2026-08-26 | docs/merge/ 已创建，zcode-client SHA 已备份 |
 | Phase 1 | 🔄 进行中 | 2026-08-26 | ipc-guard/rpc-hub/tool-capability/browser-policy + 50+测试已创建，待集成到 ipc.ts |
-| Phase 2 | ⏳ 待开始 | | |
-| Phase 3 | 🔄 进行中 | 2026-08-26 | paths/checkpoints/skills/plugins/usage 5模块已创建，updater/marketplace待创建 |
+| Phase 2 | 🔄 部分完成 | 2026-08-26 | paths.test.ts 30+用例已完成，其余测试待迁移 |
+| Phase 3 | ✅ 模块完成 | 2026-08-26 | paths/checkpoints/skills/plugins/usage/updater/marketplace 7/7模块已创建，待测试+UI接入 |
 | Phase 4 | ⏳ 待开始 | | 可选 |
 | Phase 5 | ⏳ 待开始 | | |
