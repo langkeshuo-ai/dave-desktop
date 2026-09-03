@@ -3,7 +3,8 @@
 > **更新**: 2026-09-03（Asia/Shanghai）— **v0.4 全链路就绪：内部项收口 + 发布候选 + 版本 0.4.0**\
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master`（本地已基线提交，**无 remote**）\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
-> **安装包**: 本地 `dist-v7/win-unpacked/` 已部署到 `C:\Users\C\AppData\Local\Programs\dave-desktop`\
+> **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
+> **磁盘清理**: dist-new/v2~v7 表层已清（~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
 > **本文件目标**: 新会话零上下文可读本文继续；旧 `HANDOFF.md`（2026-08-05）信息已保留并补充
 
 ***
