@@ -44,7 +44,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [draft, setDraft] = useState({ name: "", description: "", content: "" })
   const [mcpTools, setMcpTools] = useState<McpDiscoveredTool[]>([])
   // MCP 服务器管理（写通道 mcp-servers-set 已注册，UI 收口；行级 JSON 编辑后整体保存重连）
-  const [mcpServers, setMcpServers] = useState<McpServerConfig[]>([])
   const [mcpDrafts, setMcpDrafts] = useState<string[]>([])
   const [mcpFlash, setMcpFlash] = useState<string | null>(null)
 
@@ -77,7 +76,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
       try {
         const list = JSON.parse(raw) as unknown
         if (!Array.isArray(list)) return
-        setMcpServers(list as McpServerConfig[])
         setMcpDrafts((list as McpServerConfig[]).map((s) => JSON.stringify(s, null, 2)))
       } catch {
         /* store 值损坏则保持空编辑区 */
@@ -163,7 +161,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
     }
     const ok = await api.mcp.saveServers(cfgs)
     if (!ok) return
-    setMcpServers(cfgs)
     setMcpFlash(t("settings.extensions.mcpSaved"))
     void api.mcp.listTools().then(setMcpTools)
   }
