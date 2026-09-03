@@ -51,8 +51,13 @@ export function ChatView({
   // 已见过的 tool 消息 key：历史补拉见到的（走正常气泡）不重复进轨迹卡
   const knownToolKeysRef = useRef<Set<string>>(new Set())
 
-  // patch（diff 独立载体）经 bridge onEvent 收集，流结束后聚合为文件变更卡
+  // patch（diff 独立载体）经 bridge onEvent 收集，流结束后聚合为文件变更卡；
+  // start 事件 = 新一轮流开始 → 清空上一轮 patch，防多轮会话累积重复展示
   const bridge = useChatStreamBridge(store, sessionId, (event) => {
+    if (event.type === "start") {
+      patchesRef.current = []
+      return
+    }
     if (event.type === "patch" && event.patch) {
       const paths = "paths" in event ? (event.paths ?? []) : []
       patchesRef.current.push({ diff: event.patch, paths })
