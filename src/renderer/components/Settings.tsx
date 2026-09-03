@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { X } from "lucide-react"
 import type { SkillDefinition } from "../../shared/skills"
-import type { McpDiscoveredTool } from "../../shared/mcp"
+import type { McpDiscoveredTool, McpServerConfig } from "../../shared/mcp"
 import type { StructuredEvent } from "../../shared/structured-log"
 
 type SettingsTab = "model" | "workspace" | "extensions" | "logs" | "about"
@@ -43,6 +43,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [skills, setSkills] = useState<SkillDefinition[]>([])
   const [draft, setDraft] = useState({ name: "", description: "", content: "" })
   const [mcpTools, setMcpTools] = useState<McpDiscoveredTool[]>([])
+  // MCP 服务器管理（写通道 mcp-servers-set 已注册，UI 收口；行级 JSON 编辑后整体保存重连）
+  const [mcpServers, setMcpServers] = useState<McpServerConfig[]>([])
+  const [mcpDrafts, setMcpDrafts] = useState<string[]>([])
+  const [mcpFlash, setMcpFlash] = useState<string | null>(null)
 
   // ── 日志 tab 状态 ──
   const [logLevel, setLogLevel] = useState<"debug" | "info" | "warn" | "error">("info")
@@ -68,6 +72,17 @@ export function Settings({ onClose }: { onClose: () => void }) {
     void api.store.get("cwd").then((p) => setCwd(p ?? ""))
     void api.skills.list().then((s) => setSkills(s))
     void api.mcp.listTools().then((tools) => setMcpTools(tools))
+    void api.store.get("mcp-servers").then((raw) => {
+      if (typeof raw !== "string" || !raw.trim()) return
+      try {
+        const list = JSON.parse(raw) as unknown
+        if (!Array.isArray(list)) return
+        setMcpServers(list as McpServerConfig[])
+        setMcpDrafts((list as McpServerConfig[]).map((s) => JSON.stringify(s, null, 2)))
+      } catch {
+        /* store 值损坏则保持空编辑区 */
+      }
+    })
     void api.logs.readStructured(20).then((rows) => setLogs(rows))
     void api.version().then(setVersion)
     void api.usage.today().then(setUsage)
@@ -128,6 +143,29 @@ export function Settings({ onClose }: { onClose: () => void }) {
     const next = skills.filter((s) => s.name !== name)
     await api.skills.save(next)
     setSkills(next)
+  }
+
+  const addMcpRow = () => {
+    setMcpDrafts((d) => [...d, '{\n  "name": "",\n  "command": "",\n  "args": []\n}'])
+  }
+
+  const saveMcpServers = async () => {
+    const api = window.dave
+    if (!api) return
+    const cfgs: McpServerConfig[] = []
+    for (const raw of mcpDrafts) {
+      try {
+        cfgs.push(JSON.parse(raw) as McpServerConfig)
+      } catch {
+        setMcpFlash(t("settings.extensions.mcpInvalidJson"))
+        return
+      }
+    }
+    const ok = await api.mcp.saveServers(cfgs)
+    if (!ok) return
+    setMcpServers(cfgs)
+    setMcpFlash(t("settings.extensions.mcpSaved"))
+    void api.mcp.listTools().then(setMcpTools)
   }
 
   const exportUsage = async () => {
@@ -292,6 +330,41 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   <button onClick={() => void addSkill()} className={btnPrimary}>
                     {t("settings.extensions.addSkill")}
                   </button>
+                </div>
+              </div>
+              <div>
+                <p className={sectionTitle}>{t("settings.extensions.mcpServers")}</p>
+                <div className="space-y-2">
+                  {mcpDrafts.map((raw, i) => (
+                    <div key={i} className="rounded-lg border border-[var(--line)] p-2">
+                      <textarea
+                        value={raw}
+                        onChange={(e) =>
+                          setMcpDrafts((prev) =>
+                            prev.map((v, idx) => (idx === i ? e.target.value : v)),
+                          )
+                        }
+                        rows={3}
+                        aria-label={`${t("settings.extensions.mcpServerJson")} ${i + 1}`}
+                        className={`${inputCls} font-mono text-[12px]`}
+                      />
+                      <button
+                        onClick={() => setMcpDrafts((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="mt-1 text-[11.5px] text-[var(--err)] hover:underline"
+                      >
+                        {t("settings.extensions.mcpDelete")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <button onClick={addMcpRow} className={btnGhost}>
+                    {t("settings.extensions.mcpAddServer")}
+                  </button>
+                  <button onClick={() => void saveMcpServers()} className={btnPrimary}>
+                    {t("settings.extensions.mcpSaveServers")}
+                  </button>
+                  {mcpFlash && <span className="text-[12px] text-[var(--ok)]">{mcpFlash}</span>}
                 </div>
               </div>
               <div>
