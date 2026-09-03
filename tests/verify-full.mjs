@@ -8,6 +8,8 @@ import process from "node:process"
 const STEPS = [
   // IPC 契约一致性门禁（preload↔main 双向，静态快检，放最前快速失败）
   { name: "ipc-consistency", cmd: "node scripts/scan-ipc-consistency.mjs", timeout: 60_000 },
+  // IPC sender 校验覆盖门禁（每个 ipcMain.handle 必须含 sender 守卫）
+  { name: "sender-coverage", cmd: "node scripts/audit-sender-coverage.mjs", timeout: 60_000 },
   // 必须先 build:E2E 启动 electron 加载 out/ 产物,不 rebuild 会验证旧代码(假绿)
   { name: "build", cmd: "npm run build", timeout: 300_000 },
   { name: "unit", cmd: "npm test", timeout: 240_000 },
