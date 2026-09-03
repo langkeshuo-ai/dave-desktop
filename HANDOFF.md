@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **Draft**（2026-09-04）——**三平台资产已再次统一重建为最新 HEAD**（run#33776383381 三 job 全 ✓，资产 updated_at 16:05-16:07Z，含六项 UI 收口/导出契约/命令面板/主题 + A2' 执行轨迹卡）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC_LINK 签名；\
+> **Release v0.4.0**: **已公开**（2026-09-04，`gh release edit v0.4.0 --draft=false`）→ <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0>——三平台资产（run#33776383381 重建、最新 HEAD）windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 完整，electron-updater 通道已生效；mac 仍 unsigned、win 无签名证书，首次安装运行有 Gatekeeper/SmartScreen 提示；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地安装目录已升级（2026-09-04）——**dist-v9**（win-unpacked 最新 HEAD，app.asar 09-04 01:14，含 A2' 执行轨迹卡 + 六项 UI 收口）robocopy 部署并核验；受 Defender 锁影响未启动实机（DaveDesktop 未运行）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
@@ -798,7 +798,7 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 - **产品代码**：可本地 dev / package:win；功能完整度接近 0.2.0 发布候选 + 0.3.0 半成品（skills/i18n）。
 
-- **发布**：**未**正式 0.2.0（无 remote、无签名、无真实 Key 发布级 E2E 证据）。
+- **发布**：**v0.4.0 已公开**（2026-09-04，<https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0>）；仍无代码签名（SmartScreen/Gatekeeper 提示）、无真实 Key 发布级 E2E 证据（mock 链路覆盖）。
 
 - **文档**：`INTEGRATED_OVERVIEW.md` / `RESIDUAL_RISKS.md` 主体停在 2026-07-31；**以本 HANDOFF + ROADMAP\_0.3.0 + git log 为准补 8 月增量**。
 
@@ -865,13 +865,13 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 ### 当前：内部项已全部收口（2026-09-04 终态）
 
-代码 489 单测 / 6 场景真实会话 E2E / UAT 6 / preview 18 / CI 全绿 / 冷启动 464ms / 滚动 144fps；README 承诺功能 100% 落地；draft v0.4.0 三平台资产 = 最新 HEAD，release notes 完整，未公开。
+代码 489 单测 / 6 场景真实会话 E2E / UAT 6 / preview 18 / CI 全绿 / 冷启动 464ms / 滚动 144fps；README 承诺功能 100% 落地；**v0.4.0 已公开发布（2026-09-04）**，三平台资产 = 最新 HEAD，release notes 完整。
 
 ### 剩余外部解锁项（任一到位即继续）
 
 | 项 | 触发方式 | 动作 |
 | --- | --- | --- |
-| 公开发布 | 用户指令「公开」 | `gh release edit v0.4.0 --draft=false` |
+| 公开发布 | ✅ 完成（2026-09-04） | `gh release edit v0.4.0 --draft=false` → <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0> |
 | 真实全链路 E2E | 提供 `DAVE_REAL_API_KEY` | `npm run chat:e2e:real` |
 | 代码签名 | 配 `WIN_CSC_LINK` / `CSC_LINK` Secrets | 重推 tag 重建 signed 三平台包 |
 | 新功能方向 | 用户指令 | 按 staff-engineer + TDD 实施 |
@@ -1083,7 +1083,7 @@ npm run verify
 【必读】HANDOFF.md（2026-09-04）+ tests/V0_4_GATES.md
 【先跑】node tests/verify-full.mjs（ipc-consistency → build → unit 489 → chat:e2e 6 场景 → preview:e2e 18/18 → uat 6 场景，2026-09-03 已 ALL PASS）
 【先读】HANDOFF.md 第 2.8-2.25 节（TDD 六步 + 插件生命周期 + skills 安全 + i18n + SETTINGS-FS + UAT/性能基线/文档 + IPC 契约 + 外部链就绪 + README 六项 UI 收口）
-【优先】内部项已全部收口；后续仅剩外部解锁项：公开发布（等用户「公开」指令）、SIGNING（证书）、UAT-E2E-REAL（真实 Key）——需用户提供资源
+【优先】内部项已全部收口；公开发布 ✅（2026-09-04）；剩余外部解锁项：SIGNING（证书）、UAT-E2E-REAL（真实 Key）——需用户提供资源
 【禁止】dark-first 默认、自动欢迎页、audit fix --force、删 Welcome、顶部工作区卡片、webContents.send 直接推送、无状态机聊天、恢复已删的 electron-smoke/electron-uat.mjs
 【TDD 已完】Step 1-6 ✓（推送契约/状态机/store/hook/chat-loop 替换/跨域门禁）；插件失败退避 ✓ + market:upgrade 闭环 ✓；skills 路径穿越防御 ✓；i18n 扫描归零 ✓；chat:e2e 6 场景 ✓；A2' 执行轨迹卡 ✓
 【TDD 待续】见【优先】列表；新 IPC 能力必须登记契约（schema+限流+sender）走 security.handle；技能名白名单 SKILL_NAME_RE 禁止放宽
