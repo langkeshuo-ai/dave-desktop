@@ -30,7 +30,7 @@
 
 - ✅ **第一步(基础能力)已实施(2026-08-01)**:`src/shared/skills.ts`(SkillDefinition + validateSkill/parseSkills 纯函数)、store `skills` 白名单、`skills-list`/`skills-set` IPC(校验+去重)、Settings「扩展」tab `SkillsPanel`(增删 + 复制内容取用)、单测 2 条(166 全过)
 - ✅ **第二步(agent 工具集成)已实施(2026-08-01)**:`skill__<name>` 命名空间 + `skillToolDefs` 注册到 runAgentLoop + runToolCalls 技能分支(无条件审批,技能内容注入工具结果)+ code_review 修复(内容纯函数 + 安全注释)+ 单测 169 全过
-- ⏳ **剩余(发布后)**:skills 目录扫描(`skills-loader.ts`)+ UAT 追加"已安装 skills 展示"步骤
+- ✅ **第三步(skills 目录扫描 loader + UAT 展示)已实施(2026-09-03)**:`src/main/skills/skills-manager.ts` 目录扫描(listSkills/readSkill/skillsSystemPrompt/references/test-prompts)+ `skills:fs-*` IPC + agent skills-system-prompt 注入;路径穿越防御(SKILL_NAME_RE 白名单,sink 级固定);新链 UAT 含技能增删/持久化场景
 - 设计约束:skill 工具一律需审批(技能内容为任意 prompt,潜在注入载体;与 MCP 一致);复用 `runToolCalls` 分支
 - **验证标准**:单测 ≥5 条;verify 全绿;UAT 追加"已安装 skills 展示"步骤
 
@@ -41,7 +41,7 @@
   (initI18n/changeLocale + zh-CN/en 资源);Settings 界面语言选择(持久化 store locale,重启保持);
   设置标题/选项卡/sectionTitle 迁移至 t();单测 2 条(172 全过)、build 42.68s 正常
 - ✅ **第二步(核心组件文案迁移)已实施(2026-08-01)**:Settings 全量(模型/工作区/扩展/MCP/技能/漏斗/日志/诊断/通用按钮)、ChatView/MessageInput(状态栏/搜索/导出/输入提示)、KeyboardHelp(17 条快捷键 descKey 化)迁移至 t(),en 完整翻译;`scripts/scan-hardcoded-zh.mjs` 扫描脚本(报告剩余候选:App.tsx 状态消息/模式标签等);UAT 追加语言切换步骤(en 标题变 Settings 再切回)
-- ⏳ **剩余(后续)**:App.tsx 状态消息/模式标签等剩余文案抽取;UAT 全量运行验证
+- ✅ **第三步(剩余硬编码清零)已实施(2026-09-03)**:App.tsx 会话分组(今天/昨天/更早/会话)/标题占位 + ErrorBoundary(界面出错了/重试)迁移 t();`scan-hardcoded-zh.mjs` 排除 i18n 资源目录后**实测 0 处、exit 0**(M2-REST 收口)
 - **验证标准**:语言切换即时生效且持久化(UAT 步骤);全部用户可见文案经 t() 提取(脚本扫描硬编码中文);verify 全绿
 
 ### M3:跨平台(P1,需机器)

@@ -2,8 +2,9 @@
 
 > 目标：把主进程已落地的 7 条流式推送通道（start/chunk/done/error/tools/approval/patch，
 > 均经 pushWithGuard 按契约推送）接入渲染端 UI。前置条件：src/renderer 源码树就绪
-> （当前工作区为 renderer 不完整副本，本文件是 renderer 补齐后的可执行接线方案）。
-> 关联 HANDOFF 待办：TDD-CONSUME。
+> （2026-09-01 renderer 已补全；本方案执行结果由 tests/chat-stream.e2e.mjs（4 场景）与
+> tests/electron-uat.mjs（6 场景）承接与验证）。
+> 关联 HANDOFF 待办：TDD-CONSUME（✅ 已闭环）。
 
 ***
 
@@ -14,7 +15,7 @@
 
 - preload：src/preload/index.ts 的 chat 对象已暴露
   onChunk / onDone / onError / onApproval / onPatch / onTools（均返回取消订阅函数），
-  以及 chat.stream / chat.abort / chat.approve。缺 onStart，需补齐。
+  以及 chat.stream / chat.abort / chat.approve。onStart 已于 2026-09-01 补齐。
 
 - 渲染端模块（已实现且单测全绿，node 环境可测）：
 
@@ -204,8 +205,8 @@ const bridge = useChatStreamBridge(store, sessionId)
 
 ### 4.3 端到端（落地顺序第 3）
 
-- tests/electron-smoke.mjs mock 模式已全链路（chunk/tools/approval/patch/done）；
-  增加断言：渲染端 store 累加文本 == 主进程 emit 的最终文本（finalContent 对齐）。
+- tests/chat-stream.e2e.mjs 真实会话门禁已全链路（ask 流式/落库/agent 审批/重启恢复/设置面板 4 场景）；
+  渲染端 store 累加文本与主进程最终文本对齐已由该门禁断言覆盖。
 
 ***
 
@@ -217,7 +218,7 @@ const bridge = useChatStreamBridge(store, sessionId)
 4. 错误 → error 文案展示，不残留半截 streaming。
 5. 切换会话 → 旧 store 卸载、监听全部清理；残留事件被 sessionId 过滤，零串扰。
 6. 断线重连 → onStart 重置流，幂等 key 不误杀重放。
-7. 全量 vitest + typecheck 双跑绿；electron-smoke mock 全链路通过。
+7. 全量 vitest + typecheck 双跑绿；chat:e2e 真实会话门禁通过（2026-09-03：477 unit + 4 场景 + UAT 6 场景全绿）。
 
 ***
 
