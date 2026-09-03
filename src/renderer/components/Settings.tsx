@@ -25,7 +25,15 @@ const btnGhost =
   "rounded-lg border border-[var(--line)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--ink-2)] hover:bg-[var(--surface-2)] active:scale-[0.98]"
 const sectionTitle = "mb-2 text-[12px] font-semibold uppercase tracking-wide text-[var(--ink-3)]"
 
-export function Settings({ onClose }: { onClose: () => void }) {
+export function Settings({
+  onClose,
+  theme,
+  onToggleTheme,
+}: {
+  onClose: () => void
+  theme: "light" | "night"
+  onToggleTheme: () => void
+}) {
   const { t } = useTranslation()
   const [tab, setTab] = useState<SettingsTab>("model")
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -457,6 +465,22 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 </button>
                 <button onClick={() => void exportDiagnostics()} className={btnGhost}>
                   {t("settings.about.exportDiagnostics")}
+                </button>
+              </div>
+              <div>
+                <p className={sectionTitle}>{t("settings.about.appearance")}</p>
+                <button
+                  onClick={onToggleTheme}
+                  className={`${btnGhost} flex items-center gap-2`}
+                  role="switch"
+                  aria-checked={theme === "night"}
+                >
+                  <span
+                    className={`h-3 w-3 rounded-full border ${theme === "night" ? "border-[var(--amber-500)] bg-[var(--amber-500)]" : "border-[var(--ink-3)]"}`}
+                  />
+                  {theme === "night"
+                    ? t("settings.about.nightMode")
+                    : t("settings.about.lightMode")}
                 </button>
               </div>
               <div>

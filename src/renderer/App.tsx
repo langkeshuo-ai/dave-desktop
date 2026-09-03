@@ -30,6 +30,28 @@ export default function App() {
   const [activeId, setActiveId] = useState<string>("")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  // 主题（light-first 设计；night 深色变体由 globals.css html.night 驱动，持久化 store "theme"）
+  const [theme, setTheme] = useState<"light" | "night">("light")
+
+  useEffect(() => {
+    const stored = window.dave?.store
+    if (!stored) return
+    void stored.get("theme").then((v) => {
+      if (v === "night" || v === "light") setTheme(v)
+    })
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("night", theme === "night")
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme((cur) => {
+      const next = cur === "night" ? "light" : "night"
+      void window.dave?.store?.set("theme", next).catch(() => {})
+      return next
+    })
+  }
 
   // ⌘K / Ctrl+K 打开命令面板
   useEffect(() => {
@@ -157,7 +179,13 @@ export default function App() {
           onTitleUpdate={() => void refresh()}
         />
       )}
-      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <Settings
+          onClose={() => setSettingsOpen(false)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      )}
       {paletteOpen && (
         <CommandPalette
           open={paletteOpen}

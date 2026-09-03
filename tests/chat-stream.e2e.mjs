@@ -159,14 +159,24 @@ try {
   process.stdout.write("scene 3 passed (history rendered after restart)\n")
 
   // ── 场景 4：设置面板（SETTINGS-FS 视图回归：打开→tab 渲染→Esc 关闭） ──
-  process.stdout.write("scene 4: settings panel\n")
+  process.stdout.write("scene 4: settings panel + theme switch\n")
   await window2.getByRole("button", { name: "设置" }).click()
   const settingsDialog = window2.getByRole("dialog", { name: "设置" })
   await settingsDialog.waitFor({ state: "visible", timeout: 15_000 })
-  await window2.getByRole("button", { name: "关于" }).waitFor({ state: "visible", timeout: 5_000 })
+  await window2.getByRole("button", { name: "关于" }).click()
+  const themeSwitch = settingsDialog.getByRole("switch")
+  await themeSwitch.waitFor({ state: "visible", timeout: 5_000 })
+  await themeSwitch.click()
+  const nightOn = await window2.evaluate(() => document.documentElement.classList.contains("night"))
+  if (!nightOn) throw new Error("scene 4: night mode did not apply")
+  await themeSwitch.click()
+  const nightOff = await window2.evaluate(
+    () => !document.documentElement.classList.contains("night"),
+  )
+  if (!nightOff) throw new Error("scene 4: light mode did not restore")
   await window2.keyboard.press("Escape")
   await settingsDialog.waitFor({ state: "hidden", timeout: 5_000 })
-  process.stdout.write("scene 4 passed (settings panel open/close)\n")
+  process.stdout.write("scene 4 passed (settings panel + theme toggle)\n")
 
   // ── 场景 5：会话导出 Markdown（session:export-markdown 契约） ──
   process.stdout.write("scene 5: export markdown\n")
