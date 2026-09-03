@@ -1,0 +1,25 @@
+# Git 行尾策略：全程 LF，杜绝 Windows CI（autocrlf）把源码转 CRLF 后
+# 导致 prettier --check（endOfLine=lf）全线误报。
+* text=auto
+
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.cjs   text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# 二进制产物保持原样，不做行尾处理
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.exe   binary
+*.asar  binary
+*.blockmap binary
