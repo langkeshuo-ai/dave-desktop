@@ -6,7 +6,7 @@
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
 > **Release v0.4.0**: **Draft**（2026-09-04）——**三平台资产已再次统一重建为最新 HEAD**（run#33776383381 三 job 全 ✓，资产 updated_at 16:05-16:07Z，含六项 UI 收口/导出契约/命令面板/主题 + A2' 执行轨迹卡）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC_LINK 签名；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
-> **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
+> **安装包**: 本地安装目录已升级（2026-09-04）——**dist-v9**（win-unpacked 最新 HEAD，app.asar 09-04 01:14，含 A2' 执行轨迹卡 + 六项 UI 收口）robocopy 部署并核验；受 Defender 锁影响未启动实机（DaveDesktop 未运行）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
 > **本文件目标**: 新会话零上下文可读本文继续；旧 `HANDOFF.md`（2026-08-05）信息已保留并补充\
 > **主日志路径**: `%APPDATA%\dave-desktop\dave-desktop.log`（index.ts:116 resolvePathFn 覆盖；`logs\main.log` 为旧版本遗留，勿据此排查——2026-09-03 已实证 18:52 新构建设置 `logs\main.log` 零写入且 `dave-desktop.log` 正常）\
@@ -878,8 +878,8 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 ### 本地维护
 
-- 升级安装目录（可选）：`taskkill /f /im DaveDesktop.exe` → `robocopy "dist-v9\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
-- 清理旧构建目录（Defender 锁消失后）：`Remove-Item dist-new,dist-v2..v7 -Recurse -Force`
+- ✅ 安装目录已升级到 dist-v9（2026-09-04，DaveDesktop 未运行直接 robocopy）。后续再升级：`taskkill /f /im DaveDesktop.exe`（如正在运行）→ `robocopy "dist-v9\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
+- 清理旧构建目录（Defender 锁消失后，进程重启/扫描完成后）：`Remove-Item dist-new,dist-v2..v7 -Recurse -Force`（当前每目录 ~81MB app.asar 仍被瞬态锁）
 - 全量门禁复跑：`node tests/verify-full.mjs`
 
 ## 5. 踩坑记录（重要）
@@ -1079,7 +1079,7 @@ npm run verify
 【工作目录】c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop
 【状态】git 已初始化（master @ 9e210bd，已推送）· origin 已关联（langkeshuo-ai/dave-desktop）· CI 首绿 · light-first · Activity Bar 布局 · 无自动 onboarding
 【安装目录】C:\Users\C\AppData\Local\Programs\dave-desktop
-【最新打包】dist-v9/win-unpacked/（v0.4.0 全功能；本地已在跑 dist-v8 部署版）
+【最新打包】dist-v9/win-unpacked/（v0.4.0 全功能；本地安装目录已于 2026-09-04 更新为 dist-v9）
 【必读】HANDOFF.md（2026-09-04）+ tests/V0_4_GATES.md
 【先跑】node tests/verify-full.mjs（ipc-consistency → build → unit 489 → chat:e2e 6 场景 → preview:e2e 18/18 → uat 6 场景，2026-09-03 已 ALL PASS）
 【先读】HANDOFF.md 第 2.8-2.25 节（TDD 六步 + 插件生命周期 + skills 安全 + i18n + SETTINGS-FS + UAT/性能基线/文档 + IPC 契约 + 外部链就绪 + README 六项 UI 收口）
