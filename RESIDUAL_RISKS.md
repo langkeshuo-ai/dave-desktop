@@ -5,8 +5,9 @@
 > 跨域一致性门禁、插件生命周期加固(upgrade 回滚 + 失败自动禁用退避)、市场契约闭环、
 > skills 路径穿越防御(SKILL_NAME_RE 白名单)、i18n 组件硬编码清零、设置面板视图回归、
 > 冷启动 631ms(3s 预算内)。
-> 仍待外部环境:代码签名证书、真实 API Key 全链路 E2E、远端 CI(本地无 git remote,需配置后 push)、跨平台。
-> **以 `HANDOFF.md`(2026-09-03)为准;`tests/electron-smoke.mjs`/`electron-uat.mjs` 已删(旧 UI),旧 UAT 由 chat:e2e 4 场景 + preview:e2e 18/18 承接。**
+> 发布链:remote 已配置且 master 已推送、CI 首绿、Release v0.4.0 draft 三平台资产齐备(win/linux/mac,更新通道 latest.yml 贯通 0.4.0)。
+> 仍待外部环境:代码签名证书(win CSC / mac CSC_LINK,当前 mac 包为 unsigned)、真实 API Key 全链路 E2E、draft 公开动作(用户决定)。
+> **以 `HANDOFF.md`(2026-09-03)为准;`tests/electron-smoke.mjs`/`electron-uat.mjs` 已删(旧 UI),旧 UAT 由 chat:e2e 4 场景 + preview:e2e 18/18 + uat 6 场景承接。**
 
 ## 当前已关闭
 
