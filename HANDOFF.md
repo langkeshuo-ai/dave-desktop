@@ -601,14 +601,32 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 ### 2.16 本会话新增：安全收口核查 + 三平台发布链补全（2026-09-03，第八轮）
 
 - **危险模式静态扫描**（eval/new Function/innerHTML/dangerouslySetInnerHTML/exec/execSync/shell）4 处甄别：
+
   - MessageBubble `dangerouslySetInnerHTML`（hljs 高亮）：hljs `.value` 输出已 HTML 转义 + 上游 rehype-sanitize 白名单——sink 级防御正确，**无需改**
+
   - autolaunch `execSync` powershell 拼接：单引号 `''` 正确转义、固定模板无 shell 插值——**无注入面**
+
   - agent.ts `shell: true`：LLM 命令执行属产品语义（一律审批 + shell-policy 校验）
+
   - marketplace/checkpoints spawn `shell: false` ——安全
+
 - **release.yml 三平台发布补全**（MAC-LINUX 发布链 + SIGNING CI 接线）：
-  - 原仅 `release-windows`（tag v* → verify → package:win → GH_TOKEN 发布）
+
+  - 原仅 `release-windows`（tag v\* → verify → package:win → GH\_TOKEN 发布）
+
   - 新增 `release-linux`（ubuntu-latest → AppImage/deb）与 `release-mac`（macos-latest → dmg/zip，无证书时 `CSC_IDENTITY_AUTO_DISCOVERY=false` 出 unsigned 包）
+
   - 签名接线：Windows 用 `WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD` secrets，mac 发布前需 `CSC_LINK`
+
+### 2.17 基线提交完成（2026-09-03，第九轮）
+
+- 用户授权后执行首次 git 基线提交：**`b2ead1d`** **feat(v0.4): 基线提交**（183 个文件）
+
+- 前置清理：`.gitignore` 追加 `.workbuddy/`（会话记忆不入库）；`dist-v*/dist-new` 4.5GB 构建产物早已排除
+
+- **工作区已归零**（git status 0 残留）；历史提交保留 `8fc8df4`
+
+- CI-REMOTE 剩余：用户创建 GitHub 仓库 → `git remote add origin <url>` → `git push -u origin master` → CI 首绿（ci.yml 已对齐本地 6 步门禁矩阵）
 
 ***
 
