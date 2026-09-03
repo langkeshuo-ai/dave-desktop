@@ -37,7 +37,13 @@ export function CodeBlock({ className, children }: { className?: string; childre
   const match = /language-(\w+)/.exec(className ?? "")
   const lang = match?.[1] ?? ""
   // children 可能是多文本节点数组（含换行），join("") 避免 String() 的逗号分隔
-  const raw = Array.isArray(children) ? children.join("") : String(children ?? "")
+  const raw = Array.isArray(children)
+    ? children
+        .map((c) => (typeof c === "string" || typeof c === "number" ? String(c) : ""))
+        .join("")
+    : typeof children === "string" || typeof children === "number"
+      ? String(children)
+      : ""
   const text = raw.replace(/\n$/, "")
   if (!className || !match) {
     return <code className="inline-code">{text}</code>
@@ -45,7 +51,11 @@ export function CodeBlock({ className, children }: { className?: string; childre
   const html = hljs.getLanguage(lang)
     ? hljs.highlight(text, { language: lang }).value
     : hljs.highlightAuto(text).value
-  return <pre className="hljs"><code dangerouslySetInnerHTML={{ __html: html }} /></pre>
+  return (
+    <pre className="hljs">
+      <code dangerouslySetInnerHTML={{ __html: html }} />
+    </pre>
+  )
 }
 
 const markdownComponents = {
@@ -87,13 +97,14 @@ export function MessageBubble({
     )
   }
 
-  const body = streaming || role === "tool" || aborted ? (
-    <span className="whitespace-pre-wrap break-words">{content}</span>
-  ) : (
-    <div className="md-body break-words text-[13.5px] leading-relaxed">
-      <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
-    </div>
-  )
+  const body =
+    streaming || role === "tool" || aborted ? (
+      <span className="whitespace-pre-wrap break-words">{content}</span>
+    ) : (
+      <div className="md-body break-words text-[13.5px] leading-relaxed">
+        <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
+      </div>
+    )
 
   return (
     <div className="group flex justify-start">
@@ -105,7 +116,9 @@ export function MessageBubble({
         }`}
       >
         {body}
-        {streaming && <span className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-pulse bg-[var(--amber-600)] align-[-2px]" />}
+        {streaming && (
+          <span className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-pulse bg-[var(--amber-600)] align-[-2px]" />
+        )}
         {aborted && (
           <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-[var(--amber-600)]/30 bg-[var(--amber-50)] px-2 py-0.5 text-[11px] font-medium text-[var(--amber-600)]">
             {t("chat.aborted")}
@@ -116,7 +129,7 @@ export function MessageBubble({
         <button
           aria-label={t("common.copy")}
           title={copied ? t("common.copied") : t("common.copy")}
-          onClick={copy}
+          onClick={() => void copy()}
           className="ml-1.5 mt-0.5 hidden h-6 w-6 shrink-0 place-items-center rounded-md text-[var(--ink-3)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] group-hover:grid"
         >
           {copied ? <Check size={13} className="text-[var(--ok)]" /> : <Copy size={13} />}

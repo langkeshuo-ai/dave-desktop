@@ -11,3 +11,5 @@ coverage
 build
 *.tsbuildinfo
 .cache
+.archcore
+.workbuddy

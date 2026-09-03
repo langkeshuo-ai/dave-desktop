@@ -37,7 +37,8 @@ export function ChatView({
   const [history, setHistory] = useState<ChatMessage[]>(initialMessages)
   const [hydrated, setHydrated] = useState(false)
   const [mode, setMode] = useState<ModeKey>("ask")
-  const store = useMemo(() => createChatStreamStore(), [sessionId])
+  // 每个会话一个 store 实例：由父级 key={activeId} 控制组件重建，内部仅挂载时创建一次
+  const store = useMemo(() => createChatStreamStore(), [])
   const state = useChatStreamStore(store)
   const scrollRef = useRef<HTMLDivElement>(null)
   const doneSeededRef = useRef<string | null>(null)
@@ -63,7 +64,7 @@ export function ChatView({
       setHydrated(true)
       return
     }
-    ;(async () => {
+    void (async () => {
       try {
         const data = await window.dave.session.get(sessionId)
         if (!cancelled && data?.messages?.length) {
@@ -91,7 +92,10 @@ export function ChatView({
     }
   }, [state])
 
-  const busy = state.status === "streaming" || state.status === "tool_pending" || state.status === "approval_pending"
+  const busy =
+    state.status === "streaming" ||
+    state.status === "tool_pending" ||
+    state.status === "approval_pending"
   const empty = history.length === 0 && state.status !== "streaming" && !busy
 
   // 初始读取模式（主进程持久化）
@@ -160,10 +164,14 @@ export function ChatView({
           role="status"
           aria-live="polite"
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-            busy ? "bg-[var(--amber-50)] text-[var(--amber-600)]" : "bg-[var(--ok-bg)] text-[var(--ok)]"
+            busy
+              ? "bg-[var(--amber-50)] text-[var(--amber-600)]"
+              : "bg-[var(--ok-bg)] text-[var(--ok)]"
           }`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${busy ? "animate-pulse bg-[var(--amber-600)]" : "bg-[var(--ok)]"}`} />
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${busy ? "animate-pulse bg-[var(--amber-600)]" : "bg-[var(--ok)]"}`}
+          />
           {busy ? t("chat.streaming") : t("chat.done")}
         </span>
       </header>

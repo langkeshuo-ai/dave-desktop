@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next"
 import { X } from "lucide-react"
 import type { SkillDefinition } from "../../shared/skills"
 import type { McpDiscoveredTool } from "../../shared/mcp"
+import type { StructuredEvent } from "../../shared/structured-log"
 
 type SettingsTab = "model" | "workspace" | "extensions" | "logs" | "about"
 
@@ -45,7 +46,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   // ── 日志 tab 状态 ──
   const [logLevel, setLogLevel] = useState<"debug" | "info" | "warn" | "error">("info")
-  const [logs, setLogs] = useState<Array<Record<string, unknown>>>([])
+  const [logs, setLogs] = useState<StructuredEvent[]>([])
 
   // ── 关于 tab 状态 ──
   const [version, setVersion] = useState("")
@@ -92,7 +93,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
     const key = apiKey.trim() || (await api.store.get("openai-api-key")) || ""
     try {
       const r = await api.provider.probe({ provider: "openai", apiKey: key })
-      setProbeMsg(r.ok ? t("settings.model.probed", { ms: r.latencyMs }) : t("settings.model.probeFailed"))
+      setProbeMsg(
+        r.ok ? t("settings.model.probed", { ms: r.latencyMs }) : t("settings.model.probeFailed"),
+      )
     } catch {
       setProbeMsg(t("settings.model.probeFailed"))
     } finally {
@@ -158,8 +161,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
         {/* 左侧 tab 导航 */}
         <nav className="flex w-44 flex-col gap-0.5 border-r border-[var(--line)] bg-[var(--surface-2)] p-3">
           <div className="mb-3 flex items-center justify-between px-1">
-            <span className="text-[13px] font-semibold text-[var(--ink)]">{t("settings.title")}</span>
-            <button onClick={onClose} aria-label={t("settings.close")} className="grid h-7 w-7 place-items-center rounded-lg text-[var(--ink-3)] hover:bg-[var(--surface)] hover:text-[var(--ink)]">
+            <span className="text-[13px] font-semibold text-[var(--ink)]">
+              {t("settings.title")}
+            </span>
+            <button
+              onClick={onClose}
+              aria-label={t("settings.close")}
+              className="grid h-7 w-7 place-items-center rounded-lg text-[var(--ink-3)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+            >
               <X size={15} />
             </button>
           </div>
@@ -184,7 +193,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {tab === "model" && (
             <div className="space-y-5">
               <div>
-                <label htmlFor="settings-api-key" className="mb-1.5 block text-[12.5px] font-medium text-[var(--ink-2)]">
+                <label
+                  htmlFor="settings-api-key"
+                  className="mb-1.5 block text-[12.5px] font-medium text-[var(--ink-2)]"
+                >
                   {t("settings.model.apiKey")}
                 </label>
                 <div className="flex gap-2">
@@ -200,7 +212,11 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     {t("settings.model.save")}
                   </button>
                 </div>
-                {savedFlash && <p className="mt-1.5 text-[12px] text-[var(--green-600)]">{t("settings.model.saved")}</p>}
+                {savedFlash && (
+                  <p className="mt-1.5 text-[12px] text-[var(--green-600)]">
+                    {t("settings.model.saved")}
+                  </p>
+                )}
               </div>
               <button onClick={() => void probe()} disabled={probing} className={btnGhost}>
                 {probing ? "…" : t("settings.model.probe")}
@@ -228,14 +244,23 @@ export function Settings({ onClose }: { onClose: () => void }) {
               <div>
                 <p className={sectionTitle}>{t("settings.extensions.skills")}</p>
                 {skills.length === 0 ? (
-                  <p className="text-[12.5px] text-[var(--ink-3)]">{t("settings.extensions.noSkills")}</p>
+                  <p className="text-[12.5px] text-[var(--ink-3)]">
+                    {t("settings.extensions.noSkills")}
+                  </p>
                 ) : (
                   <ul className="space-y-1.5">
                     {skills.map((s) => (
-                      <li key={s.name} className="flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2">
+                      <li
+                        key={s.name}
+                        className="flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2"
+                      >
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-medium text-[var(--ink)]">{s.name}</p>
-                          <p className="truncate text-[12px] text-[var(--ink-3)]">{s.description}</p>
+                          <p className="truncate text-[13px] font-medium text-[var(--ink)]">
+                            {s.name}
+                          </p>
+                          <p className="truncate text-[12px] text-[var(--ink-3)]">
+                            {s.description}
+                          </p>
                         </div>
                         <button onClick={() => void removeSkill(s.name)} className={btnGhost}>
                           {t("common.delete")}
@@ -272,17 +297,26 @@ export function Settings({ onClose }: { onClose: () => void }) {
               <div>
                 <p className={sectionTitle}>{t("settings.extensions.mcp")}</p>
                 {mcpTools.length === 0 ? (
-                  <p className="text-[12.5px] text-[var(--ink-3)]">{t("settings.extensions.noMcp")}</p>
+                  <p className="text-[12.5px] text-[var(--ink-3)]">
+                    {t("settings.extensions.noMcp")}
+                  </p>
                 ) : (
                   <ul className="space-y-1">
                     {mcpTools.map((tool) => (
-                        <li key={tool.fullName} className="rounded-lg border border-[var(--line)] px-3 py-2">
-                          <p className="truncate font-mono text-[12.5px] text-[var(--ink)]">{tool.fullName}</p>
-                          {tool.description && (
-                            <p className="truncate text-[12px] text-[var(--ink-3)]">{tool.description}</p>
-                          )}
-                        </li>
-                      ))}
+                      <li
+                        key={tool.fullName}
+                        className="rounded-lg border border-[var(--line)] px-3 py-2"
+                      >
+                        <p className="truncate font-mono text-[12.5px] text-[var(--ink)]">
+                          {tool.fullName}
+                        </p>
+                        {tool.description && (
+                          <p className="truncate text-[12px] text-[var(--ink-3)]">
+                            {tool.description}
+                          </p>
+                        )}
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -292,7 +326,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {tab === "logs" && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="text-[12.5px] font-medium text-[var(--ink-2)]">{t("settings.logs.level")}</span>
+                <span className="text-[12.5px] font-medium text-[var(--ink-2)]">
+                  {t("settings.logs.level")}
+                </span>
                 <select
                   value={logLevel}
                   onChange={(e) => {
@@ -319,9 +355,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   <ul className="space-y-1 font-mono text-[12px]">
                     {logs.map((row, i) => (
                       <li key={i} className="truncate text-[var(--ink-2)]">
-                        <span className="text-[var(--ink-4)]">{String(row.ts ?? "")}</span>{" "}
-                        <span className="text-[var(--amber-600)]">{String(row.level ?? "")}</span>{" "}
-                        {String(row.message ?? String(row.msg ?? ""))}
+                        <span className="text-[var(--ink-4)]">
+                          {new Date(row.ts).toLocaleTimeString()}
+                        </span>{" "}
+                        <span className="text-[var(--amber-600)]">{row.level}</span> {row.msg}
                       </li>
                     ))}
                   </ul>
@@ -354,7 +391,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <p className={sectionTitle}>{t("settings.about.shortcuts")}</p>
-                <p className="text-[13px] text-[var(--ink-2)]">{t("settings.about.shortcutsList")}</p>
+                <p className="text-[13px] text-[var(--ink-2)]">
+                  {t("settings.about.shortcutsList")}
+                </p>
               </div>
             </div>
           )}
