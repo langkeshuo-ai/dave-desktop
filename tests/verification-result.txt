@@ -1,32 +1,30 @@
-=== FULL VERIFICATION (分步运行记录,2026-08-01) ===
-覆盖:build(最新源码)+ unit + integration(smoke)+ UAT,四步全部 clean exit。
-注:verify-full.mjs(含 build 步骤)单条命令可一键复现;本文件为分步运行记录,
-   避免单条命令在负载下超过工具调用时长上限。全部输出为实际运行结果。
+=== FULL VERIFICATION (单命令完整运行记录, 2026-09-03) ===
+命令: node tests/verify-full.mjs
+管线: ipc-consistency → build → unit → integration(chat:e2e) → e2e(preview) → uat
+全部为实际运行输出。退出码 0。
 
-STEP 1: build(验证最新源码,消除 smoke/UAT 验证旧产物的假绿)
-  ✓ built in 1m 41s
-  build: PASS (exit 0)
+STEP ipc-consistency: node scripts/scan-ipc-consistency.mjs
+  MISSING 0 / DEAD 0 → PASS
+STEP ipc sender-coverage: node scripts/audit-sender-coverage.mjs
+  OK (32 ipcMain.handle, all with sender guard) → PASS
+STEP build: npm run build
+  main/preload/renderer 三端产物生成 → PASS
+STEP unit: npm test
+  489 passed / 0 failed（20 测试文件，含状态机/推送守卫/跨域一致性/契约/
+  插件退避/市场升级/skills 路径安全/tool-trace/i18n 键一致）→ PASS
+STEP integration(chat:e2e): node tests/chat-stream.e2e.mjs
+  6 场景全过、零 console 错误：
+  scene 1 ask 流式渲染 / 1b 消息落库(user+assistant) / 2 agent 审批 /
+  2b 执行轨迹卡(file_tree) / 3 重启恢复渲染 / 4 设置面板+主题切换 /
+  5 导出 Markdown 含转写 / 6 命令面板开合 → PASS
+STEP e2e(preview): node tests/frontend-preview.e2e.mjs
+  Result: 18 passed, 0 failed → PASS
+STEP uat: node tests/electron-uat.mjs
+  6 场景（启动渲染/设置面板/技能增删/关于/持久化/删除）全过 → PASS
 
-STEP 2: unit
-  Tests  170 passed (170)
-  unit: PASS (exit 0)
+FULL VERIFICATION: ALL PASS (clean exit)
 
-STEP 3: integration(smoke)
-  mock ask streaming passed
-  mock edit + regenerate passed
-  mock agent approval + patch passed
-  Electron smoke passed: Dave Desktop
-  integration(smoke): PASS (exit 0)
-
-STEP 4: uat
-  UAT RESULT: 21/21 passed
-  uat: PASS (exit 0)
-
-FULL VERIFICATION: ALL PASS (clean exit, 4/4 steps exit 0)
-
-本轮修复(2026-08-01,code_review 2 发现):
-- verify-full.mjs:STEPS 增加 build 步骤——smoke/UAT 启动 electron 加载 out/ 产物,
-  不 rebuild 会验证旧代码(假绿);现强制先 build 验证最新源码。
-- electron-smoke.mjs teardown:close 超时强制 kill(避免 playwright 保持 stdio 管道
-  使脚本无限挂起);功能断言(三场景)为核心门禁,close 阶段慢关闭记录为警告。
-- electron-uat.mjs:跳过引导前等待欢迎页/向导渲染(负载下时序),修复设置 click 超时。
+补充基线（2026-09-03 实测）：
+  冷启动 464ms（预算 3000ms）
+  FPS 2000 条混合消息真实 .chat-scroller 滚动 avg 144fps / P95 7ms / P99 7.1ms / slow 帧 0
+  发布：draft v0.4.0 三平台资产统一（windows/linux/mac + 3 latest.yml），CI 全绿
