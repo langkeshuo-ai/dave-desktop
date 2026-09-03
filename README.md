@@ -1,23 +1,31 @@
 # Dave Desktop
 
-> **定位:** 本地 Agent · Cursor 风格 UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff  
-> **状态:** ✅ 可运行（Windows / macOS / Linux · Electron）  
-> **主题:** light-first（浅色默认）· `html.night` 深色可选  
-> **仓库:** https://github.com/langkeshuo-ai/dave-desktop  
-> **最后推送:** 2026-08-05（卖机最终同步 — 源码 + Windows 安装包 Release）
+> **定位:** 本地 Agent · Cursor 风格 UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff
+> **状态:** ✅ 可运行（Windows / macOS / Linux · Electron）· 版本 **0.4.0**（2026-09-03）
+> **主题:** light-first（浅色默认）· `html.night` 深色可选
+> **仓库:** https://github.com/langkeshuo-ai/dave-desktop
+> **门禁:** `npm run verify` 全绿 + `node tests/verify-full.mjs` 6 步 ALL PASS（477 单测 · chat:e2e 4 场景 · preview:e2e 18 · UAT 6）
+> **交接:** 详细状态/决策/命令见 `HANDOFF.md`（2026-09-03）+ `tests/V0_4_GATES.md`（门禁矩阵）
 
-## 卖机最终推送说明（2026-08-05）
+## v0.4 能力（2026-09-03）
 
-本仓库在 **2026-08-05** 做了「卖出开发机前」的最终同步：
+- **插件生命周期加固**：市场升级契约 + 升级失败回滚 + 连续失败自动禁用（PLUGIN_FAIL_THRESHOLD=3）
+- **设置面板回归**：模型/工作区/扩展/日志/关于 五 tab（走 IPC 契约）
+- **skills 目录扫描 + 路径穿越防御**（SKILL_NAME_RE 白名单）；i18n 组件硬编码清零
+- **IPC 契约治理**：38 handler 全 schema；`scripts/scan-ipc-consistency.mjs` 双向缺口归零门禁
+- **会话链路**：真实流式（pushWithGuard + 状态机守卫）+ 落库 + 审批 + 重启恢复渲染 + 文件变更卡
 
-| 项     | 说明                                                                           |
-| ------ | ------------------------------------------------------------------------------ |
-| 源码   | `master` 与本地一致；完整历史在 GitHub                                         |
-| 安装包 | **不进 git**（`dist/` 已 ignore）；发在 **GitHub Releases**                    |
-| 本机   | 推送后清除本目录构建产物与运行时密钥数据；新环境请 `git clone` + `npm install` |
-| 复刻   | 见下方「快速开始」；装包见 Releases 最新 tag                                   |
+## 快速开始
 
-> 旧文档若仍写 `alchaincyf/dave-desktop` 或 dark-first，以本 README 与 `HANDOFF.md`（2026-08-05）为准。
+```bash
+npm ci          # 安装依赖（lockfile 0.4.0）
+npm run dev     # 开发模式
+npm run verify  # 静态门禁（format/lint/typecheck/coverage/build）
+node tests/verify-full.mjs   # 一键全量门禁（含 Electron E2E，需先 npx playwright install chromium）
+npm run package:win  # 打包（默认 dist/；dist-v8 为隔离产物）
+```
+
+> 依赖审计：`npm audit --omit=dev --audit-level=high` 当前 **0 vulnerabilities**（2026-09-03）。
 
 ## 技术栈
 
@@ -29,7 +37,7 @@
 | 图标     | lucide-react 0.500                                                        |
 | 持久化   | electron-store 11 + electron-window-state 5 + safeStorage（API Key）      |
 | 日志     | electron-log 5                                                            |
-| 测试     | Vitest 3.2.6 + 136 单元测试                                               |
+| 测试     | Vitest 3.2 + **477 单元测试** + Playwright E2E                            |
 | 代码质量 | ESLint 9 + Prettier + Husky + lint-staged                                 |
 | 字体     | -apple-system / Segoe UI（系统栈）+ JetBrains Mono（代码）                |
 
