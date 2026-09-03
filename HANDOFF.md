@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产齐备**：windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml（run#33755352792 全绿）；修复历程见 §2.21（mac=icon-tool 拒绝 .ico → 预制 icns；linux=缺 build 步骤 + author.email）；**未公开**，mac 正式发布前需配 CSC\_LINK 签名；\
+> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产齐备**：windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml（run#33755352792 全绿）；修复历程见 §2.21（mac=icon-tool 拒绝 .ico → 预制 icns；linux=缺 build 步骤 + author.email）；**未公开**，mac 正式发布前需配 CSC_LINK 签名；**注意**：windows 资产已被本地 dist-v9 打包（含 A2' 执行轨迹卡）经 GH_TOKEN 自动覆盖上传，linux/mac 仍为旧构建——**正式发布前需重推 v0.4.0 tag 统一三平台**（先删本地+远端 tag）；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
@@ -746,6 +746,13 @@ ROADMAP_0.4_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此�
 
 **验证**：typecheck 双零错 · vitest **489/489**（+11）· build 绿（renderer 1.146MB）· verify-full 6 步 ALL PASS（chat:e2e 4 场景含 2b）。
 
+### 2.23 本会话新增：CI 格式门禁修复 + dist-v9 打包 + 三平台发布一致性核查（2026-09-03，第十五轮）
+
+- **CI 一次失败并修复**：A2' 提交（0823e19）CI 52s 挂——`npm run verify` 的 prettier --check 报 5 个新文件格式问题（本地 verify-full 不含 format 步骤是漏检根因）。修复：`npx prettier --write` 5 文件 + INTEGRATED_OVERVIEW.md（表格对齐）+ **新增教训**（见 §5 踩坑表）。修复提交 `1ad8a09` 后 CI 全绿。
+- **dist-v9 打包**（最新 HEAD 含执行轨迹卡）：`npx electron-builder --win --config electron-builder.v9.config.ts` 出包成功（setup 123MB / portable 123MB / app.asar 82.9MB）。
+- **GH_TOKEN 意外上传（重要坑）**：本地 shell 存在 GH_TOKEN（`gh auth` 注入）时，electron-builder 会**自动 publish 覆盖 draft 资产**（日志 `overwrite published file ... already exists on GitHub`），即使 config `publish: undefined` 也不阻止。本次产物恰为最新 HEAD → draft 的 windows 资产被升到最新（正向），但**linux/mac 仍为旧构建** → 三平台版本不一致，正式公开前必须重推 tag 统一重建。避免再犯：本地打包用 `--publish never`（或临时清 GH_TOKEN）。
+- **门禁矩阵同步**：V0_4_GATES.md 更新（489 单测 / scene 2b / 待办项 4）。**release notes**：draft body 更新（门禁 489 + 执行轨迹卡能力）。
+
 ***
 
 ## 3. 当前状态
@@ -1127,6 +1134,8 @@ node scripts/scan-hardcoded-zh.mjs
 | IPC 推送通道直接 webContents.send   | 绕过 `ipc-guard.ts` 契约体系与 schema 校验 | 所有推送必须走 `pushWithGuard`，在 `channelSchemas` 注册 schema |
 | 流式聊天无显式状态机                    | 弱网/快速操作下状态不一致、消息乱序                | 必须实现状态转移矩阵，每个转移必须被状态机守卫校验                            |
 | 状态所有权分片文档存在但代码隐式耦合            | 编排域闭包引用生命周期域状态                    | 通过事件流解耦，增加门禁测试验证跨域一致性                                |
+| 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检） | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿 |
+| 本地 electron-builder 打包时 shell 有 GH_TOKEN   | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`） | 本地打包命令加 `--publish never`，或临时清 GH_TOKEN env |
 
 ### 特殊配置 / 隐藏依赖
 
