@@ -92,6 +92,10 @@ export default function App() {
         onSelect={setActiveId}
         onNew={() => void newChat()}
         onDelete={(id) => void deleteSession(id)}
+        onRename={(id, title) => {
+          void window.dave.session.updateTitle(id, title).catch(() => {})
+          void refresh()
+        }}
       />
       {ready && (
         <ChatView

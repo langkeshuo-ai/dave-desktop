@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Folder, Plus, Search, Trash2 } from "lucide-react"
+import { useRef, useState } from "react"
+import { Folder, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 export interface SidebarSession {
@@ -14,19 +14,39 @@ export function Sidebar({
   onSelect,
   onNew,
   onDelete,
+  onRename,
 }: {
   sessions: SidebarSession[]
   activeId: string
   onSelect: (id: string) => void
   onNew: () => void
   onDelete: (id: string) => void
+  onRename: (id: string, title: string) => void
 }) {
   const { t } = useTranslation()
   const [q, setQ] = useState("")
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const filtered = sessions.filter((s) => !q || s.title.toLowerCase().includes(q.toLowerCase()))
   const groups = [...new Set(filtered.map((s) => s.group))]
+
+  const startRename = (s: SidebarSession) => {
+    setEditingId(s.id)
+    setDraft(s.title)
+    // 下一帧聚焦（输入框随编辑态渲染）
+    requestAnimationFrame(() => inputRef.current?.select())
+  }
+
+  const commitRename = () => {
+    if (editingId !== null) {
+      const title = draft.trim()
+      if (title) onRename(editingId, title)
+    }
+    setEditingId(null)
+  }
 
   return (
     <aside className="flex h-full w-[260px] flex-col border-r border-[var(--line)] bg-[var(--surface)]">
@@ -84,7 +104,35 @@ export function Sidebar({
                   }`}
                 >
                   <Folder size={14} className="shrink-0 text-[var(--ink-3)]" />
-                  <span className="flex-1 truncate">{s.title}</span>
+                  {editingId === s.id ? (
+                    <input
+                      ref={inputRef}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename()
+                        if (e.key === "Escape") setEditingId(null)
+                      }}
+                      onBlur={commitRename}
+                      aria-label={t("common.rename")}
+                      className="w-full min-w-0 rounded border border-[var(--amber-600)]/50 bg-[var(--bg)] px-1 py-0 text-[13px] text-[var(--ink)] outline-none"
+                    />
+                  ) : (
+                    <span className="flex-1 truncate">{s.title}</span>
+                  )}
+                  {editingId === s.id ? null : (
+                    <button
+                      aria-label={t("common.rename")}
+                      title={t("common.rename")}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        startRename(s)
+                      }}
+                      className="hidden h-4 w-4 place-items-center rounded text-[var(--ink-3)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] group-hover:grid"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  )}
                   {confirmId === s.id ? (
                     <button
                       aria-label={t("common.confirmDelete")}
@@ -119,7 +167,7 @@ export function Sidebar({
       <div className="flex items-center gap-2 border-t border-[var(--line)] px-3 py-2 text-xs text-[var(--ink-2)]">
         <span className="h-2 w-2 rounded-full bg-[var(--ok)]" />
         <span>{t("common.ready")}</span>
-        <span className="ml-auto font-mono text-[11px] text-[var(--ink-3)]">v0.3.0</span>
+        <span className="ml-auto font-mono text-[11px] text-[var(--ink-3)]">v0.4.0</span>
       </div>
     </aside>
   )
