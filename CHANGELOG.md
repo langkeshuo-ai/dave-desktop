@@ -2,33 +2,39 @@
 
 所有显著变更按 Keep a Changelog 格式记录。本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [0.4.0] - 2026-09-03
 
 ### v0.4 能力收口（2026-09-03）
 
 #### Added
 
 - **插件生命周期加固**：marketplace 升级契约（`marketplace:upgrade` + zod schema + preload 暴露）；升级失败自动回滚 `installed.json` 快照；连续失败达 3 次自动禁用插件（`PLUGIN_FAIL_THRESHOLD`，429 语义拒绝加载）。
-- **版本门禁矩阵**（`tests/V0_4_GATES.md`）：真实会话 E2E 4 场景（ask 流式/落库/agent 审批/重启恢复渲染/设置面板）；新链 UAT 6 场景（设置面板/技能增删/持久化/关于）；IPC 契约一致性门禁（`scripts/scan-ipc-consistency.mjs`，MISSING/DEAD 归零）；一键全量 `node tests/verify-full.mjs` 6 步管线。
-- **设置面板视图回归**（`Settings.tsx`）：模型（API key + provider probe）/ 工作区（目录选择）/ 扩展（技能增删 + MCP 只读列表）/ 日志（级别 + 查看器）/ 关于（用量/导出/快捷键）五 tab，全部经既有 IPC 契约。
-- **i18n 收口**：`settings.*` 命名空间（zh/en 成对）；App 会话分组与 ErrorBoundary 文案迁移，`scan-hardcoded-zh.mjs` 实测 0 处。
-- **三平台发布链**：CI workflow 对齐 6 步门禁矩阵；release 增加 linux（AppImage/deb）与 mac（dmg/zip）job（无证书时 `CSC_IDENTITY_AUTO_DISCOVERY=false` 出 unsigned 包）。
+- **版本门禁矩阵**（`tests/V0_4_GATES.md`）：真实会话 E2E **6 场景**（ask 流式/落库/agent 审批/执行轨迹卡/重启恢复渲染/设置面板+主题/导出 Markdown/命令面板）；新链 UAT 6 场景；IPC 契约一致性门禁（`scan-ipc-consistency.mjs`）+ **sender-coverage** 静态审计（每个 `ipcMain.handle` 必须含 sender 守卫）；一键全量 `node tests/verify-full.mjs` 6 步管线。
+- **设置面板视图回归**（`Settings.tsx`）：模型 / 工作区 / 扩展（技能增删 + **MCP 服务器管理 UI**：行级 JSON 编辑/增删/保存重连）/ 日志 / 关于（用量/导出/快捷键/**外观深浅色开关**）五 tab。
+- **i18n 收口**：`settings.*` 命名空间；App 会话分组与 ErrorBoundary 文案迁移，`scan-hardcoded-zh.mjs` 实测 0 处。
+- **会话导出 Markdown**：新契约 `session:export-markdown`（security.handle + id schema + 限流 5/s），ChatView 下载按钮。
+- **命令面板**：CommandPalette（⌘K/Ctrl+K、前缀过滤、键盘导航），命令：新对话/设置/导出。
+- **会话手动重命名**：Sidebar 行内编辑（复用 `session-update-title`）。
+- **patch 应用/忽略**：PatchPreviewCard 每行应用（复用 `workspace-apply-patch`）/忽略。
+- **三平台发布链**：release linux/mac job + icns 预制（mac）与 build 步骤补齐，三平台资产统一出包（run#33763230915 全绿）。
 - 真实 provider E2E 就绪（`npm run chat:e2e:real`，需 `DAVE_REAL_API_KEY`，无 key 自动 SKIP）。
-- git 基线：首次提交 `b2ead1d`（183 文件）；`electron-builder.v8.config.ts` 隔离打包（dist-v8）。
 
 #### Changed
 
 - 旧面向旧 renderer UI 的门禁 `electron-smoke.mjs` / `electron-uat.mjs` 删除；`test:electron` 改指 `chat:e2e`。
-- 冷启动 631ms（预算 3s）；FPS 2000 条混合消息滚动 avg 60fps / P95 16.8ms / P99 16.8ms（P95<30ms、P99<50ms 达标）。
+- 冷启动 **464ms**（预算 3s）；FPS 2000 条混合消息真实滚动（`.chat-scroller`）**144fps / P95 7ms / P99 7.1ms / 慢帧 0**。
+- GitHub Actions checkout/setup-node v4→v5（消除 Node20 弃用警告）；git 基线提交 + `electron-builder.v9.config.ts` 隔离打包。
 
 #### Security
 
-- `skills-manager.ts` 路径穿越防御：`readSkill` 参数与目录过滤走 `SKILL_NAME_RE` 白名单（此前 `../` 名称可读出技能根目录外 `SKILL.md`）。
-- `skills:fs-system-prompt` 补 zod 边界 schema（数组 1-32 项）；IPC 全量 38 handler schema 校验覆盖 100%。
+- `skills-manager.ts` 路径穿越防御：`readSkill` 白名单 `SKILL_NAME_RE`（此前 `../` 名称可读出技能根目录外 `SKILL.md`）。
+- `skills:fs-system-prompt` 补 zod 边界 schema；IPC 全量 handler schema 校验覆盖 100%；sender-coverage 门禁纳入 verify-full。
 
 #### Fixed
 
 - `ipc-push-guard.test.ts` 类型修正（mapEvent 显式 `StreamEvent` 返回标注）。
+- ChatView 滚动容器 grid 行高约束（长会话可滚）；`useChatStreamBridge` onEvent 用 ref（流式高频 render 不再重建 IPC 订阅）；`patchesRef` 每轮 start 清空（多轮不重复展示）。
+- `.lintstagedrc` 排除 `.archcore/**`（prettier 显式路径曾绕过 ignore 破坏 YAML frontmatter）；`V0_4_GATES.md` 加入 `.prettierignore`（中文表格 prettier 双稳定点震荡规避）。
 
 ### 端到端性能与安全加固（2026-07-27）
 
