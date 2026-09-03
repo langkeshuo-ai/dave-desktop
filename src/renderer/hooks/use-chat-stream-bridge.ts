@@ -17,7 +17,7 @@
  *   const state = useChatStreamStore(store)
  *   const bridge = useChatStreamBridge(store, sessionId)
  */
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import type { ChatStreamStore } from "../../shared/chat-stream-store"
 import { buildEventFromChannel } from "../../shared/chat-stream-events"
 import type { StreamEvent } from "../../shared/chat-stream-state"
@@ -44,6 +44,14 @@ export function useChatStreamBridge(
   sessionId: string,
   onEvent?: (event: StreamEvent) => void,
 ): ChatStreamBridge {
+  // onEvent 用 ref 持有最新引用：调用方（如 ChatView）传入内联箭头函数时，
+  // effect 不得随每次 render 重建 IPC 订阅（流式期间 ~120ms 一次 render，
+  // 重建订阅会产生事件丢失窗口与额外开销）。
+  const onEventRef = useRef(onEvent)
+  useEffect(() => {
+    onEventRef.current = onEvent
+  }, [onEvent])
+
   useEffect(() => {
     const dave = window.dave?.chat
     if (!dave) return
@@ -54,7 +62,7 @@ export function useChatStreamBridge(
       if (p?.sessionId && p.sessionId !== sessionId) return
       const event = buildEventFromChannel(channel, payload)
       store.dispatch(event)
-      onEvent?.(event)
+      onEventRef.current?.(event)
     }
 
     const offs: ChatStreamUnsubscribe[] = [
@@ -67,7 +75,7 @@ export function useChatStreamBridge(
       dave.onPatch((p) => dispatch("chat-stream-patch", p)),
     ]
     return () => offs.forEach((off) => off())
-  }, [store, sessionId, onEvent])
+  }, [store, sessionId])
 
   const approve = useCallback(
     (approved: boolean) => {
