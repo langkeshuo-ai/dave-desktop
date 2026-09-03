@@ -168,11 +168,21 @@ try {
   await settingsDialog.waitFor({ state: "hidden", timeout: 5_000 })
   process.stdout.write("scene 4 passed (settings panel open/close)\n")
 
+  // ── 场景 5：会话导出 Markdown（session:export-markdown 契约） ──
+  process.stdout.write("scene 5: export markdown\n")
+  const exportText = await window2.evaluate(async (sid) => {
+    return await window.dave.session.exportMarkdown(sid)
+  }, persistedSessionId)
+  if (!exportText || !exportText.includes("你好 Dave") || !exportText.includes("# ")) {
+    throw new Error(`scene 5: exported markdown missing content (len=${exportText?.length ?? 0})`)
+  }
+  process.stdout.write("scene 5 passed (markdown export contains transcript)\n")
+
   // ── 无控制台错误 ──
   if (consoleErrors.length > 0) {
     throw new Error(`console errors: ${consoleErrors.slice(0, 3).join(" | ")}`)
   }
-  process.stdout.write("chat-stream E2E passed (4 scenes + no console errors)\n")
+  process.stdout.write("chat-stream E2E passed (5 scenes + no console errors)\n")
 } catch (err) {
   process.stdout.write(
     `chat-stream E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`,

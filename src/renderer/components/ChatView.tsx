@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Gauge, Sparkles } from "lucide-react"
+import { Download, Gauge, Sparkles } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { ChatMessage } from "../../shared/types"
 import { createChatStreamStore } from "../../shared/chat-stream-store"
@@ -158,6 +158,22 @@ export function ChatView({
     }
   }
 
+  // 导出会话为 Markdown（主进程生成 → Blob 下载）
+  const exportSession = async () => {
+    try {
+      const md = await window.dave?.session?.exportMarkdown(sessionId)
+      if (!md) return
+      const url = URL.createObjectURL(new Blob([md], { type: "text/markdown" }))
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${title || sessionId}.md`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      /* 下载失败静默 */
+    }
+  }
+
   // Esc 中止流式输出（流式/工具/审批均视为 busy）
   useEffect(() => {
     if (!busy) return
@@ -198,6 +214,14 @@ export function ChatView({
         >
           <Gauge size={12} strokeWidth={2.2} />
           {t(`mode.${mode}`)}
+        </button>
+        <button
+          onClick={() => void exportSession()}
+          title={t("common.exportSession")}
+          aria-label={t("common.exportSession")}
+          className="inline-flex shrink-0 items-center rounded-full border border-[var(--line)] px-2.5 py-1 text-[var(--ink-2)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+        >
+          <Download size={12} strokeWidth={2} />
         </button>
         <span
           role="status"

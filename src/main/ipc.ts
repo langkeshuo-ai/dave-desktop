@@ -12,6 +12,7 @@ import {
   deleteSession,
   getSession,
   getSessionList,
+  getSessionMessages,
   replaceSessionMessages,
   updateSessionTitle,
 } from "./session"
@@ -27,6 +28,7 @@ import { isAllowedStoreKey, sanitizeSessionTitle, STORE_VALUE_MAX } from "../sha
 import { appendEvent, readStructuredEvents } from "./structured-log"
 import { exportDiagnostics } from "./diagnostics"
 import { mcpManager } from "./mcp-client"
+import { messagesToMarkdown } from "../shared/export"
 import { parseMcpServers } from "../shared/mcp"
 import { isValidLogLevel } from "../shared/log-level"
 import { parseSkills, SKILL_MAX_COUNT } from "../shared/skills"
@@ -91,6 +93,7 @@ const storeSetLimiter = createRateLimiter(SENSITIVE_IPC_LIMIT)
 const chatStreamLimiter = createRateLimiter(SENSITIVE_IPC_LIMIT)
 const applyPatchLimiter = createRateLimiter({ max: 10, windowMs: 1000 })
 const sessionOpsLimiter = createRateLimiter({ max: 20, windowMs: 1000 })
+const exportLimiter = createRateLimiter({ max: 5, windowMs: 1000 })
 
 // 白名单 Set:O(1) 查找,防止渲染端注入未知事件名。
 const TELEMETRY_NAME_SET: Set<string> = new Set(TELEMETRY_EVENT_NAMES)
@@ -800,5 +803,18 @@ export function registerIpcHandlers(deps: Deps) {
       return deleteCollaboration(filename)
     },
     channelSchemas.multiAgentFilename,
+  )
+
+  // ---- 会话导出（Markdown，Codex/Cursor 风格）--------------------------------
+  security.handle(
+    "session:export-markdown",
+    (_event, sessionId: unknown) => {
+      if (!exportLimiter.allow()) return null
+      const sid = sessionId as string
+      const messages = getSessionMessages(sid)
+      if (messages.length === 0) return null
+      return messagesToMarkdown(messages, { title: sid, sessionId: sid })
+    },
+    channelSchemas.id,
   )
 }
