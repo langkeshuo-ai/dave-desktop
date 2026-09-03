@@ -2,7 +2,7 @@
   "name": "dave-desktop",
   "type": "module",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Dave Desktop — 戴夫个人 Agent 桌面应用",
   "author": "戴夫",
   "main": "./out/main/index.js",

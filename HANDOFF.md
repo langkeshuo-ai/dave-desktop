@@ -1,8 +1,8 @@
 # 项目交接文档
 
-> **更新**: 2026-09-03（Asia/Shanghai）— **v0.4 全部内部项收口（插件/门禁/skills/i18n/设置面板/UAT/性能基线/文档）**\
-> **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master`（本地无 git remote）\
-> **版本**: `package.json` `0.1.0`\
+> **更新**: 2026-09-03（Asia/Shanghai）— **v0.4 全链路就绪：内部项收口 + 发布候选 + 版本 0.4.0**\
+> **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master`（本地已基线提交，**无 remote**）\
+> **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地 `dist-v7/win-unpacked/` 已部署到 `C:\Users\C\AppData\Local\Programs\dave-desktop`\
 > **本文件目标**: 新会话零上下文可读本文继续；旧 `HANDOFF.md`（2026-08-05）信息已保留并补充
 
@@ -633,18 +633,26 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 发布候选级 packaging 验证（不依赖外部资源）：
 
 - **EBUSY 已知坑复现**：dist-v7/win-unpacked/resources/app.asar 被运行中的 DaveDesktop.exe 锁定 → 不打旧目录
-- **新建 `electron-builder.v8.config.ts`**（继承 base，output=dist-v8, publish=undefined）隔离输出
+
+- **新建** **`electron-builder.v8.config.ts`**（继承 base，output=dist-v8, publish=undefined）隔离输出
+
 - **打包成功**（win x64，noproxy noproxy electron 42.7.0）：`dist-v8/dave-desktop-win-x64-setup.exe`(117.4MB) + portable + blockmap + latest.yml
+
 - 注意：builder 检测 CI 环境触发 publishing 尝试，因无 tag/release 自动 skip（`skipped publishing … not on tag`）——本地无害
+
 - 部署到安装目录（需先 kill 运行中应用，用户决定）：`taskkill /f /im DaveDesktop.exe` → `robocopy "dist-v8\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
 
 ### 2.19 发布候选终态记录（2026-09-03，第十一轮）
 
-**代码侧 + 文档侧发布候选已完备**（恢复目标后第 5 轮确认，以下为唯一未定项）：
+**代码侧 + 文档侧发布候选已完备**（版本号 0.4.0 已落实，2026-09-03）：
 
-- **版本号待用户确认**：`package.json` 仍为 `0.1.0`，功能量已达 v0.4 全集；发 tag 前需确认升 `0.4.0`（影响 latest.yml/artifactName/更新语义）
+- **版本号已升级** **`0.1.0 → 0.4.0`**（package.json + package-lock.json 根版本；build + electron-builder 打包回归验证，latest.yml `version: 0.4.0` 贯通）
+
 - 发布候选证据链（全部实测）：6 步 verify-full ALL PASS · dist-v8 打包产物 · 冷启动 631ms · FPS 60fps/P95 16.8ms · 477 unit · chat:e2e 4 场景 · preview:e2e 18/18 · uat 6 场景 · IPC 一致性归零
-- 剩余阻塞（外部资源，恢复后已持续 5 轮未解除）：远端仓库 URL（push→CI）、真实 API Key（chat:e2e:real）、签名证书 secrets（WIN_CSC_*/CSC_LINK）、跨平台 runner
+
+- 剩余阻塞（外部资源，恢复后已持续 5 轮未解除）：远端仓库 URL（push→CI）、真实 API Key（chat:e2e:real）、签名证书 secrets（WIN\_CSC\_\*/CSC\_LINK）、跨平台 runner
+
+- 发布动作序列（资源到位后）：`git remote add origin <url>` → `git push -u origin master`（CI 首绿）→ `git tag v0.4.0` → `git push origin v0.4.0`（release 三平台出包）
 
 ***
 
