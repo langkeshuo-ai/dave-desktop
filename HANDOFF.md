@@ -1,6 +1,6 @@
 # 项目交接文档
 
-> **更新**: 2026-09-03（Asia/Shanghai）— **v0.4 全链路就绪：内部项收口 + 发布候选 + 版本 0.4.0**\
+> **更新**: 2026-09-04（Asia/Shanghai）— **v0.4 全链路就绪：内部项收口 + 发布候选 + 版本 0.4.0**。本次同步第 18 轮：§1 远程状态 / §3 已知问题 / §6 续工提示更正为实况（origin 已关联、CI 首绿、最新构建 dist-v9）\
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
@@ -44,14 +44,14 @@ Dave Desktop（本地 Electron Agent 客户端）的工程化、安全纵深、�
 
 | 项          | 值                                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 工作区        | `C:\Users\C\dave客户端开发`                                                                                                                                 |
+| 工作区        | `c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop`                                                                                          |
 | 栈          | Electron 42 · electron-vite 5 · React 19 · TS 5.8 · Tailwind 4 · Zustand 5 · Vitest 3.2.6 · Playwright · i18next 26 · `@modelcontextprotocol/sdk` 1.30 |
 | 架构         | `src/main` / `src/preload` / `src/renderer` / `src/shared`（纯函数，node 可单测）                                                                               |
 | 双 tsconfig | `tsconfig.json`（renderer+shared）+ `tsconfig.node.json`（main+preload+shared）；**必须** `npm run typecheck` 双跑                                              |
 | ESM/CJS    | 根 `package.json` `"type":"module"`；主进程打包 CJS；`electron-store` 等用 `resolveDefaultExport()`                                                              |
 | UI 语言      | 中文优先 + i18n zh-CN/en                                                                                                                                   |
 | 主题         | **light-first**（`:root` 浅色）；`html.night` 为深色变体。**不要**再默认 dark-first                                                                                    |
-| 远程         | **本地无** **`git remote`**（`git remote -v` 空）；CI workflow 已入库但从未远端绿灯                                                                                     |
+| 远程         | `origin` 已关联 <https://github.com/langkeshuo-ai/dave-desktop>· `master` 已推送（最新 `9e210bd`）· **CI 首绿**（run#33748057183）                                   |
 | 平台         | 仅 Windows 真机验证过；builder 已有 mac/linux 配置                                                                                                                |
 
 ***
@@ -838,16 +838,14 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 ### 已知问题 / 阻塞
 
-1. **无 git remote** — 无法 push / 远端 CI / GitHub Release。
-2. **无代码签名** — SmartScreen；auto-update 发布链不完整。
-3. **dev audit high** — 开发链 electron-builder/eslint 传递依赖；prod `audit --omit=dev` = 0。
-4. **文档漂移** — overview 仍写 skills ❌、门禁 164 tests 等旧数字。
-5. **smoke/UAT 仍防御性跳过欢迎页** — 与「不再自动弹出」兼容（`isVisible` 才 skip）；若将来删组件需改测试文案。
-6. **偶发**：`npm install` 后立刻 `npm run dev` 可能 Vite exit 3 — 重试或清 cache。
-7. **IPC 限流**：1s 内 >30 store-set/chat-stream 丢弃（日志 `IPC rate limited`）。
-8. **无 git 仓库**：`dave-desktop` 目录下没有 `.git` 文件夹，无法使用 git 版本控制。工作目录为 `c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop`（非旧 HANDOFF 提及的 `C:\Users\C\dave客户端开发`）。
-9. **构建产物目录膨胀**：多次打包产生 dist-v2/dist-v3/dist-v7 等多个输出目录，需清理。
-10. **robocopy 部署需先 kill 旧进程**：安装目录文件被操作系统锁定，需要先 `taskkill /f /im DaveDesktop.exe` 再复制。
+1. **无代码签名** — SmartScreen；auto-update 发布链不完整。
+2. **dev audit high** — 开发链 electron-builder/eslint 传递依赖；prod `audit --omit=dev` = 0。
+3. **文档漂移** — overview 仍写 skills ❌、门禁 164 tests 等旧数字。
+4. **smoke/UAT 已重写** — 面向新 renderer 的 chat:e2e 6 场景 / uat 6 场景已接入 verify-full；若删组件需改测试文案。
+5. **偶发**：`npm install` 后立刻 `npm run dev` 可能 Vite exit 3 — 重试或清 cache。
+6. **IPC 限流**：1s 内 >30 store-set/chat-stream 丢弃（日志 `IPC rate limited`）。
+7. **构建产物目录膨胀**：dist-new / dist-v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 \~81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8/v9 勿动）。
+8. **robocopy 部署需先 kill 旧进程**：安装目录文件被操作系统锁定，需要先 `taskkill /f /im DaveDesktop.exe` 再复制。
 
 ### 报错条件（历史已修，勿回退）
 
@@ -997,7 +995,7 @@ tests/cross-domain-consistency.test.ts       # 新增：13 个跨域一致性门
 ### 开始前检查
 
 1. `pwd` / 工作区 = `c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop`（注意：非旧文档的 `C:\Users\C\dave客户端开发`）
-2. `git status` · `git log -8 --oneline` · `git remote -v`（预期无 remote，**可能无** **`.git`** **目录**）
+2. `git status` · `git log -8 --oneline` · `git remote -v`（`origin` 已关联 langkeshuo-ai/dave-desktop，`master` 已推送，最新 `9e210bd`）
 3. **读本文件全文** + `CLAUDE.md`/`AGENTS.md` gotcha + `ROADMAP_0.3.0.md`
 4. 不要把 2026-07-31 的 overview 数字当当前真理
 
@@ -1030,7 +1028,7 @@ npm run verify
 
 - 不要将侧栏宽度改回 300px 或活动栏改回 44px（已定稿 260px + 40px）
 
-\-| 不要在 `electron.vite.config.ts` 中设置 `emptyOutDir: false`
+- 不要在 `electron.vite.config.ts` 中设置 `emptyOutDir: false`
 
 - 不要让流式聊天无状态机；必须实现显式状态转移矩阵守卫非法转移
 
@@ -1079,20 +1077,20 @@ npm run verify
 
 ```
 【工作目录】c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop
-【状态】无 git 仓库 · light-first · Activity Bar 布局 · 无自动 onboarding · 无 remote
+【状态】git 已初始化（master @ 9e210bd，已推送）· origin 已关联（langkeshuo-ai/dave-desktop）· CI 首绿 · light-first · Activity Bar 布局 · 无自动 onboarding
 【安装目录】C:\Users\C\AppData\Local\Programs\dave-desktop
-【最新打包】dist-v7/win-unpacked/
-【必读】HANDOFF.md（2026-09-03）+ tests/V0_4_GATES.md
-【先跑】node tests/verify-full.mjs（ipc-consistency → build → unit 477 → chat:e2e 4 场景 → preview:e2e 18/18 → uat 6 场景，2026-09-03 已 ALL PASS）
-【先读】HANDOFF.md 第 2.8-2.14 节（TDD + 插件 + skills 安全 + i18n + SETTINGS-FS + UAT/性能基线/文档 + IPC 契约 + 外部就绪）
-【优先】内部项已全部收口；后续仅剩外部阻塞项：SIGNING（证书）、CI-REMOTE（建仓 push）、UAT-E2E-REAL（真实 Key）、MAC-LINUX（机器）——需用户提供资源
+【最新打包】dist-v9/win-unpacked/（v0.4.0 全功能；本地已在跑 dist-v8 部署版）
+【必读】HANDOFF.md（2026-09-04）+ tests/V0_4_GATES.md
+【先跑】node tests/verify-full.mjs（ipc-consistency → build → unit 489 → chat:e2e 6 场景 → preview:e2e 18/18 → uat 6 场景，2026-09-03 已 ALL PASS）
+【先读】HANDOFF.md 第 2.8-2.25 节（TDD 六步 + 插件生命周期 + skills 安全 + i18n + SETTINGS-FS + UAT/性能基线/文档 + IPC 契约 + 外部链就绪 + README 六项 UI 收口）
+【优先】内部项已全部收口；后续仅剩外部解锁项：公开发布（等用户「公开」指令）、SIGNING（证书）、UAT-E2E-REAL（真实 Key）——需用户提供资源
 【禁止】dark-first 默认、自动欢迎页、audit fix --force、删 Welcome、顶部工作区卡片、webContents.send 直接推送、无状态机聊天、恢复已删的 electron-smoke/electron-uat.mjs
-【TDD 已完】Step 1-6 ✓（推送契约/状态机/store/hook/chat-loop 替换/跨域门禁）；插件失败退避 ✓ + market:upgrade 闭环 ✓；skills 路径穿越防御 ✓；i18n 扫描归零 ✓；chat:e2e 重启恢复 ✓
+【TDD 已完】Step 1-6 ✓（推送契约/状态机/store/hook/chat-loop 替换/跨域门禁）；插件失败退避 ✓ + market:upgrade 闭环 ✓；skills 路径穿越防御 ✓；i18n 扫描归零 ✓；chat:e2e 6 场景 ✓；A2' 执行轨迹卡 ✓
 【TDD 待续】见【优先】列表；新 IPC 能力必须登记契约（schema+限流+sender）走 security.handle；技能名白名单 SKILL_NAME_RE 禁止放宽
-【部署】先 taskkill /f /im DaveDesktop.exe → robocopy "dist-v7\win-unpacked" "安装目录" /E /COPY:DAT
+【部署】先 taskkill /f /im DaveDesktop.exe → robocopy "dist-v9\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT
 ```
 
 ***
 
 **交接完整度**：代码状态、决策、坑、命令、路径、优先级已写入。\
-**已验证**：2026-09-03 `node tests/verify-full.mjs` → **FULL VERIFICATION: ALL PASS (clean exit)**（unit 469 / chat:e2e / preview:e2e 18/18）。
+**已验证**：2026-09-03 `node tests/verify-full.mjs` → **FULL VERIFICATION: ALL PASS (clean exit)**（unit 489 / chat:e2e 6 场景 / preview:e2e 18 / uat 6）。
