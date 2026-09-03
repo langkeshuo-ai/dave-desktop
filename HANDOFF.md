@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **Draft**（2026-09-03）——windows 三资产已上传（setup/portable/latest.yml），**未公开**；linux/mac job 首轮失败，**根因已实测修正并修复**（见 §2.21，与首版 HANDOFF 记录不同：mac=icon-tool 拒绝 .ico，linux=缺 build 步骤）；修复提交 `4e423b0` 已推送 master；**重推 tag 需先删本地+远端 v0.4.0 tag**（draft 保护下可迭代）\
+> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产齐备**：windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml（run#33755352792 全绿）；修复历程见 §2.21（mac=icon-tool 拒绝 .ico → 预制 icns；linux=缺 build 步骤 + author.email）；**未公开**，mac 正式发布前需配 CSC\_LINK 签名；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
@@ -713,16 +713,25 @@ Application entry file "out/main/index.js" in the "dist/linux-unpacked/resources
 
 - **与图标完全无关**——release-linux job 只有 `npm ci` + `package:linux`，**没有** **`npm run build`**，out/ 不存在 → app.asar 空。windows job 因走 `npm run verify`（内含 build）才成功。
 
-**修复（提交** **`4e423b0`，已推送 master）**：
+**修复（提交** **`4e423b0`** **+** **`cdd9b28`，均已推送 master）**：
 
 1. `resources/icon.icns` 新增：本地 512×512 PNG（System.Drawing 高质量放大、保 alpha）拼装 PNG-based icns 容器（ic07=128 / ic08=256 / ic09=512 三块，Apple 公开格式，纯字节构造，Python 单次运行不落永久依赖）。文件头部自校验通过（magic / total length / 三块）。
 2. `resources/icon.png` 升级 256→512×512（linux 图标源同步合规）。
 3. `electron-builder.config.ts`：`mac.icon` 由 `resources/icon.ico` 改为 `resources/icon.icns`（macos runner 不再需要任何实时格式转换）。
 4. `.github/workflows/release.yml`：release-linux 与 release-mac 两 job 在打包前补 `- run: npm run build`（与 windows job 的 verify 内置 build 对齐）。
+5. `package.json`：`author` 由字符串 `"戴夫"` 改为对象 `{name, email}`（email 用 `langkeshuo@users.noreply.github.com`）——linux deb 经 FPM 硬性要求 author 含 email（第二轮 run 实测报错 `Please specify author 'email' in the application package.json`）。
 
-**验证**：本地 `npm run build` 绿（18.42s，renderer 1.14MB）；变更集 4 文件；`4e423b0` push 后 CI run 观察中。
+**验证（三轮迭代，最终全绿）**：
 
-**下一步（待用户确认后执行）**：删除本地 + 远端 `v0.4.0` tag → 重打 tag → push tag 触发 release 三平台重建（draft 下 windows 资产会被重新上传覆盖，幂等）。
+| 轮              | 结果                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| 1（33754825527） | mac ✓ / windows ✓ / linux ✗（缺 author.email → deb/FPM 报错）                                             |
+| 2（33755352792） | **三平台全 ✓**：windows 3m56s（setup/portable）、linux 2m21s（AppImage/deb）、mac 3m41s（arm64 dmg/zip，unsigned） |
+
+**Release v0.4.0 draft（2026-09-03）资产齐备（9 安装资产 + 3 latest.yml）**：
+`dave-desktop-win-x64-setup.exe` / `portable.exe` / `linux-amd64.deb` / `linux-x86_64.AppImage` / `mac-arm64.dmg`(+blockmap) / `mac-arm64.zip`(+blockmap) / `latest.yml` / `latest-linux.yml` / `latest-mac.yml`
+
+**未公开（draft: true）**——公开动作由用户决定；mac 包为 unsigned（`CSC_IDENTITY_AUTO_DISCOVERY=false`），正式对外发布前需配 `CSC_LINK` 签名（SmartScreen/Gatekeeper 拦载）。
 
 ***
 
