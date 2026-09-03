@@ -1,10 +1,13 @@
 # Dave Desktop
 
+[![CI](https://github.com/langkeshuo-ai/dave-desktop/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/langkeshuo-ai/dave-desktop/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/langkeshuo-ai/dave-desktop?label=%E7%89%88%E6%9C%AC)](https://github.com/langkeshuo-ai/dave-desktop/releases)
+
 > **定位:** 本地 Agent · Cursor 风格 UI · Codex 工具集 · 四种批准模式 · 工作区读写 · unified-diff
 > **状态:** ✅ 可运行（Windows / macOS / Linux · Electron）· 版本 **0.4.0**（2026-09-03）
 > **主题:** light-first（浅色默认）· `html.night` 深色可选
 > **仓库:** https://github.com/langkeshuo-ai/dave-desktop
-> **门禁:** `npm run verify` 全绿 + `node tests/verify-full.mjs` 6 步 ALL PASS（478 单测 · chat:e2e 4 场景 · preview:e2e 18 · UAT 6）· **CI 首绿**（GitHub Actions @ master 2026-09-03）
+> **门禁:** `npm run verify` 全绿 + `node tests/verify-full.mjs` 6 步 ALL PASS（489 单测 · chat:e2e 4 场景 · preview:e2e 18 · UAT 6）· **CI 首绿**（GitHub Actions @ master 2026-09-03）
 > **交接:** 详细状态/决策/命令见 `HANDOFF.md`（2026-09-03）+ `tests/V0_4_GATES.md`（门禁矩阵）
 
 ## v0.4 能力（2026-09-03）
