@@ -84,7 +84,7 @@ export default function App() {
   const activeTitle = sessions.find((s) => s.id === activeId)?.title
 
   return (
-    <div className="grid h-screen grid-cols-[40px_260px_1fr] overflow-hidden">
+    <div className="grid h-screen grid-rows-[minmax(0,1fr)] grid-cols-[40px_260px_1fr] overflow-hidden">
       <ActivityBar onOpenSettings={() => setSettingsOpen(true)} />
       <Sidebar
         sessions={sessions}

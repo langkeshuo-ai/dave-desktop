@@ -31,7 +31,8 @@ function makeMessages(count) {
     } else if (mod === 7) {
       msgs.push({
         role: "assistant",
-        content: "```ts\nconst value = " + i + "\nexport function compute() {\n  return value * 2\n}\n```",
+        content:
+          "```ts\nconst value = " + i + "\nexport function compute() {\n  return value * 2\n}\n```",
       })
     } else if (mod === 8) {
       msgs.push({
@@ -55,16 +56,19 @@ function makeMessages(count) {
 
 try {
   const window = await app.firstWindow({ timeout: 45_000 })
-  await window.waitForFunction(
-    "() => !!document.getElementById('root')?.childElementCount",
-    null,
-    { timeout: 20_000 },
-  )
+  await window.waitForFunction("() => !!document.getElementById('root')?.childElementCount", null, {
+    timeout: 20_000,
+  })
   // 跳过首启引导/向导(与 smoke 一致)
   const welcome = window.getByRole("dialog", { name: "欢迎使用 Dave Desktop" })
   if (await welcome.isVisible().catch(() => false)) await window.keyboard.press("Escape")
   const wizard = window.getByRole("dialog").filter({ hasText: /API|密钥|Provider/i })
-  if (await wizard.first().isVisible().catch(() => false)) {
+  if (
+    await wizard
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     await window.keyboard.press("Escape")
     await delay(300)
   }
@@ -80,7 +84,7 @@ try {
   // 重载:渲染端加载最新会话并渲染 2000 条(虚拟列表按需渲染)
   await window.reload()
   await window.waitForFunction(
-    "() => document.querySelectorAll('.msg-row').length > 0",
+    "() => { const el = document.querySelector('.chat-scroller'); return !!el && el.scrollHeight - el.clientHeight > 2000 }",
     null,
     { timeout: 30_000 },
   )
@@ -97,13 +101,9 @@ try {
     window.__fpsRAF = globalThis.requestAnimationFrame(loop)
   })
 
-  // 定位滚动容器(虚拟列表的滚动元素)
+  // 定位滚动容器(虚拟列表的滚动元素)——ChatView 滚动区带稳定类 .chat-scroller
   const scroller = await window.evaluate(() => {
-    const el = [...globalThis.document.querySelectorAll("div")].find(
-      (d) =>
-        d.scrollHeight - d.clientHeight > 2000 &&
-        globalThis.getComputedStyle(d).overflowY === "auto",
-    )
+    const el = globalThis.document.querySelector(".chat-scroller")
     return el ? { scrollHeight: el.scrollHeight, clientHeight: el.clientHeight } : null
   })
   process.stdout.write(`scroller: ${JSON.stringify(scroller)}\n`)

@@ -215,7 +215,7 @@ export function ChatView({
         </span>
       </header>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto pb-24">
+      <div ref={scrollRef} className="chat-scroller min-h-0 flex-1 overflow-y-auto pb-24">
         <div className="mx-auto flex max-w-[720px] flex-col gap-4 px-5 py-4">
           {history.map((m, i) => (
             <MessageBubble key={i} role={m.role} content={m.content} />
