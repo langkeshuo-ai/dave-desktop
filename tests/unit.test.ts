@@ -1796,6 +1796,26 @@ describe("validateSender — IPC origin validation", () => {
     httpFrame.top = httpFrame
     expect(validateSender({ sender: { id: 1 }, senderFrame: httpFrame }, main)).toBe(false)
   })
+
+  it("logs rejection context (sender/frameUrl) on validation failure", async () => {
+    const warn = vi.fn()
+    vi.doMock("electron", () => ({
+      app: { isPackaged: true, getPath: () => "/tmp" },
+    }))
+    vi.doMock("electron-log", () => ({ default: { warn } }))
+    const { validateSender } = await import("../src/main/ipc")
+    const main = { webContents: { id: 1 } } as never
+    expect(
+      validateSender(
+        { sender: { id: 99 }, senderFrame: { url: "file:///app/index.html", top: undefined } },
+        main,
+      ),
+    ).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    const msg = warn.mock.calls[0][0] as string
+    expect(msg).toContain("sender=99")
+    expect(msg).toContain("file:///app/index.html")
+  })
 })
 
 // =====================================================================

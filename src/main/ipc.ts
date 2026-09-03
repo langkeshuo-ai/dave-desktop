@@ -136,18 +136,24 @@ export function validateSender(
 ): boolean {
   const main = trustedWindowOverride ?? trustedMainWindow?.()
   if (!main || event.sender.id !== main.webContents.id) {
-    log.warn("IPC sender validation failed: sender is not the trusted main window")
+    log.warn(
+      `IPC sender validation failed: sender is not the trusted main window (sender=${event.sender.id}, main=${main?.webContents.id ?? "unset"}, frameUrl=${event.senderFrame?.url ?? "none"})`,
+    )
     return false
   }
 
   const frame = event.senderFrame
   if (!frame || (frame.top !== undefined && frame.top !== frame)) {
-    log.warn("IPC sender validation failed: sender is not the top frame")
+    log.warn(
+      `IPC sender validation failed: sender is not the top frame (sender=${event.sender.id}, frameUrl=${frame?.url ?? event.sender.getURL?.() ?? "none"})`,
+    )
     return false
   }
   const frameUrl = frame.url || event.sender.getURL?.() || ""
   if (!isTrustedRendererUrl(frameUrl)) {
-    log.warn("IPC sender validation failed: untrusted renderer URL")
+    log.warn(
+      `IPC sender validation failed: untrusted renderer URL (sender=${event.sender.id}, url=${frameUrl || "(empty)"})`,
+    )
     return false
   }
   return true
