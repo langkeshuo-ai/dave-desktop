@@ -36,7 +36,9 @@ export function MessageInput({
     <div className="border-t border-[var(--line)] bg-[var(--surface)] px-4 pb-4 pt-3">
       <div className="mx-auto max-w-[720px] rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-lg focus-within:border-[var(--amber-500)]">
         <div className="flex items-center gap-1.5 px-3 pt-2 text-xs text-[var(--ink-3)]">
-          <span className={`h-2 w-2 rounded-full ${streaming ? "animate-pulse bg-[var(--amber-600)]" : "bg-[var(--ok)]"}`} />
+          <span
+            className={`h-2 w-2 rounded-full ${streaming ? "animate-pulse bg-[var(--amber-600)]" : "bg-[var(--ok)]"}`}
+          />
           {streaming ? t("chat.streaming") : t("chat.done")}
         </div>
         <div className="flex items-end gap-2 px-3 pb-2 pt-1.5">

@@ -39,7 +39,10 @@ export function ApprovalCard({
             <span className="text-[var(--ink-3)]">{t("approval.tool")}:</span> {tool}
           </div>
           {argText && (
-            <div className="mt-1.5 truncate font-mono text-[12px] text-[var(--ink-2)]" title={argText}>
+            <div
+              className="mt-1.5 truncate font-mono text-[12px] text-[var(--ink-2)]"
+              title={argText}
+            >
               {argText}
             </div>
           )}

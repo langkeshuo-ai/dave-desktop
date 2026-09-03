@@ -1,10 +1,11 @@
-***
-
+---
 type: rule
 title: Project stack
 status: accepted
 tags: \[stack, conventions]
----------------------------
+---
+
+---
 
 # 技术栈
 
@@ -31,4 +32,3 @@ Electron 42 桌面应用，electron-vite 5 构建，TypeScript 5.8 严格模式�
 - 幂等 key 是会话命名空间化的，禁止改回全局去重。
 
 - 不留向后兼容层；过时实现直接删除。
-

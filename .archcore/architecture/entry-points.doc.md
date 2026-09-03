@@ -1,4 +1,4 @@
-***
+---
 
 type: doc
 title: Entry-point inventory
@@ -39,6 +39,7 @@ tags: \[entry-points, architecture]
 - src/shared/event-contract.ts —— 事件契约闭环验证（回放 + 渲染文本还原）。
 
 ## Renderer（React）
+
 - src/renderer/main.tsx / App.tsx —— React 挂载 + 布局外壳（light-first，Activity Bar 40px + 侧栏 260px；settingsOpen 状态挂载 Settings）。
 - src/renderer/components/ChatView.tsx —— 流式聊天视图（store + useChatStreamBridge 消费 IPC 推送事件）。
 - src/renderer/components/ApprovalCard.tsx / PatchPreviewCard.tsx —— 审批卡 / patch 可视化。
@@ -60,4 +61,3 @@ tags: \[entry-points, architecture]
 ## 已删除（v0.4，勿恢复）
 
 - tests/electron-smoke.mjs / electron-uat.mjs —— 面向旧 renderer UI，已被 chat:e2e + preview:e2e 取代。
-

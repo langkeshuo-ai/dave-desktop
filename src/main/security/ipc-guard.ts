@@ -66,9 +66,7 @@ export const channelSchemas = {
       .optional(),
   ]),
   /** skills:fs-system-prompt — 技能名数组（IPC 边界校验，与 manager 侧路径白名单双保险）。 */
-  skillNames: z.tuple([
-    z.array(idSchema).min(1).max(32),
-  ]),
+  skillNames: z.tuple([z.array(idSchema).min(1).max(32)]),
   sessionCreate: z.tuple([
     z
       .object({

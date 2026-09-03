@@ -6,7 +6,7 @@
 > tests/electron-uat.mjs（6 场景）承接与验证）。
 > 关联 HANDOFF 待办：TDD-CONSUME（✅ 已闭环）。
 
-***
+---
 
 ## 1. 现状（已落地，不再重复）
 
@@ -34,7 +34,7 @@
 
   - 断线重连由 onStart 重置流。
 
-***
+---
 
 ## 2. 改动清单
 
@@ -69,10 +69,7 @@ export interface ChatStreamBridge {
 }
 
 /** 一次性订阅主进程流式事件 → store.dispatch。会话切换/卸载时自动清理。 */
-export function useChatStreamBridge(
-  store: ChatStreamStore,
-  sessionId: string,
-): ChatStreamBridge {
+export function useChatStreamBridge(store: ChatStreamStore, sessionId: string): ChatStreamBridge {
   useEffect(() => {
     // window.dave 即 preload 暴露的 API（contextBridge）
     const offs = [
@@ -90,7 +87,14 @@ export function useChatStreamBridge(
       }),
       window.dave.chat.onApproval((req) => {
         if (req.sessionId !== sessionId) return
-        store.dispatch({ type: "approval", sessionId, tool: req.tool, arguments: req.arguments, mutates: req.mutates, isShell: req.isShell })
+        store.dispatch({
+          type: "approval",
+          sessionId,
+          tool: req.tool,
+          arguments: req.arguments,
+          mutates: req.mutates,
+          isShell: req.isShell,
+        })
       }),
       window.dave.chat.onPatch((p) => {
         if (p.sessionId !== sessionId) return
@@ -147,14 +151,14 @@ const bridge = useChatStreamBridge(store, sessionId)
 
 状态 → UI 映射（渲染端状态机 6 态）：
 
-| 状态                | UI 行为                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------ |
-| idle              | 不渲染流内容；发送走 chat.stream(text, sessionId)                                              |
-| streaming         | 显示 state.content 累积文本 + 光标；isStreaming → 用于停止按钮/节流                                   |
-| tool\_pending     | 工具指示器（state.tools 列表，如"正在调用 read\_file…"）                                            |
+| 状态              | UI 行为                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| idle              | 不渲染流内容；发送走 chat.stream(text, sessionId)                                                       |
+| streaming         | 显示 state.content 累积文本 + 光标；isStreaming → 用于停止按钮/节流                                     |
+| tool\_pending     | 工具指示器（state.tools 列表，如"正在调用 read\_file…"）                                                |
 | approval\_pending | 审批卡片：tool/arguments/mutates/isShell（mutates 或 isShell 高亮风险），按钮批准/拒绝 → bridge.approve |
-| done              | 落最终文本（aborted 时保留 finalContent 部分输出）                                                 |
-| error             | 错误文案（state.error code block）                                                         |
+| done              | 落最终文本（aborted 时保留 finalContent 部分输出）                                                      |
+| error             | 错误文案（state.error code block）                                                                      |
 
 补充组件：
 
@@ -166,7 +170,7 @@ const bridge = useChatStreamBridge(store, sessionId)
 
 发送按钮/回车 → window\.dave.chat.stream(text, sessionId)（现有 API，主进程会先推 start）。
 
-***
+---
 
 ## 3. 状态机对齐与不变量
 
@@ -179,7 +183,7 @@ const bridge = useChatStreamBridge(store, sessionId)
 - 断线重连：chat.stream 再次调用 → 主进程推新 start → 渲染 store reset 重来；
   幂等 key 为会话命名空间（Wave-B 已落地），重放不会串扰。
 
-***
+---
 
 ## 4. TDD 验证计划
 
@@ -208,7 +212,7 @@ const bridge = useChatStreamBridge(store, sessionId)
 - tests/chat-stream.e2e.mjs 真实会话门禁已全链路（ask 流式/落库/agent 审批/重启恢复/设置面板 4 场景）；
   渲染端 store 累加文本与主进程最终文本对齐已由该门禁断言覆盖。
 
-***
+---
 
 ## 5. 验收标准
 
@@ -220,7 +224,7 @@ const bridge = useChatStreamBridge(store, sessionId)
 6. 断线重连 → onStart 重置流，幂等 key 不误杀重放。
 7. 全量 vitest + typecheck 双跑绿；chat:e2e 真实会话门禁通过（2026-09-03：477 unit + 4 场景 + UAT 6 场景全绿）。
 
-***
+---
 
 ## 6. renderer 就绪的前置检查
 
@@ -231,19 +235,19 @@ const bridge = useChatStreamBridge(store, sessionId)
 
 - preload 补 onStart 可在 renderer 就绪前先行（主进程侧改造，双端 typecheck 可验证）。
 
-***
+---
 
 ## 8. 开源优先选型结论（2026-09 调研）
 
 按"先在 GitHub/npm 检索成熟开源方案，优先复用"原则对 2026 组件库生态做调研，结论如下：
 
-| 候选            | 许可  | 维护活跃                     | 与本项目契合度                                        | 决策                    |
-| ------------- | --- | ------------------------ | ---------------------------------------------- | --------------------- |
-| shadcn/ui     | MIT | 是（CLI 复制进代码库，75k+ stars） | 高：Tailwind4 原生 + 代码完全自有，可无缝套用暖琥珀 token         | 采用（组件源进库零 runtime 依赖） |
-| Mantine 7     | MIT | 是                        | 中：120+ 全系统组件，但自带 CSS Modules 主题，与自有 token 系统双轨 | 不采用（风格打架 + 体积）        |
-| Radix/Base UI | MIT | 是                        | 中：无样式 primitives，仍需自写样式层                       | 作为 shadcn 底层间接采用      |
-| HeroUI        | MIT | 是                        | 中高：Tailwind4 + React Aria 无障碍                  | 备选；本项目组件面窄，shadcn 更轻  |
-| 自研全组件         | —   | —                        | —                                              | 拒绝：已有成熟开源，无强定制理由      |
+| 候选          | 许可 | 维护活跃                           | 与本项目契合度                                                      | 决策                              |
+| ------------- | ---- | ---------------------------------- | ------------------------------------------------------------------- | --------------------------------- |
+| shadcn/ui     | MIT  | 是（CLI 复制进代码库，75k+ stars） | 高：Tailwind4 原生 + 代码完全自有，可无缝套用暖琥珀 token           | 采用（组件源进库零 runtime 依赖） |
+| Mantine 7     | MIT  | 是                                 | 中：120+ 全系统组件，但自带 CSS Modules 主题，与自有 token 系统双轨 | 不采用（风格打架 + 体积）         |
+| Radix/Base UI | MIT  | 是                                 | 中：无样式 primitives，仍需自写样式层                               | 作为 shadcn 底层间接采用          |
+| HeroUI        | MIT  | 是                                 | 中高：Tailwind4 + React Aria 无障碍                                 | 备选；本项目组件面窄，shadcn 更轻 |
+| 自研全组件    | —    | —                                  | —                                                                   | 拒绝：已有成熟开源，无强定制理由  |
 
 **结论**：组件层复用 shadcn/ui（渲染端就绪后 `npx shadcn init` + 按需 add button/input/dialog/select/tooltip/badge 等，全部复制进仓库）；其余能力复用项目既有依赖：@tanstack/react-virtual（虚拟列表）、react-markdown+rehype-sanitize（Markdown）、lucide-react（图标）、i18next（多语言）、zustand（状态）、diff（补丁 diff 行）。零新增 runtime 依赖，只新增 devDeps：@testing-library/react、jsdom。
 
@@ -251,28 +255,28 @@ const bridge = useChatStreamBridge(store, sessionId)
 
 三层测试门禁（分层理由：unit/contract 快且确定性高，E2E 覆盖跨边界真实行为，均防回归）：
 
-| 层                    | 载体                     | 数量       | 命令                    |
-| -------------------- | ---------------------- | -------- | --------------------- |
-| Unit（状态机/契约/守卫）      | vitest                 | 277      | npm test              |
-| E2E（前端原型交互门禁）        | playwright chromium    | 18       | npm run preview:e2e   |
+| 层                         | 载体                        | 数量        | 命令                  |
+| -------------------------- | --------------------------- | ----------- | --------------------- |
+| Unit（状态机/契约/守卫）   | vitest                      | 277         | npm test              |
+| E2E（前端原型交互门禁）    | playwright chromium         | 18          | npm run preview:e2e   |
 | Electron smoke（真实链路） | electron（renderer 就绪后） | mock 全链路 | npm run test:electron |
 
 E2E 门禁 check matrix（每个检查对应一个具名风险与失败响应，见 tests/frontend-preview\.e2e.mjs 头注释）：
 
-| 检查           | 保护的风险              | 失败响应                                       |
-| ------------ | ------------------ | ------------------------------------------ |
-| R1 外壳渲染      | 布局壳缺失              | 检查 .activity/.sidebar/.main 与 #input 是否被误删 |
-| R2/R2b 流式回放  | 回放脚本未运行 / 流式 UI 未接 | 打开 devtools console 查 JS 异常                |
-| R3 审批步骤可见    | 写文件审批开关未呈现         | 确认 .action.writed 依赖的状态机分支存在               |
-| R4a/R4b 审批可点 | 令牌被输入区遮挡（历史 bug）   | 重查 .tray z-index/bottom 与 placeOverlay 逻辑  |
-| R5a/R5b 补丁预览 | diff 弹层不可用         | 检查 openDiff/close 事件绑定                     |
-| R6a/R6b 撤销令牌 | 回滚语义丢失             | 确认 token.undo 与 action.denied 联动           |
-| R7a/R7b 输入发送 | composer 发送/回复链路断裂 | 检查 send()/secondRound 事件链                  |
-| R8 模式切换      | mode pill 不可交互     | 检查 modePill 事件委托                           |
-| R9/R9b 新对话空态 | 会话重置失败             | 检查 newChat 清空逻辑与空态注入                       |
-| R10 会话搜索     | 列表过滤失效             | 检查sessSearch input 过滤                      |
-| R11 运行状态指示   | 忙碌指示不可见            | 检查 setRunning 与 sbFlow 切换                  |
-| R12 无控制台错误   | 运行时 JS 异常          | 修 console.error 对应处                        |
+| 检查              | 保护的风险                    | 失败响应                                           |
+| ----------------- | ----------------------------- | -------------------------------------------------- |
+| R1 外壳渲染       | 布局壳缺失                    | 检查 .activity/.sidebar/.main 与 #input 是否被误删 |
+| R2/R2b 流式回放   | 回放脚本未运行 / 流式 UI 未接 | 打开 devtools console 查 JS 异常                   |
+| R3 审批步骤可见   | 写文件审批开关未呈现          | 确认 .action.writed 依赖的状态机分支存在           |
+| R4a/R4b 审批可点  | 令牌被输入区遮挡（历史 bug）  | 重查 .tray z-index/bottom 与 placeOverlay 逻辑     |
+| R5a/R5b 补丁预览  | diff 弹层不可用               | 检查 openDiff/close 事件绑定                       |
+| R6a/R6b 撤销令牌  | 回滚语义丢失                  | 确认 token.undo 与 action.denied 联动              |
+| R7a/R7b 输入发送  | composer 发送/回复链路断裂    | 检查 send()/secondRound 事件链                     |
+| R8 模式切换       | mode pill 不可交互            | 检查 modePill 事件委托                             |
+| R9/R9b 新对话空态 | 会话重置失败                  | 检查 newChat 清空逻辑与空态注入                    |
+| R10 会话搜索      | 列表过滤失效                  | 检查sessSearch input 过滤                          |
+| R11 运行状态指示  | 忙碌指示不可见                | 检查 setRunning 与 sbFlow 切换                     |
+| R12 无控制台错误  | 运行时 JS 异常                | 修 console.error 对应处                            |
 
 **验收 Gate**：npm run preview:e2e 必须 18/18 通过；npm test 全绿；typecheck 零错。当前实测：E2E 18/18、unit 277 通过。
 
@@ -281,4 +285,3 @@ E2E 门禁 check matrix（每个检查对应一个具名风险与失败响应，
 1. preload 补 onStart + ChatStreamStart import —— 已落地（src/preload/index.ts，与 onChunk 同构）。
 2. 导出纯函数事件映射 buildEventFromChannel —— 已落地（src/shared/chat-stream-events.ts + 9 单测；渲染端 hook 与主进程 mapEvent 共用，消除双写漂移）。
 3. 桥接 hook —— 已落地（src/renderer/hooks/use-chat-stream-bridge.ts：7 通道订阅 + sessionId 过滤 + buildEventFromChannel 复用 + approve/abort；typecheck 零错）。renderer 源码就绪后：ChatView 以 useMemo 建 store → useChatStreamStore 读状态 → useChatStreamBridge 接线 → ApprovalCard → smoke 断言。
-

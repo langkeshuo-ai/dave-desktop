@@ -152,7 +152,8 @@ export const resources = {
         fullAuto: "Full auto",
       },
       chat: {
-        placeholder: "Describe what you want — AI will act step by step and ask before writing files.",
+        placeholder:
+          "Describe what you want — AI will act step by step and ask before writing files.",
         send: "Send",
         stop: "Stop",
         enterToSend: "Enter to send",
@@ -234,7 +235,7 @@ export const resources = {
 } as const
 
 const instance: I18nInstance = i18next.createInstance()
-instance.use(initReactI18next).init({
+void instance.use(initReactI18next).init({
   resources,
   lng: DEFAULT_LOCALE,
   fallbackLng: DEFAULT_LOCALE,

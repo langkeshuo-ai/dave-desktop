@@ -585,7 +585,10 @@ export async function handleChatStream(
   // resolveKey handles custom-api-key alias; never ship empty Bearer headers.
   const key = resolveKey(provider, store, storedKey)
   if (!key) {
-    pushWithGuard(event.sender, "chat-stream-error", { error: "请先在设置中配置 API 密钥", sessionId })
+    pushWithGuard(event.sender, "chat-stream-error", {
+      error: "请先在设置中配置 API 密钥",
+      sessionId,
+    })
     return
   }
 

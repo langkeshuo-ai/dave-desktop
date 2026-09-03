@@ -195,12 +195,22 @@ describe("Chat Stream Store", () => {
   it("跨会话 store 使用相同 idempotentKey 互不串扰", () => {
     const storeA = createChatStreamStore()
     storeA.dispatch({ type: "start", sessionId: "sess-a" })
-    storeA.dispatch({ type: "chunk", content: "hello", sessionId: "sess-a", idempotentKey: "key-1" })
+    storeA.dispatch({
+      type: "chunk",
+      content: "hello",
+      sessionId: "sess-a",
+      idempotentKey: "key-1",
+    })
 
     // 会话 B 与 A 使用同名 key，应正常累加（不被 A 去重误杀）
     const storeB = createChatStreamStore()
     storeB.dispatch({ type: "start", sessionId: "sess-b" })
-    storeB.dispatch({ type: "chunk", content: " world", sessionId: "sess-b", idempotentKey: "key-1" })
+    storeB.dispatch({
+      type: "chunk",
+      content: " world",
+      sessionId: "sess-b",
+      idempotentKey: "key-1",
+    })
 
     const s = storeB.getSnapshot()
     expect(s.status).toBe("streaming")

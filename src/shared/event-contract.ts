@@ -14,7 +14,11 @@
  *
  * 无副作用、无 Electron 依赖，可在 vitest node 环境单测。
  */
-import { createChatStreamState, type StreamEvent, type StreamStateStatus } from "./chat-stream-state"
+import {
+  createChatStreamState,
+  type StreamEvent,
+  type StreamStateStatus,
+} from "./chat-stream-state"
 
 // ─── 契约结果类型 ─────────────────────────────────────
 

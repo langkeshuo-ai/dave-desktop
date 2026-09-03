@@ -51,7 +51,15 @@ import {
   exportUsage,
   purgeUsageBefore,
 } from "./telemetry/usage-tracker"
-import { listMarketplaces, listInstalledPlugins, installPlugin, uninstallPlugin, describePlugin, upgradePlugin, updateMarketplace } from "./marketplace/marketplace-client"
+import {
+  listMarketplaces,
+  listInstalledPlugins,
+  installPlugin,
+  uninstallPlugin,
+  describePlugin,
+  upgradePlugin,
+  updateMarketplace,
+} from "./marketplace/marketplace-client"
 import {
   getUpdateStatus,
   checkForUpdates,
@@ -556,9 +564,13 @@ export function registerIpcHandlers(deps: Deps) {
     channelSchemas.id,
   )
 
-  security.handle("skills:fs-system-prompt", (_event, names: unknown) => {
-    return skillsSystemPrompt(names as string[])
-  }, channelSchemas.skillNames)
+  security.handle(
+    "skills:fs-system-prompt",
+    (_event, names: unknown) => {
+      return skillsSystemPrompt(names as string[])
+    },
+    channelSchemas.skillNames,
+  )
 
   // ---- Plugins（插件管理器）--------------------------------------------
   security.handle("plugins:list", () => pluginManager.listPlugins(), channelSchemas.noArgs)

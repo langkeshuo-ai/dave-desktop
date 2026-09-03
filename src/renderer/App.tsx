@@ -11,7 +11,10 @@ function dayGroup(ts: number | undefined, t: (key: string) => string): string {
   const d = new Date(ts)
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
-  const dayDiff = Math.floor((startOfToday.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86_400_000)
+  const dayDiff = Math.floor(
+    (startOfToday.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
+      86_400_000,
+  )
   if (dayDiff <= 0) return t("common.groupToday")
   if (dayDiff === 1) return t("common.groupYesterday")
   return t("common.groupEarlier")

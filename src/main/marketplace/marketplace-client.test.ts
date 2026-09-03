@@ -194,9 +194,9 @@ describe("MarketplaceClient", () => {
         force: true,
       })
 
-      await expect(
-        upgradePlugin({ marketplace: "official", name: "stable" }),
-      ).rejects.toThrow(/marketplace not found/)
+      await expect(upgradePlugin({ marketplace: "official", name: "stable" })).rejects.toThrow(
+        /marketplace not found/,
+      )
 
       const after = listInstalledPlugins()
       const entry = after.plugins.find((p) => p.name === "stable")

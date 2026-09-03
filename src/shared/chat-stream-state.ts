@@ -25,7 +25,14 @@
  *          error → start → streaming
  *           any → reset → idle
  */
-import type { ChatStreamChunk, ChatStreamDone, ChatStreamError, ChatStreamApproval, ChatStreamPatch, ChatStreamTools } from "./types"
+import type {
+  ChatStreamChunk,
+  ChatStreamDone,
+  ChatStreamError,
+  ChatStreamApproval,
+  ChatStreamPatch,
+  ChatStreamTools,
+} from "./types"
 
 // ─── 事件类型 ───────────────────────────────────────
 
@@ -46,7 +53,15 @@ export type StreamStateStatus =
   | { status: "idle" }
   | { status: "streaming"; content: string; sessionId: string }
   | { status: "tool_pending"; content: string; sessionId: string; tools: string[] }
-  | { status: "approval_pending"; content: string; sessionId: string; tool: string; toolArgs: Record<string, unknown>; mutates: boolean; isShell: boolean }
+  | {
+      status: "approval_pending"
+      content: string
+      sessionId: string
+      tool: string
+      toolArgs: Record<string, unknown>
+      mutates: boolean
+      isShell: boolean
+    }
   | { status: "done"; sessionId: string; aborted?: boolean; finalContent: string }
   | { status: "error"; error: string; sessionId: string }
 
@@ -123,13 +138,27 @@ function transitionState(state: StreamStateStatus, event: StreamEvent): StreamSt
           if (event.replace) {
             return { status: "streaming", content: event.content, sessionId: event.sessionId }
           }
-          return { status: "streaming", content: state.content + event.content, sessionId: event.sessionId }
+          return {
+            status: "streaming",
+            content: state.content + event.content,
+            sessionId: event.sessionId,
+          }
         case "done":
-          return { status: "done", sessionId: event.sessionId, aborted: event.aborted, finalContent: state.content }
+          return {
+            status: "done",
+            sessionId: event.sessionId,
+            aborted: event.aborted,
+            finalContent: state.content,
+          }
         case "error":
           return { status: "error", error: event.error, sessionId: event.sessionId }
         case "tools":
-          return { status: "tool_pending", content: state.content, sessionId: event.sessionId, tools: event.tools }
+          return {
+            status: "tool_pending",
+            content: state.content,
+            sessionId: event.sessionId,
+            tools: event.tools,
+          }
         case "approval":
           return {
             status: "approval_pending",
@@ -152,7 +181,11 @@ function transitionState(state: StreamStateStatus, event: StreamEvent): StreamSt
       switch (event.type) {
         case "chunk":
           // 工具完成后恢复 streaming，累加新 content
-          return { status: "streaming", content: state.content + event.content, sessionId: event.sessionId }
+          return {
+            status: "streaming",
+            content: state.content + event.content,
+            sessionId: event.sessionId,
+          }
         case "approval":
           // 工具执行中请求下一项审批（mock 与真实 agent 工具轮均出现）
           return {

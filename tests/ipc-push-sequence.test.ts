@@ -41,14 +41,10 @@ function createMockWebContents() {
 
 /** 播种 start 事件（状态机 idle 只接受 start） */
 function registerStartChannel(): void {
-  registerPushChannel(
-    "test-start",
-    z.object({ sessionId: z.string() }),
-    {
-      sessionIdOf: (payload: any) => payload.sessionId,
-      mapEvent: (payload: any): StreamEvent => ({ type: "start", sessionId: payload.sessionId }),
-    },
-  )
+  registerPushChannel("test-start", z.object({ sessionId: z.string() }), {
+    sessionIdOf: (payload: any) => payload.sessionId,
+    mapEvent: (payload: any): StreamEvent => ({ type: "start", sessionId: payload.sessionId }),
+  })
 }
 
 // ─── 测试套件 ─────────────────────────────────────────
@@ -75,8 +71,13 @@ describe("IPC Push Sequence Guard", () => {
     pushWithGuard(mockWebContents, "chat-stream-done", { sessionId: "sess-1" })
 
     expect((mockWebContents as any).send).toHaveBeenCalledTimes(3)
-    expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-chunk", { content: "hi", sessionId: "sess-1" })
-    expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-done", { sessionId: "sess-1" })
+    expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-chunk", {
+      content: "hi",
+      sessionId: "sess-1",
+    })
+    expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-done", {
+      sessionId: "sess-1",
+    })
   })
 
   // ─── 2. idle 直接 done 被拒 ───────────────────────
@@ -112,7 +113,10 @@ describe("IPC Push Sequence Guard", () => {
       isShell: false,
     })
     // approval 不推进守卫状态机，chunk 依旧在 streaming 合法转移
-    pushWithGuard(mockWebContents, "chat-stream-chunk", { content: "after approval", sessionId: "sess-1" })
+    pushWithGuard(mockWebContents, "chat-stream-chunk", {
+      content: "after approval",
+      sessionId: "sess-1",
+    })
 
     expect((mockWebContents as any).send).toHaveBeenCalledTimes(3)
     expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-chunk", {
@@ -134,7 +138,10 @@ describe("IPC Push Sequence Guard", () => {
     }).toThrow(/chat-stream-chunk/)
 
     // sess-2 仍在 streaming，chunk 应正常
-    pushWithGuard(mockWebContents, "chat-stream-chunk", { content: "sess2 chunk", sessionId: "sess-2" })
+    pushWithGuard(mockWebContents, "chat-stream-chunk", {
+      content: "sess2 chunk",
+      sessionId: "sess-2",
+    })
     expect((mockWebContents as any).send).toHaveBeenCalledWith("chat-stream-chunk", {
       content: "sess2 chunk",
       sessionId: "sess-2",

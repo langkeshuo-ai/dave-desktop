@@ -8,11 +8,11 @@
 
 ## 0. 总览与决策矩阵
 
-| 候选 | 问题本质 | 方案A | 方案B | 推荐 | 优先级 |
-|---|---|---|---|---|---|
-| **A 渲染端执行可视化补全** | 已有能力(通道/状态机/patch载体)的 UI 应收账款 | 内联气泡平铺 | 侧边执行轨道 | **A2'（轨道+补丁预览，复用现有 token）** | P0 |
-| **B 插件生命周期加固** | 隔离被延期后的契约缺口 | 立即进程隔离 | 生命周期契约补全 | **B2（维持延迟隔离）** | P2，决策先行 |
-| **C v0.4 版本门禁整合** | 多轮增量后的收口欠账 | 仅补新 E2E | 全量回归矩阵 | **C2（门禁矩阵+缺件清单）** | P1 |
+| 候选                       | 问题本质                                      | 方案A        | 方案B            | 推荐                                     | 优先级       |
+| -------------------------- | --------------------------------------------- | ------------ | ---------------- | ---------------------------------------- | ------------ |
+| **A 渲染端执行可视化补全** | 已有能力(通道/状态机/patch载体)的 UI 应收账款 | 内联气泡平铺 | 侧边执行轨道     | **A2'（轨道+补丁预览，复用现有 token）** | P0           |
+| **B 插件生命周期加固**     | 隔离被延期后的契约缺口                        | 立即进程隔离 | 生命周期契约补全 | **B2（维持延迟隔离）**                   | P2，决策先行 |
+| **C v0.4 版本门禁整合**    | 多轮增量后的收口欠账                          | 仅补新 E2E   | 全量回归矩阵     | **C2（门禁矩阵+缺件清单）**              | P1           |
 
 **总优先级**：A(P0) → C(P1) → B(P2)。理由：A 是用户可见的核心体验欠账且纯增量零风险；C 是交付可信度保障；B 是"防未来问题"，当前 <5 插件下属于推迟项（archcore 约束明文：插件数量超过 5 才启动隔离，不违反现有决策）。
 
@@ -34,6 +34,7 @@
 **方案 A2（侧边执行轨道，激进）**：新增右侧轨道面板，工具/审批/diff 全部从主消息流剥离，独立滚动区（原型 HTML 的"待确认变更托盘"形态）。改动中（新组件 + 布局重构 + 轨道滚动同步）。
 
 **推荐 A2'（轨道+复用 token，收敛版）**：
+
 - 不新建布局框架，把"执行轨迹"收敛为一条**折叠式总结卡**：工具名 → 状态（运行/完成/拒绝）→ 补丁预览（折叠，复用 CodeBlock+hljs diff）→ 撤销令牌（若有）
 - 触发点：`done` 落常驻消息后，扫描本轮 `tool` 角色历史消息聚合渲染
 - 反对 A1：diff 内联污染正文（与 M5 语义决策矛盾）；反对 A2 全轨：为当前单工具循环做滚动同步属过度工程
@@ -45,9 +46,9 @@
 interface ExecTraceCardProps {
   tool: { name: string; args: Record<string, unknown> }
   status: "ok" | "denied" | "failed" | "running"
-  patch?: { diff: string; paths: string[] }   // 来自 chat-stream-patch 通道
-  output?: string                              // tool 角色消息 content(clamp 后)
-  onTogglePatch?: () => void                   // 折叠展开 diff 预览
+  patch?: { diff: string; paths: string[] } // 来自 chat-stream-patch 通道
+  output?: string // tool 角色消息 content(clamp 后)
+  onTogglePatch?: () => void // 折叠展开 diff 预览
 }
 ```
 
@@ -82,6 +83,7 @@ interface ExecTraceCardProps {
 **方案 B1（立即进程隔离，激进）**：UtilityProcess 承载插件运行时。挑战：与"<5 不隔离"既有决策冲突；引入 IPC 隧道、生命周期守卫、状态清理三大新面；当前唯一插件诉求是市场扩展而非运行时执行。**过工程设计，拒绝。**
 
 **方案 B2（生命周期契约补全，推荐）**：不引入隔离，只补三件缺口：
+
 1. `plugin-remove`/`plugin-upgrade` 契约（当前只有 install/list）——回收闭环（对应 HANDOFF"契约发布/回收闭环需完整实现"债务）
 2. 插件异常退避：execute 失败连续 3 次 → 自动禁用（防市场扩展写坏 store 后程序反复崩）
 3. 插件配置回滚点：安装前冻结 store 相关 key，安装失败自动回滚
@@ -90,8 +92,12 @@ interface ExecTraceCardProps {
 
 ```ts
 // 契约登记（channelSchemas 追加）
-pluginUninstall: z.tuple([z.object({ name: idSchema, marketplace: shortTextSchema.optional() }).strict()])
-pluginUpgrade: z.tuple([z.object({ name: idSchema, fromVersion: z.string().max(32).optional() }).strict()])
+pluginUninstall: z.tuple([
+  z.object({ name: idSchema, marketplace: shortTextSchema.optional() }).strict(),
+])
+pluginUpgrade: z.tuple([
+  z.object({ name: idSchema, fromVersion: z.string().max(32).optional() }).strict(),
+])
 ```
 
 ### 2.4 数据设计变更
@@ -114,14 +120,14 @@ pluginUpgrade: z.tuple([z.object({ name: idSchema, fromVersion: z.string().max(3
 
 ### 3.1 待办聚合（缺件清单）
 
-| 类别 | 条目 | 现状 |
-|---|---|---|
-| 缺件 | 设置页 / 键盘帮助（lazy 组件在清单但 renderer 树重补时未恢复） | 待补 |
-| 缺件 | 欢迎/配方屏（v0.4 首启体验） | 待补 |
-| 门禁 | electron smoke 仍指向旧 renderer UI（welcome/cmdk/.msg-row） | 过时，应删除或重写（无兼容层原则） |
-| 门禁 | 冷启动 / FPS 重新基线 | 性能报告已有，重建基线 |
-| 门禁 | UAT（23 条历史）在新链上复跑 | 待跑 |
-| 集成 | 会话消息恢复 UI 断言（session.get → ChatView 渲染） | chat:e2e 已覆盖落库；补"重启恢复渲染"场景 |
+| 类别 | 条目                                                           | 现状                                      |
+| ---- | -------------------------------------------------------------- | ----------------------------------------- |
+| 缺件 | 设置页 / 键盘帮助（lazy 组件在清单但 renderer 树重补时未恢复） | 待补                                      |
+| 缺件 | 欢迎/配方屏（v0.4 首启体验）                                   | 待补                                      |
+| 门禁 | electron smoke 仍指向旧 renderer UI（welcome/cmdk/.msg-row）   | 过时，应删除或重写（无兼容层原则）        |
+| 门禁 | 冷启动 / FPS 重新基线                                          | 性能报告已有，重建基线                    |
+| 门禁 | UAT（23 条历史）在新链上复跑                                   | 待跑                                      |
+| 集成 | 会话消息恢复 UI 断言（session.get → ChatView 渲染）            | chat:e2e 已覆盖落库；补"重启恢复渲染"场景 |
 
 ### 3.2 方案对比
 

@@ -29,7 +29,11 @@ export function PatchPreviewCard({ patches }: { patches: PatchRecord[] }) {
           aria-expanded={open}
           className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left transition-colors hover:bg-[var(--surface-2)]"
         >
-          {open ? <ChevronDown size={14} className="text-[var(--ink-3)]" /> : <ChevronRight size={14} className="text-[var(--ink-3)]" />}
+          {open ? (
+            <ChevronDown size={14} className="text-[var(--ink-3)]" />
+          ) : (
+            <ChevronRight size={14} className="text-[var(--ink-3)]" />
+          )}
           <FileDiff size={14} className="text-[var(--amber-600)]" />
           <span className="text-[13px] font-semibold">{t("common.fileChanges")}</span>
           {totalPaths > 0 && (

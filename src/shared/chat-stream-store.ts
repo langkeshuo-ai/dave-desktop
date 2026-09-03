@@ -18,7 +18,11 @@
  * 注意：快照以引用相等判断变化（zustand 同款约定），
  * 状态实际变化时才通知订阅者，非法转移不触发通知。
  */
-import { createChatStreamState, type StreamEvent, type StreamStateStatus } from "./chat-stream-state"
+import {
+  createChatStreamState,
+  type StreamEvent,
+  type StreamStateStatus,
+} from "./chat-stream-state"
 
 export interface ChatStreamStore {
   /** 当前状态快照（不可变，引用相等表示未变化） */

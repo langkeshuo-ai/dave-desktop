@@ -169,7 +169,9 @@ describe("Chat Stream Push Channels", () => {
   it("所有 6 个推送通道应注册成功", () => {
     registerAllPushChannels()
     for (const channel of CHANNEL_NAMES) {
-      expect(() => pushWithGuard(mockWebContents, channel, {} as any)).not.toThrow(/not registered/i)
+      expect(() => pushWithGuard(mockWebContents, channel, {} as any)).not.toThrow(
+        /not registered/i,
+      )
     }
   })
 

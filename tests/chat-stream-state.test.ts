@@ -65,7 +65,12 @@ describe("Chat Stream State Machine", () => {
     const state = createChatStreamState()
     const s1 = state.transition({ type: "start", sessionId: "sess-1" })
     const s2 = s1.transition({ type: "chunk", content: "hello", sessionId: "sess-1" })
-    const s3 = s2.transition({ type: "chunk", content: "replaced", sessionId: "sess-1", replace: true })
+    const s3 = s2.transition({
+      type: "chunk",
+      content: "replaced",
+      sessionId: "sess-1",
+      replace: true,
+    })
 
     const s = s3.getState()
     expect(s.status).toBe("streaming")
@@ -107,7 +112,11 @@ describe("Chat Stream State Machine", () => {
   it("tools 事件应从 streaming 进入 tool_pending 状态", () => {
     const state = createChatStreamState()
     const s1 = state.transition({ type: "start", sessionId: "sess-1" })
-    const s2 = s1.transition({ type: "tools", sessionId: "sess-1", tools: ["read_file", "edit_file"] })
+    const s2 = s1.transition({
+      type: "tools",
+      sessionId: "sess-1",
+      tools: ["read_file", "edit_file"],
+    })
 
     const s = s2.getState()
     expect(s.status).toBe("tool_pending")
@@ -229,8 +238,18 @@ describe("Chat Stream State Machine", () => {
     const state = createChatStreamState()
     const s1 = state.transition({ type: "start", sessionId: "sess-1" })
     // 两次相同 idempotentKey 的 chunk
-    const s2 = s1.transition({ type: "chunk", content: "hello", sessionId: "sess-1", idempotentKey: "key-1" })
-    const s3 = s2.transition({ type: "chunk", content: " world", sessionId: "sess-1", idempotentKey: "key-1" })
+    const s2 = s1.transition({
+      type: "chunk",
+      content: "hello",
+      sessionId: "sess-1",
+      idempotentKey: "key-1",
+    })
+    const s3 = s2.transition({
+      type: "chunk",
+      content: " world",
+      sessionId: "sess-1",
+      idempotentKey: "key-1",
+    })
     // 相同的 key 应被跳过
     const s = s3.getState()
     expect(s.status).toBe("streaming")
@@ -266,7 +285,12 @@ describe("Chat Stream State Machine", () => {
     // 会话 B 使用与 A 相同的 idempotentKey，应正常累加（不被 A 误杀）
     const b = createChatStreamState()
     b.transition({ type: "start", sessionId: "sess-b" })
-    const b1 = b.transition({ type: "chunk", content: " world", sessionId: "sess-b", idempotentKey: "key-1" })
+    const b1 = b.transition({
+      type: "chunk",
+      content: " world",
+      sessionId: "sess-b",
+      idempotentKey: "key-1",
+    })
 
     const s = b1.getState()
     expect(s.status).toBe("streaming")
@@ -301,7 +325,12 @@ describe("Chat Stream State Machine", () => {
     // 断线重连：新 start 清空该会话幂等集，允许同 key 重放
     m.transition({ type: "start", sessionId: "sess-1" })
     const s = m
-      .transition({ type: "chunk", content: "hi again", sessionId: "sess-1", idempotentKey: "key-1" })
+      .transition({
+        type: "chunk",
+        content: "hi again",
+        sessionId: "sess-1",
+        idempotentKey: "key-1",
+      })
       .getState()
     expect(s.status).toBe("streaming")
     if (s.status === "streaming") {
@@ -320,7 +349,12 @@ describe("Chat Stream State Machine", () => {
     m.transition({ type: "reset" })
     m.transition({ type: "start", sessionId: "sess-1" })
     const s = m
-      .transition({ type: "chunk", content: "after reset", sessionId: "sess-1", idempotentKey: "key-1" })
+      .transition({
+        type: "chunk",
+        content: "after reset",
+        sessionId: "sess-1",
+        idempotentKey: "key-1",
+      })
       .getState()
     expect(s.status).toBe("streaming")
     if (s.status === "streaming") {

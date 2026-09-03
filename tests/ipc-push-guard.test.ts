@@ -16,7 +16,15 @@ import { z } from "zod"
 
 // 这些函数将从 ipc-guard.ts 中导出
 // 当前不存在，所以导入会失败——这正是 RED 阶段要验证的
-import { registerPushChannel, pushWithGuard, resetPushRegistry, getPushChannelRegistry, clearSessionGuardState, getPushViolationStats, channelSchemas } from "../src/main/security/ipc-guard"
+import {
+  registerPushChannel,
+  pushWithGuard,
+  resetPushRegistry,
+  getPushChannelRegistry,
+  clearSessionGuardState,
+  getPushViolationStats,
+  channelSchemas,
+} from "../src/main/security/ipc-guard"
 import type { StreamEvent } from "../src/shared/chat-stream-state"
 
 // ─── 辅助：模拟 WebContents ──────────────────────────
@@ -150,12 +158,14 @@ describe("IPC Push Channel Guard", () => {
     const startSchema = z.object({ sessionId: z.string() })
     const chunkSchema = z.object({ content: z.string(), sessionId: z.string() })
     const doneSchema = z.object({ sessionId: z.string() })
-    const mapEvent = (type: "start" | "chunk" | "done") => (p: any): StreamEvent =>
-      type === "done"
-        ? { type: "done", sessionId: p.sessionId }
-        : type === "chunk"
-          ? { type: "chunk", content: p.content, sessionId: p.sessionId }
-          : { type: "start", sessionId: p.sessionId }
+    const mapEvent =
+      (type: "start" | "chunk" | "done") =>
+      (p: any): StreamEvent =>
+        type === "done"
+          ? { type: "done", sessionId: p.sessionId }
+          : type === "chunk"
+            ? { type: "chunk", content: p.content, sessionId: p.sessionId }
+            : { type: "start", sessionId: p.sessionId }
     registerPushChannel("seq-start", startSchema, {
       sessionIdOf: (p: any) => p.sessionId,
       mapEvent: mapEvent("start"),
@@ -197,7 +207,13 @@ describe("IPC Push Channel Guard", () => {
     const exemptSchemas = {
       "x-error": z.object({ error: z.string(), sessionId: z.string() }),
       "x-tools": z.object({ sessionId: z.string(), tools: z.array(z.string()) }),
-      "x-approval": z.object({ sessionId: z.string(), tool: z.string(), arguments: z.record(z.string(), z.unknown()), mutates: z.boolean(), isShell: z.boolean() }),
+      "x-approval": z.object({
+        sessionId: z.string(),
+        tool: z.string(),
+        arguments: z.record(z.string(), z.unknown()),
+        mutates: z.boolean(),
+        isShell: z.boolean(),
+      }),
       "x-patch": z.object({ sessionId: z.string(), patch: z.string() }),
     }
     // 内容级通道带守卫；exempt 通道不配 mapEvent
@@ -218,7 +234,13 @@ describe("IPC Push Channel Guard", () => {
     pushWithGuard(mockWebContents, "x-start", { sessionId: "sess-y" })
     pushWithGuard(mockWebContents, "x-chunk", { content: "a", sessionId: "sess-y" })
     pushWithGuard(mockWebContents, "x-tools", { sessionId: "sess-y", tools: ["t1"] })
-    pushWithGuard(mockWebContents, "x-approval", { sessionId: "sess-y", tool: "t1", arguments: {}, mutates: false, isShell: false })
+    pushWithGuard(mockWebContents, "x-approval", {
+      sessionId: "sess-y",
+      tool: "t1",
+      arguments: {},
+      mutates: false,
+      isShell: false,
+    })
     pushWithGuard(mockWebContents, "x-patch", { sessionId: "sess-y", patch: "diff" })
     pushWithGuard(mockWebContents, "x-error", { error: "mid-fail", sessionId: "sess-y" })
     pushWithGuard(mockWebContents, "x-chunk", { content: "b", sessionId: "sess-y" })
@@ -237,7 +259,8 @@ describe("IPC Push Channel Guard", () => {
   it("skillNames schema 拒绝空数组 / 超限数组 / 非字符串元素", () => {
     expect(channelSchemas.skillNames.safeParse([[]]).success).toBe(false)
     expect(
-      channelSchemas.skillNames.safeParse([[Array.from({ length: 33 }, (_, i) => `s${i}`)]]).success,
+      channelSchemas.skillNames.safeParse([[Array.from({ length: 33 }, (_, i) => `s${i}`)]])
+        .success,
     ).toBe(false)
     expect(channelSchemas.skillNames.safeParse([[null]]).success).toBe(false)
     expect(channelSchemas.skillNames.safeParse([["ok", 42]]).success).toBe(false)

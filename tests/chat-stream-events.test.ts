@@ -27,7 +27,10 @@ describe("buildEventFromChannel", () => {
 
   it("chat-stream-start → start 事件", () => {
     const p: ChatStreamStart = { sessionId: sess }
-    expect(buildEventFromChannel("chat-stream-start", p)).toEqual({ type: "start", sessionId: sess })
+    expect(buildEventFromChannel("chat-stream-start", p)).toEqual({
+      type: "start",
+      sessionId: sess,
+    })
   })
 
   it("chat-stream-chunk → chunk 事件（含可选 replace 透传）", () => {
@@ -118,7 +121,9 @@ describe("buildEventFromChannel", () => {
     // 每个通道都能被映射（不抛未知通道错）
     const start: ChatStreamStart = { sessionId: sess }
     for (const c of CHAT_STREAM_CHANNELS) {
-      expect(() => buildEventFromChannel(c, c === "chat-stream-start" ? start : {})).not.toThrow(/unknown/i)
+      expect(() => buildEventFromChannel(c, c === "chat-stream-start" ? start : {})).not.toThrow(
+        /unknown/i,
+      )
     }
   })
 })
