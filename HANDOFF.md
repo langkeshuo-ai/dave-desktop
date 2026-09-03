@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产已统一重建为最新 HEAD**（run#33763230915 三 job 全 ✓，全部资产 updated_at 13:49-13:52Z，含 A2' 执行轨迹卡 + patch 修复）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC_LINK 签名；\
+> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产已统一重建为最新 HEAD**（run#33763230915 三 job 全 ✓，全部资产 updated\_at 13:49-13:52Z，含 A2' 执行轨迹卡 + patch 修复）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC\_LINK 签名；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
@@ -536,9 +536,9 @@ GATE-UAT / GATE-PERF / DOCS-SYNC 三项内部遗留全部收口：
 
 **GATE-PERF 基线重建**（实测落档）：
 
-- 冷启动：**631ms**（预算 3000ms，优于 0.2.0 目标 1.5s）
+- 冷启动：**464ms**（预算 3000ms，优于 0.2.0 目标 1.5s）
 
-- FPS（2000 条混合消息滚动）：**avg 60fps / P95 16.8ms / P99 16.8ms / slow33=0 / slow50=0**
+- FPS（2000 条混合消息真实 .chat-scroller 滚动，2026-09-03 修复选择器后实测）：**avg 144fps / P95 7ms / P99 7.1ms / slow33=0 / slow50=0**
 
 **DOCS-SYNC**：
 
@@ -735,31 +735,43 @@ Application entry file "out/main/index.js" in the "dist/linux-unpacked/resources
 
 ### 2.22 本会话新增：A2' 执行轨迹卡落地（ROADMAP 候选 A 收口，2026-09-03，第十四轮）
 
-ROADMAP_0.4_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此前只剩"工具执行结果 UI"这一环（patch 卡已落地）；本轮补全：
+ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此前只剩"工具执行结果 UI"这一环（patch 卡已落地）；本轮补全：
 
-- **缺口确认**：主进程把工具输出落库为 `role:"tool"` 消息（成功="输出" / 拒绝=「用户拒绝了此操作…」 / 失败=「工具失败：…」/「错误：未知工具…」），但渲染端无聚合展示——流式期间只见 tool_pending 行 + 审批卡，工具执行结果不可见。
+- **缺口确认**：主进程把工具输出落库为 `role:"tool"` 消息（成功="输出" / 拒绝=「用户拒绝了此操作…」 / 失败=「工具失败：…」/「错误：未知工具…」），但渲染端无聚合展示——流式期间只见 tool\_pending 行 + 审批卡，工具执行结果不可见。
+
 - **新纯函数** `src/shared/tool-trace.ts`：`toToolTraces`（tool 消息→轨迹列表，幂等去重 + 上限 8）、`toToolTraceStatus`（content 前缀推导 ok/denied/failed）、`toolTraceKey`（name::content）；**11 单测**（tests/tool-trace.test.ts）。
+
 - **新组件** `src/renderer/components/ExecTraceCard.tsx`：折叠式总结卡（工具名徽标 + 状态徽标 ok=绿/denied=灰/failed=红 + 输出等宽折叠），复用 design token，无新契约。
+
 - **ChatView 接线**：done 后补拉 session.get → 过滤"已知 key 之外的 tool 消息"聚合进轨迹卡；history 同步 effect 标记历史 tool 消息为已知（防父级预填/挂载补拉/多轮重复，也避免与 tool 气泡重复渲染）；无 schema / 契约变更。
+
 - **i18n**：tool 命名空间新增 traces/output/failed（zh/en 成对，键一致单测守卫通过）。
+
 - **E2E**：chat:e2e scene 2b 新增断言——审批允许后轨迹卡出现（aria-label 含「执行轨迹」）→ 展开可见工具名 `file_tree` 与输出，实测 passed、零 console 错误。
 
 **验证**：typecheck 双零错 · vitest **489/489**（+11）· build 绿（renderer 1.146MB）· verify-full 6 步 ALL PASS（chat:e2e 4 场景含 2b）。
 
 ### 2.23 本会话新增：CI 格式门禁修复 + dist-v9 打包 + 三平台发布一致性核查（2026-09-03，第十五轮）
 
-- **CI 一次失败并修复**：A2' 提交（0823e19）CI 52s 挂——`npm run verify` 的 prettier --check 报 5 个新文件格式问题（本地 verify-full 不含 format 步骤是漏检根因）。修复：`npx prettier --write` 5 文件 + INTEGRATED_OVERVIEW.md（表格对齐）+ **新增教训**（见 §5 踩坑表）。修复提交 `1ad8a09` 后 CI 全绿。
+- **CI 一次失败并修复**：A2' 提交（0823e19）CI 52s 挂——`npm run verify` 的 prettier --check 报 5 个新文件格式问题（本地 verify-full 不含 format 步骤是漏检根因）。修复：`npx prettier --write` 5 文件 + INTEGRATED\_OVERVIEW\.md（表格对齐）+ **新增教训**（见 §5 踩坑表）。修复提交 `1ad8a09` 后 CI 全绿。
+
 - **dist-v9 打包**（最新 HEAD 含执行轨迹卡）：`npx electron-builder --win --config electron-builder.v9.config.ts` 出包成功（setup 123MB / portable 123MB / app.asar 82.9MB）。
-- **GH_TOKEN 意外上传（重要坑）**：本地 shell 存在 GH_TOKEN（`gh auth` 注入）时，electron-builder 会**自动 publish 覆盖 draft 资产**（日志 `overwrite published file ... already exists on GitHub`），即使 config `publish: undefined` 也不阻止。本次产物恰为最新 HEAD → draft 的 windows 资产被升到最新（正向），但**linux/mac 仍为旧构建** → 三平台版本不一致，正式公开前必须重推 tag 统一重建。避免再犯：本地打包用 `--publish never`（或临时清 GH_TOKEN）。
-- **门禁矩阵同步**：V0_4_GATES.md 更新（489 单测 / scene 2b / 待办项 4）。**release notes**：draft body 更新（门禁 489 + 执行轨迹卡能力）。
+
+- **GH\_TOKEN 意外上传（重要坑）**：本地 shell 存在 GH\_TOKEN（`gh auth` 注入）时，electron-builder 会**自动 publish 覆盖 draft 资产**（日志 `overwrite published file ... already exists on GitHub`），即使 config `publish: undefined` 也不阻止。本次产物恰为最新 HEAD → draft 的 windows 资产被升到最新（正向），但**linux/mac 仍为旧构建** → 三平台版本不一致，正式公开前必须重推 tag 统一重建。避免再犯：本地打包用 `--publish never`（或临时清 GH\_TOKEN）。
+
+- **门禁矩阵同步**：V0\_4\_GATES.md 更新（489 单测 / scene 2b / 待办项 4）。**release notes**：draft body 更新（门禁 489 + 执行轨迹卡能力）。
 
 ### 2.24 本会话新增：prettier 双稳定点震荡根治 + 三平台资产统一（2026-09-03，第十六轮）
 
 - **连锁故障**：重推 tag 后 release windows job 连续两次失败（`npm run verify` 的 prettier --check 报 `tests/V0_4_GATES.md` warn），linux 反而成功（linux job 不跑 verify）。
-- **根因（第一性原理定位，多轮排查）**：`tests/V0_4_GATES.md` 的中文表格处于 **prettier 双稳定点接缝**——经 hash 验证 `fmt(244a)=afdb`、`fmt(afdb)=afdb`（afdb 是幂等不动点，244a→afdb），且 **pre-commit 钩子（`npx lint-staged` + `npm run typecheck`）与 git 交互会把工作区文件拉回 244a**，导致"write 后 check 仍失败"的死循环；同因使 HEAD blob 反复在 244a/afdb 间摇摆（npx 与 node API 差异仅为表象）。
+
+- **根因（第一性原理定位，多轮排查）**：`tests/V0_4_GATES.md` 的中文表格处于 **prettier 双稳定点接缝**——经 hash 验证 `fmt(244a)=afdb`、`fmt(afdb)=afdb`（afdb 是幂等不动点，244a→afdb），且 **pre-commit 钩子（`npx lint-staged`** **+** **`npm run typecheck`）与 git 交互会把工作区文件拉回 244a**，导致"write 后 check 仍失败"的死循环；同因使 HEAD blob 反复在 244a/afdb 间摇摆（npx 与 node API 差异仅为表象）。
+
 - **根治**：`tests/V0_4_GATES.md` 加入 `.prettierignore`（与 `HANDOFF.md` 同待遇——中文表格文档走人工审阅，格式门禁覆盖代码与其余 md）；同时入库幂等稳定版 afdb。`npm run format:check` 全绿，**CI 永久不再被该文件卡**。提交 `9105798`。
+
 - **踩坑延伸**：遇 prettier `--write` 后 `--check` 仍败时，先 `git hash-object` 验证磁盘/HEAD/blob 三层一致性；再查是否 pre-commit 钩子改写；`--no-verify` 可跳过钩子做原子提交。
-- **三平台统一**：最终重推 tag（指向 `9105798`）→ release run#33763230915 三 job 全 ✓（linux 3m42s / mac 4m3s / windows 4m6s），全部资产 updated_at 13:49-13:52Z **统一重建为最新 HEAD**（含 A2' 执行轨迹卡 + patch 修复），draft 彻底一致、notes 就绪、仅剩用户 Publish。
+
+- **三平台统一**：最终重推 tag（指向 `9105798`）→ release run#33763230915 三 job 全 ✓（linux 3m42s / mac 4m3s / windows 4m6s），全部资产 updated\_at 13:49-13:52Z **统一重建为最新 HEAD**（含 A2' 执行轨迹卡 + patch 修复），draft 彻底一致、notes 就绪、仅剩用户 Publish。
 
 ***
 
@@ -1111,41 +1123,41 @@ node scripts/scan-hardcoded-zh.mjs
 
 ## 5. 踩坑记录（重要）
 
-| 坑                             | 原因                                | 不要再做                                                 |
-| ----------------------------- | --------------------------------- | ---------------------------------------------------- |
-| 默认改 dark-first 又改回            | 产品最终要浅色专业风                        | **以** **`857cbee`** **light-first 为准**；改主题先改基线与 UAT  |
-| 启动强制 Welcome                  | 转化漏斗假设 vs 专业用户                    | **禁止**恢复自动 `setOnboarding("welcome")`，除非产品书面改回       |
-| 删 Welcome 组件当死代码              | 设置仍 `onReopenWelcome`             | 保留 lazy 组件与手动入口                                      |
-| `require is not defined`      | type:module + CJS                 | 主进程 dynamic require 必须 external                      |
-| React.lazy(remark 插件)         | 插件非 Component                     | 只 lazy 组件                                            |
-| hooks 在 MessageBubble 早退后     | Rules of Hooks                    | 流式节流放独立子组件                                           |
-| rehype-sanitize 类型            | 工厂签名不兼容                           | `[rehypeSanitize as never, schema as never]`         |
-| dual tsconfig 漏跑              | main 不在 renderer 工程               | 只用 `npm run typecheck` / `verify`                    |
-| `audit fix --force`           | builder 降级 22                     | 仅 `audit --omit=dev` 门禁                              |
-| secure-storage `plainText`    | Electron 42 字段名 `result`          | 见 `src/main/secure-storage.ts` 注释                    |
-| MCP content 类型 `{}`           | SDK 推断                            | 显式 `as Array<{type?:string;text?:string}>`           |
-| abort 后换新 signal              | 停止失效                              | `beginAbortScope` 见 aborted 则复用旧 signal              |
-| deleteSession 不 abort runtime | Map 泄漏                            | 必先 `sessionRuntime.abortSession`                     |
-| 搜索关后 Ctrl+↑ 高亮残留              | 未 reset nav                       | closeSearch 清 `navCursor`                            |
-| 全局快捷键抢 IME                    | 合成期 keydown                       | `e.isComposing \|\| e.keyCode===229` 早退              |
-| shell `-c` 正则                 | 可选组不回溯                            | 用 `-[a-zA-Z0-9]*-?c\b`                               |
-| verify-full 不 build           | smoke 验旧 out/ 假绿                  | STEPS 必须先 build（已修于 `b81f3b1`）                       |
-| smoke close 挂起                | playwright 管道                     | teardown 超时 force kill                               |
-| 色彩硬编码                         | 漂移                                | 只用 `var(--*)`；night 只覆盖变量                            |
-| 文档当唯一真相                       | overview 过期                       | **以 git HEAD + 本 HANDOFF + 实测命令为准**                  |
-| 设置按钮 aria-label 含"设置"         | 与 UAT 页面级匹配冲突                     | 侧栏按钮 aria-label 用"首选项"，不要用"设置"                       |
-| `emptyOutDir: false`          | 懒加载 chunk 残留导致 Failed to fetch    | 始终设为 `true`                                          |
-| 直接运行旧安装目录的 exe                | 看不到新版 UI 变更                       | 必须用 `robocopy` 覆盖安装目录再启动，或从 dist-v7 直接启动             |
-| 工作区放在顶部卡片                     | 用户期望在左侧 Activity Bar              | 遵循 VS Code/Cursor 模式：左侧竖条图标 + 右侧内容区                  |
-| 部署前不 kill 旧进程                 | 文件被锁定，复制失败                        | 先 `taskkill /f /im DaveDesktop.exe` 再 `robocopy`     |
-| `robocopy /COPYALL`           | 需要审计权限，普通用户无                      | 改用 `robocopy /COPY:DAT`                              |
-| IPC 推送通道直接 webContents.send   | 绕过 `ipc-guard.ts` 契约体系与 schema 校验 | 所有推送必须走 `pushWithGuard`，在 `channelSchemas` 注册 schema |
-| 流式聊天无显式状态机                    | 弱网/快速操作下状态不一致、消息乱序                | 必须实现状态转移矩阵，每个转移必须被状态机守卫校验                            |
-| 状态所有权分片文档存在但代码隐式耦合            | 编排域闭包引用生命周期域状态                    | 通过事件流解耦，增加门禁测试验证跨域一致性                                |
-| 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检） | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿 |
-| 本地 electron-builder 打包时 shell 有 GH_TOKEN   | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`） | 本地打包命令加 `--publish never`，或临时清 GH_TOKEN env |
-| prettier --write 后 --check 仍报 warn             | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
-| hook effect 依赖内联回调参数                       | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 ~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销） | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275` |
+| 坑                                         | 原因                                                                                                 | 不要再做                                                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 默认改 dark-first 又改回                        | 产品最终要浅色专业风                                                                                         | **以** **`857cbee`** **light-first 为准**；改主题先改基线与 UAT                                                     |
+| 启动强制 Welcome                              | 转化漏斗假设 vs 专业用户                                                                                     | **禁止**恢复自动 `setOnboarding("welcome")`，除非产品书面改回                                                          |
+| 删 Welcome 组件当死代码                          | 设置仍 `onReopenWelcome`                                                                              | 保留 lazy 组件与手动入口                                                                                         |
+| `require is not defined`                  | type:module + CJS                                                                                  | 主进程 dynamic require 必须 external                                                                         |
+| React.lazy(remark 插件)                     | 插件非 Component                                                                                      | 只 lazy 组件                                                                                               |
+| hooks 在 MessageBubble 早退后                 | Rules of Hooks                                                                                     | 流式节流放独立子组件                                                                                              |
+| rehype-sanitize 类型                        | 工厂签名不兼容                                                                                            | `[rehypeSanitize as never, schema as never]`                                                            |
+| dual tsconfig 漏跑                          | main 不在 renderer 工程                                                                                | 只用 `npm run typecheck` / `verify`                                                                       |
+| `audit fix --force`                       | builder 降级 22                                                                                      | 仅 `audit --omit=dev` 门禁                                                                                 |
+| secure-storage `plainText`                | Electron 42 字段名 `result`                                                                           | 见 `src/main/secure-storage.ts` 注释                                                                       |
+| MCP content 类型 `{}`                       | SDK 推断                                                                                             | 显式 `as Array<{type?:string;text?:string}>`                                                              |
+| abort 后换新 signal                          | 停止失效                                                                                               | `beginAbortScope` 见 aborted 则复用旧 signal                                                                 |
+| deleteSession 不 abort runtime             | Map 泄漏                                                                                             | 必先 `sessionRuntime.abortSession`                                                                        |
+| 搜索关后 Ctrl+↑ 高亮残留                          | 未 reset nav                                                                                        | closeSearch 清 `navCursor`                                                                               |
+| 全局快捷键抢 IME                                | 合成期 keydown                                                                                        | `e.isComposing \|\| e.keyCode===229` 早退                                                                 |
+| shell `-c` 正则                             | 可选组不回溯                                                                                             | 用 `-[a-zA-Z0-9]*-?c\b`                                                                                  |
+| verify-full 不 build                       | smoke 验旧 out/ 假绿                                                                                   | STEPS 必须先 build（已修于 `b81f3b1`）                                                                          |
+| smoke close 挂起                            | playwright 管道                                                                                      | teardown 超时 force kill                                                                                  |
+| 色彩硬编码                                     | 漂移                                                                                                 | 只用 `var(--*)`；night 只覆盖变量                                                                               |
+| 文档当唯一真相                                   | overview 过期                                                                                        | **以 git HEAD + 本 HANDOFF + 实测命令为准**                                                                     |
+| 设置按钮 aria-label 含"设置"                     | 与 UAT 页面级匹配冲突                                                                                      | 侧栏按钮 aria-label 用"首选项"，不要用"设置"                                                                          |
+| `emptyOutDir: false`                      | 懒加载 chunk 残留导致 Failed to fetch                                                                     | 始终设为 `true`                                                                                             |
+| 直接运行旧安装目录的 exe                            | 看不到新版 UI 变更                                                                                        | 必须用 `robocopy` 覆盖安装目录再启动，或从 dist-v7 直接启动                                                                |
+| 工作区放在顶部卡片                                 | 用户期望在左侧 Activity Bar                                                                               | 遵循 VS Code/Cursor 模式：左侧竖条图标 + 右侧内容区                                                                     |
+| 部署前不 kill 旧进程                             | 文件被锁定，复制失败                                                                                         | 先 `taskkill /f /im DaveDesktop.exe` 再 `robocopy`                                                        |
+| `robocopy /COPYALL`                       | 需要审计权限，普通用户无                                                                                       | 改用 `robocopy /COPY:DAT`                                                                                 |
+| IPC 推送通道直接 webContents.send               | 绕过 `ipc-guard.ts` 契约体系与 schema 校验                                                                  | 所有推送必须走 `pushWithGuard`，在 `channelSchemas` 注册 schema                                                    |
+| 流式聊天无显式状态机                                | 弱网/快速操作下状态不一致、消息乱序                                                                                 | 必须实现状态转移矩阵，每个转移必须被状态机守卫校验                                                                               |
+| 状态所有权分片文档存在但代码隐式耦合                        | 编排域闭包引用生命周期域状态                                                                                     | 通过事件流解耦，增加门禁测试验证跨域一致性                                                                                   |
+| 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检）                               | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿                                                         |
+| 本地 electron-builder 打包时 shell 有 GH\_TOKEN | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`）  | 本地打包命令加 `--publish never`，或临时清 GH\_TOKEN env                                                            |
+| prettier --write 后 --check 仍报 warn        | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
+| hook effect 依赖内联回调参数                      | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 \~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销） | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275`                                     |
 
 ### 特殊配置 / 隐藏依赖
 
