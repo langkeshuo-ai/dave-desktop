@@ -58,10 +58,13 @@ tags: \[entry-points, architecture]
 
 - tests/frontend-preview\.e2e.mjs —— 前端原型 E2E 门禁（18 项 named-risk）。
 
-- tests/chat-stream.e2e.mjs —— 真实会话 E2E 门禁（Electron + mock provider：ask 流式/落库/agent 审批）。
+- tests/chat-stream.e2e.mjs —— 真实会话 E2E 门禁（Electron + mock provider：ask 流式/落库/agent 审批/执行轨迹卡/重启恢复/设置面板/导出/命令面板，**6 场景**）。
 
-- tests/verify-full.mjs —— 一键全量：build → unit → chat:e2e → preview:e2e（矩阵见 tests/V0\_4\_GATES.md）。
+- tests/electron-uat.mjs —— 用户验收 E2E（新 renderer 链：主界面渲染/设置对话框/扩展技能增删/关于/持久化/删除，**6 场景**）。
+
+- tests/verify-full.mjs —— 一键全量 7 步：ipc-consistency → sender-coverage → build → unit → chat:e2e → preview:e2e → uat（矩阵见 tests/V0\_4\_GATES.md）。
 
 ## 已删除（v0.4，勿恢复）
 
-- tests/electron-smoke.mjs / electron-uat.mjs —— 面向旧 renderer UI，已被 chat:e2e + preview:e2e 取代。
+- tests/electron-smoke.mjs —— 面向旧 renderer UI，已被 chat:e2e 取代（已彻底删除）。
+- tests/electron-uat.mjs **旧版** —— 依赖旧 UI 对话框；已重建为新 renderer 链（见上，勿再删当前版本）。
