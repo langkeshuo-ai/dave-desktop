@@ -4,7 +4,10 @@
   "private": true,
   "version": "0.4.0",
   "description": "Dave Desktop — 戴夫个人 Agent 桌面应用",
-  "author": "戴夫",
+  "author": {
+    "name": "戴夫",
+    "email": "langkeshuo@users.noreply.github.com"
+  },
   "main": "./out/main/index.js",
   "homepage": "https://github.com/langkeshuo-ai/dave-desktop",
   "repository": {
