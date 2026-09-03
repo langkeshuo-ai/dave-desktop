@@ -81,6 +81,7 @@ export default tseslint.config(
       "electron-builder.config.ts",
       "electron-builder.v7.config.ts",
       "electron-builder.v8.config.ts",
+      "electron-builder.v9.config.ts",
     ],
   },
 )
