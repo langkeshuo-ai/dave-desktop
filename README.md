@@ -37,7 +37,7 @@ npm run package:win  # 打包（默认 dist/；dist-v8 为隔离产物）
 | 图标     | lucide-react 0.500                                                        |
 | 持久化   | electron-store 11 + electron-window-state 5 + safeStorage（API Key）      |
 | 日志     | electron-log 5                                                            |
-| 测试     | Vitest 3.2 + **477 单元测试** + Playwright E2E                            |
+| 测试     | Vitest 3.2 + **489 单元测试** + Playwright E2E                            |
 | 代码质量 | ESLint 9 + Prettier + Husky + lint-staged                                 |
 | 字体     | -apple-system / Segoe UI（系统栈）+ JetBrains Mono（代码）                |
 

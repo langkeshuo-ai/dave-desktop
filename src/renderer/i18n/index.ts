@@ -58,6 +58,9 @@ export const resources = {
         pending: "待确认",
         denied: "已拒绝",
         rolledBack: "已回滚",
+        traces: "执行轨迹",
+        output: "输出",
+        failed: "失败",
       },
       approval: {
         title: "工具审批",
@@ -170,6 +173,9 @@ export const resources = {
         pending: "Pending",
         denied: "Denied",
         rolledBack: "Rolled back",
+        traces: "Tool traces",
+        output: "Output",
+        failed: "Failed",
       },
       approval: {
         title: "Tool approval",

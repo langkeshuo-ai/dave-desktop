@@ -9,6 +9,12 @@ import { MessageBubble } from "./MessageBubble"
 import { MessageInput } from "./MessageInput"
 import { ApprovalCard } from "./ApprovalCard"
 import { PatchPreviewCard, type PatchRecord } from "./PatchPreviewCard"
+import { ExecTraceCard } from "./ExecTraceCard"
+import {
+  toToolTraces,
+  toolTraceKey,
+  type ToolTrace,
+} from "../../shared/tool-trace"
 
 const MODES = ["ask", "suggest", "auto", "fullAuto"] as const
 type ModeKey = (typeof MODES)[number]
@@ -44,6 +50,10 @@ export function ChatView({
   const doneSeededRef = useRef<string | null>(null)
   const titledRef = useRef(false)
   const patchesRef = useRef<PatchRecord[]>([])
+  // 工具执行轨迹（A2'）：累积本轮会话补拉到的 tool 消息，幂等去重后渲染为总结卡
+  const [toolTraces, setToolTraces] = useState<ToolTrace[]>([])
+  // 已见过的 tool 消息 key：历史补拉见到的（走正常气泡）不重复进轨迹卡
+  const knownToolKeysRef = useRef<Set<string>>(new Set())
 
   // patch（diff 独立载体）经 bridge onEvent 收集，流结束后聚合为文件变更卡
   const bridge = useChatStreamBridge(store, sessionId, (event) => {
@@ -80,6 +90,34 @@ export function ChatView({
       cancelled = true
     }
   }, [sessionId, hydrated, history.length])
+
+  // 历史中的 tool 消息一律视为已知：会话回看的工具输出走正常气泡，
+  // 不重复进入执行轨迹卡（覆盖父级预填 / 挂载补拉 / done 落常驻各路径）
+  useEffect(() => {
+    for (const m of history) {
+      if (m.role === "tool") knownToolKeysRef.current.add(toolTraceKey(m))
+    }
+  }, [history])
+
+  // 流结束后补拉最新历史：聚合本轮新增的 tool 消息为执行轨迹（A2'，无 schema 变更）
+  useEffect(() => {
+    if (state.status !== "done") return
+    void (async () => {
+      const dave = window.dave?.session
+      if (!dave) return
+      try {
+        const data = await dave.get(sessionId)
+        const fresh = (data?.messages ?? [])
+          .filter((m) => m.role === "tool")
+          .filter((m) => !knownToolKeysRef.current.has(toolTraceKey(m)))
+        if (fresh.length === 0) return
+        for (const m of fresh) knownToolKeysRef.current.add(toolTraceKey(m))
+        setToolTraces((prev) => toToolTraces([...prev, ...fresh]))
+      } catch {
+        /* 会话不可读时跳过轨迹聚合（不影响主流程） */
+      }
+    })()
+  }, [state.status, sessionId])
 
   // 流结束后把最终文本落成常驻消息（done/aborted 均含 finalContent）
   useEffect(() => {
@@ -210,6 +248,8 @@ export function ChatView({
           {state.status === "done" && patchesRef.current.length > 0 && (
             <PatchPreviewCard patches={patchesRef.current} />
           )}
+
+          {toolTraces.length > 0 && <ExecTraceCard traces={toolTraces} />}
 
           {state.status === "error" && (
             <div

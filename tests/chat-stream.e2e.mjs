@@ -116,6 +116,14 @@ try {
   await agentText.first().waitFor({ state: "visible", timeout: 20_000 })
   process.stdout.write("scene 2 passed (agent approval + final text rendered)\n")
 
+  // A2' 断言：执行轨迹卡（done 后补拉聚合 role:"tool" 消息）出现，展开可见工具名与输出
+  const traceBtn = window.getByRole("button", { name: /执行轨迹/ })
+  await traceBtn.waitFor({ state: "visible", timeout: 15_000 })
+  await traceBtn.click()
+  const traceTool = window.getByText(/file_tree/, { exact: false })
+  await traceTool.first().waitFor({ state: "visible", timeout: 5_000 })
+  process.stdout.write("scene 2b passed (exec trace card rendered: file_tree)\n")
+
   // ── 场景 3：重启恢复渲染（落库数据 → 重启 → ChatView 渲染历史） ──
   process.stdout.write("scene 3: restart resume rendering\n")
   const persistedSessionId = await window.evaluate(async () => {

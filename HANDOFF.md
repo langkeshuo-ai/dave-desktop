@@ -733,6 +733,19 @@ Application entry file "out/main/index.js" in the "dist/linux-unpacked/resources
 
 **未公开（draft: true）**——公开动作由用户决定；mac 包为 unsigned（`CSC_IDENTITY_AUTO_DISCOVERY=false`），正式对外发布前需配 `CSC_LINK` 签名（SmartScreen/Gatekeeper 拦载）。
 
+### 2.22 本会话新增：A2' 执行轨迹卡落地（ROADMAP 候选 A 收口，2026-09-03，第十四轮）
+
+ROADMAP_0.4_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此前只剩"工具执行结果 UI"这一环（patch 卡已落地）；本轮补全：
+
+- **缺口确认**：主进程把工具输出落库为 `role:"tool"` 消息（成功="输出" / 拒绝=「用户拒绝了此操作…」 / 失败=「工具失败：…」/「错误：未知工具…」），但渲染端无聚合展示——流式期间只见 tool_pending 行 + 审批卡，工具执行结果不可见。
+- **新纯函数** `src/shared/tool-trace.ts`：`toToolTraces`（tool 消息→轨迹列表，幂等去重 + 上限 8）、`toToolTraceStatus`（content 前缀推导 ok/denied/failed）、`toolTraceKey`（name::content）；**11 单测**（tests/tool-trace.test.ts）。
+- **新组件** `src/renderer/components/ExecTraceCard.tsx`：折叠式总结卡（工具名徽标 + 状态徽标 ok=绿/denied=灰/failed=红 + 输出等宽折叠），复用 design token，无新契约。
+- **ChatView 接线**：done 后补拉 session.get → 过滤"已知 key 之外的 tool 消息"聚合进轨迹卡；history 同步 effect 标记历史 tool 消息为已知（防父级预填/挂载补拉/多轮重复，也避免与 tool 气泡重复渲染）；无 schema / 契约变更。
+- **i18n**：tool 命名空间新增 traces/output/failed（zh/en 成对，键一致单测守卫通过）。
+- **E2E**：chat:e2e scene 2b 新增断言——审批允许后轨迹卡出现（aria-label 含「执行轨迹」）→ 展开可见工具名 `file_tree` 与输出，实测 passed、零 console 错误。
+
+**验证**：typecheck 双零错 · vitest **489/489**（+11）· build 绿（renderer 1.146MB）· verify-full 6 步 ALL PASS（chat:e2e 4 场景含 2b）。
+
 ***
 
 ## 3. 当前状态
