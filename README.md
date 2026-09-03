@@ -13,10 +13,11 @@
 ## v0.4 能力（2026-09-03）
 
 - **插件生命周期加固**：市场升级契约 + 升级失败回滚 + 连续失败自动禁用（PLUGIN_FAIL_THRESHOLD=3）
-- **设置面板回归**：模型/工作区/扩展/日志/关于 五 tab（走 IPC 契约）
+- **设置面板回归**：模型/工作区/扩展（MCP 服务器管理 + 技能增删）/日志/关于（深浅色主题）五 tab（走 IPC 契约）
 - **skills 目录扫描 + 路径穿越防御**（SKILL_NAME_RE 白名单）；i18n 组件硬编码清零
-- **IPC 契约治理**：38 handler 全 schema；`scripts/scan-ipc-consistency.mjs` 双向缺口归零门禁
-- **会话链路**：真实流式（pushWithGuard + 状态机守卫）+ 落库 + 审批 + 重启恢复渲染 + 文件变更卡
+- **IPC 契约治理**：38 handler 全 schema；`scripts/scan-ipc-consistency.mjs` 双向缺口 + `audit-sender-coverage.mjs` 发送者覆盖双门禁归零
+- **会话链路**：真实流式（pushWithGuard + 状态机守卫）+ 落库 + 审批 + 重启恢复渲染 + 文件变更卡（应用/忽略）+ 执行轨迹卡
+- **会话管理**：手动重命名、导出 Markdown、命令面板（⌘K/Ctrl+K）、深色/浅色主题切换（持久化）
 
 ## 快速开始
 
