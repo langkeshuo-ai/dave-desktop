@@ -44,7 +44,7 @@ Dave Desktop（本地 Electron Agent 客户端）的工程化、安全纵深、�
 
 | 项          | 值                                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 工作区        | `c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop`                                                                                          |
+| 工作区        | `c:\Users\C\DoubaoWork\chats\2026-08-31\new-chat-1\dave-desktop`                                                                                       |
 | 栈          | Electron 42 · electron-vite 5 · React 19 · TS 5.8 · Tailwind 4 · Zustand 5 · Vitest 3.2.6 · Playwright · i18next 26 · `@modelcontextprotocol/sdk` 1.30 |
 | 架构         | `src/main` / `src/preload` / `src/renderer` / `src/shared`（纯函数，node 可单测）                                                                               |
 | 双 tsconfig | `tsconfig.json`（renderer+shared）+ `tsconfig.node.json`（main+preload+shared）；**必须** `npm run typecheck` 双跑                                              |
@@ -777,14 +777,14 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 对 README 功能清单逐项核查后，补齐 renderer 重建后丢失/缺失的 UI 入口（六项，均无新契约或复用已注册契约）：
 
-| 功能 | 提交 | 要点 |
-| --- | --- | --- |
-| 会话手动重命名 | `a510d19` | Sidebar 行内编辑（Pencil 按钮/Enter/Escape/blur），复用 `session-update-title`；修底部版本号 v0.3.0→v0.4.0 |
-| MCP 服务器管理 UI | `85d8e56`+`f5fb83f` | Settings 扩展 tab：读 `mcp-servers` → 行级 JSON 编辑/增删 → 保存并重连（复用 `mcp-servers-set` + connectAll）→ 刷新工具列表 |
-| patch 应用/忽略 | `9d3d4c9` | PatchPreviewCard 每行「应用」（复用 `workspace-apply-patch` + 失败回显）/「忽略」（本地隐去） |
-| 会话导出 Markdown | `896eb0a` | **新契约** `session:export-markdown`（security.handle + channelSchemas.id + exportLimiter 5/s）；ChatView 下载按钮；抽共享 `renderer/utils/export-session.ts`；E2E scene 5 |
-| 命令面板 | `abd561b` | 新组件 CommandPalette（⌘K/Ctrl+K、前缀过滤、↑↓/Enter/Esc）；3 命令（新对话/设置/导出）；E2E scene 6 |
-| 主题切换 | `0d4fc7d` | App theme 状态 + `html.night` classList + store `"theme"` 持久化；Settings 关于 tab 外观开关（role=switch）；E2E scene 4 增强断言 night 应用/复原 |
+| 功能            | 提交                  | 要点                                                                                                                                                          |
+| ------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 会话手动重命名       | `a510d19`           | Sidebar 行内编辑（Pencil 按钮/Enter/Escape/blur），复用 `session-update-title`；修底部版本号 v0.3.0→v0.4.0                                                                    |
+| MCP 服务器管理 UI  | `85d8e56`+`f5fb83f` | Settings 扩展 tab：读 `mcp-servers` → 行级 JSON 编辑/增删 → 保存并重连（复用 `mcp-servers-set` + connectAll）→ 刷新工具列表                                                          |
+| patch 应用/忽略   | `9d3d4c9`           | PatchPreviewCard 每行「应用」（复用 `workspace-apply-patch` + 失败回显）/「忽略」（本地隐去）                                                                                       |
+| 会话导出 Markdown | `896eb0a`           | **新契约** `session:export-markdown`（security.handle + channelSchemas.id + exportLimiter 5/s）；ChatView 下载按钮；抽共享 `renderer/utils/export-session.ts`；E2E scene 5 |
+| 命令面板          | `abd561b`           | 新组件 CommandPalette（⌘K/Ctrl+K、前缀过滤、↑↓/Enter/Esc）；3 命令（新对话/设置/导出）；E2E scene 6                                                                                 |
+| 主题切换          | `0d4fc7d`           | App theme 状态 + `html.night` classList + store `"theme"` 持久化；Settings 关于 tab 外观开关（role=switch）；E2E scene 4 增强断言 night 应用/复原                                  |
 
 **E2E 由 4 场景扩至 6 场景**（+scene 5 导出、scene 6 命令面板；scene 2b/4 增强断言）。
 
@@ -840,7 +840,7 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 1. **无代码签名** — SmartScreen；auto-update 发布链不完整。
 2. **dev audit high** — 开发链 electron-builder/eslint 传递依赖；prod `audit --omit=dev` = 0。
-3. **文档漂移** — overview 仍写 skills ❌、门禁 164 tests 等旧数字。
+3. **文档漂移** — ✅ 已收口（2026-09-04）：INTEGRATED\_OVERVIEW §1 快照（489/6 场景/已公开）、能力矩阵 skills 行、§3 历史基线注记已同步；旧数字仍仅存于明确标注的历史小节。
 4. **smoke/UAT 已重写** — 面向新 renderer 的 chat:e2e 6 场景 / uat 6 场景已接入 verify-full；若删组件需改测试文案。
 5. **偶发**：`npm install` 后立刻 `npm run dev` 可能 Vite exit 3 — 重试或清 cache。
 6. **IPC 限流**：1s 内 >30 store-set/chat-stream 丢弃（日志 `IPC rate limited`）。
@@ -869,57 +869,59 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 ### 剩余外部解锁项（任一到位即继续）
 
-| 项 | 触发方式 | 动作 |
-| --- | --- | --- |
-| 公开发布 | ✅ 完成（2026-09-04） | `gh release edit v0.4.0 --draft=false` → <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0> |
-| 真实全链路 E2E | 提供 `DAVE_REAL_API_KEY` | `npm run chat:e2e:real` |
-| 代码签名 | 配 `WIN_CSC_LINK` / `CSC_LINK` Secrets | 重推 tag 重建 signed 三平台包 |
-| 新功能方向 | 用户指令 | 按 staff-engineer + TDD 实施 |
+| 项         | 触发方式                                  | 动作                                                                                                           |
+| --------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 公开发布      | ✅ 完成（2026-09-04）                      | `gh release edit v0.4.0 --draft=false` → <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0> |
+| 真实全链路 E2E | 提供 `DAVE_REAL_API_KEY`                | `npm run chat:e2e:real`                                                                                      |
+| 代码签名      | 配 `WIN_CSC_LINK` / `CSC_LINK` Secrets | 重推 tag 重建 signed 三平台包                                                                                        |
+| 新功能方向     | 用户指令                                  | 按 staff-engineer + TDD 实施                                                                                    |
 
 ### 本地维护
 
 - ✅ 安装目录已升级到 dist-v9（2026-09-04，DaveDesktop 未运行直接 robocopy）。后续再升级：`taskkill /f /im DaveDesktop.exe`（如正在运行）→ `robocopy "dist-v9\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
-- 清理旧构建目录（Defender 锁消失后，进程重启/扫描完成后）：`Remove-Item dist-new,dist-v2..v7 -Recurse -Force`（当前每目录 ~81MB app.asar 仍被瞬态锁）
+
+- 清理旧构建目录（Defender 锁消失后，进程重启/扫描完成后）：`Remove-Item dist-new,dist-v2..v7 -Recurse -Force`（当前每目录 \~81MB app.asar 仍被瞬态锁）
+
 - 全量门禁复跑：`node tests/verify-full.mjs`
 
 ## 5. 踩坑记录（重要）
 
-| 坑                                         | 原因                                                                                                 | 不要再做                                                                                                    |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 默认改 dark-first 又改回                        | 产品最终要浅色专业风                                                                                         | **以** **`857cbee`** **light-first 为准**；改主题先改基线与 UAT                                                     |
-| 启动强制 Welcome                              | 转化漏斗假设 vs 专业用户                                                                                     | **禁止**恢复自动 `setOnboarding("welcome")`，除非产品书面改回                                                          |
-| 删 Welcome 组件当死代码                          | 设置仍 `onReopenWelcome`                                                                              | 保留 lazy 组件与手动入口                                                                                         |
-| `require is not defined`                  | type:module + CJS                                                                                  | 主进程 dynamic require 必须 external                                                                         |
-| React.lazy(remark 插件)                     | 插件非 Component                                                                                      | 只 lazy 组件                                                                                               |
-| hooks 在 MessageBubble 早退后                 | Rules of Hooks                                                                                     | 流式节流放独立子组件                                                                                              |
-| rehype-sanitize 类型                        | 工厂签名不兼容                                                                                            | `[rehypeSanitize as never, schema as never]`                                                            |
-| dual tsconfig 漏跑                          | main 不在 renderer 工程                                                                                | 只用 `npm run typecheck` / `verify`                                                                       |
-| `audit fix --force`                       | builder 降级 22                                                                                      | 仅 `audit --omit=dev` 门禁                                                                                 |
-| secure-storage `plainText`                | Electron 42 字段名 `result`                                                                           | 见 `src/main/secure-storage.ts` 注释                                                                       |
-| MCP content 类型 `{}`                       | SDK 推断                                                                                             | 显式 `as Array<{type?:string;text?:string}>`                                                              |
-| abort 后换新 signal                          | 停止失效                                                                                               | `beginAbortScope` 见 aborted 则复用旧 signal                                                                 |
-| deleteSession 不 abort runtime             | Map 泄漏                                                                                             | 必先 `sessionRuntime.abortSession`                                                                        |
-| 搜索关后 Ctrl+↑ 高亮残留                          | 未 reset nav                                                                                        | closeSearch 清 `navCursor`                                                                               |
-| 全局快捷键抢 IME                                | 合成期 keydown                                                                                        | `e.isComposing \|\| e.keyCode===229` 早退                                                                 |
-| shell `-c` 正则                             | 可选组不回溯                                                                                             | 用 `-[a-zA-Z0-9]*-?c\b`                                                                                  |
-| verify-full 不 build                       | smoke 验旧 out/ 假绿                                                                                   | STEPS 必须先 build（已修于 `b81f3b1`）                                                                          |
-| smoke close 挂起                            | playwright 管道                                                                                      | teardown 超时 force kill                                                                                  |
-| 色彩硬编码                                     | 漂移                                                                                                 | 只用 `var(--*)`；night 只覆盖变量                                                                               |
-| 文档当唯一真相                                   | overview 过期                                                                                        | **以 git HEAD + 本 HANDOFF + 实测命令为准**                                                                     |
-| 设置按钮 aria-label 含"设置"                     | 与 UAT 页面级匹配冲突                                                                                      | 侧栏按钮 aria-label 用"首选项"，不要用"设置"                                                                          |
-| `emptyOutDir: false`                      | 懒加载 chunk 残留导致 Failed to fetch                                                                     | 始终设为 `true`                                                                                             |
-| 直接运行旧安装目录的 exe                            | 看不到新版 UI 变更                                                                                        | 必须用 `robocopy` 覆盖安装目录再启动，或从 dist-v7 直接启动                                                                |
-| 工作区放在顶部卡片                                 | 用户期望在左侧 Activity Bar                                                                               | 遵循 VS Code/Cursor 模式：左侧竖条图标 + 右侧内容区                                                                     |
-| 部署前不 kill 旧进程                             | 文件被锁定，复制失败                                                                                         | 先 `taskkill /f /im DaveDesktop.exe` 再 `robocopy`                                                        |
-| `robocopy /COPYALL`                       | 需要审计权限，普通用户无                                                                                       | 改用 `robocopy /COPY:DAT`                                                                                 |
-| IPC 推送通道直接 webContents.send               | 绕过 `ipc-guard.ts` 契约体系与 schema 校验                                                                  | 所有推送必须走 `pushWithGuard`，在 `channelSchemas` 注册 schema                                                    |
-| 流式聊天无显式状态机                                | 弱网/快速操作下状态不一致、消息乱序                                                                                 | 必须实现状态转移矩阵，每个转移必须被状态机守卫校验                                                                               |
-| 状态所有权分片文档存在但代码隐式耦合                        | 编排域闭包引用生命周期域状态                                                                                     | 通过事件流解耦，增加门禁测试验证跨域一致性                                                                                   |
-| 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检）                               | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿                                                         |
-| 本地 electron-builder 打包时 shell 有 GH\_TOKEN | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`）  | 本地打包命令加 `--publish never`，或临时清 GH\_TOKEN env                                                            |
-| prettier --write 后 --check 仍报 warn        | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
-| hook effect 依赖内联回调参数 | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 ~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销） | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275` |
-| lint-staged 破坏 .archcore frontmatter | 提交 .archcore 下 .md 时 lint-staged 显式传路径给 prettier --write 绕过 .prettierignore，把 frontmatter `---` 转成 `***`、路径转义 | `.lintstagedrc` 加 negate glob `"!.archcore/**"` 排除；.archcore 提交用 `--no-verify` |
+| 坑                                         | 原因                                                                                                            | 不要再做                                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 默认改 dark-first 又改回                        | 产品最终要浅色专业风                                                                                                    | **以** **`857cbee`** **light-first 为准**；改主题先改基线与 UAT                                                     |
+| 启动强制 Welcome                              | 转化漏斗假设 vs 专业用户                                                                                                | **禁止**恢复自动 `setOnboarding("welcome")`，除非产品书面改回                                                          |
+| 删 Welcome 组件当死代码                          | 设置仍 `onReopenWelcome`                                                                                         | 保留 lazy 组件与手动入口                                                                                         |
+| `require is not defined`                  | type:module + CJS                                                                                             | 主进程 dynamic require 必须 external                                                                         |
+| React.lazy(remark 插件)                     | 插件非 Component                                                                                                 | 只 lazy 组件                                                                                               |
+| hooks 在 MessageBubble 早退后                 | Rules of Hooks                                                                                                | 流式节流放独立子组件                                                                                              |
+| rehype-sanitize 类型                        | 工厂签名不兼容                                                                                                       | `[rehypeSanitize as never, schema as never]`                                                            |
+| dual tsconfig 漏跑                          | main 不在 renderer 工程                                                                                           | 只用 `npm run typecheck` / `verify`                                                                       |
+| `audit fix --force`                       | builder 降级 22                                                                                                 | 仅 `audit --omit=dev` 门禁                                                                                 |
+| secure-storage `plainText`                | Electron 42 字段名 `result`                                                                                      | 见 `src/main/secure-storage.ts` 注释                                                                       |
+| MCP content 类型 `{}`                       | SDK 推断                                                                                                        | 显式 `as Array<{type?:string;text?:string}>`                                                              |
+| abort 后换新 signal                          | 停止失效                                                                                                          | `beginAbortScope` 见 aborted 则复用旧 signal                                                                 |
+| deleteSession 不 abort runtime             | Map 泄漏                                                                                                        | 必先 `sessionRuntime.abortSession`                                                                        |
+| 搜索关后 Ctrl+↑ 高亮残留                          | 未 reset nav                                                                                                   | closeSearch 清 `navCursor`                                                                               |
+| 全局快捷键抢 IME                                | 合成期 keydown                                                                                                   | `e.isComposing \|\| e.keyCode===229` 早退                                                                 |
+| shell `-c` 正则                             | 可选组不回溯                                                                                                        | 用 `-[a-zA-Z0-9]*-?c\b`                                                                                  |
+| verify-full 不 build                       | smoke 验旧 out/ 假绿                                                                                              | STEPS 必须先 build（已修于 `b81f3b1`）                                                                          |
+| smoke close 挂起                            | playwright 管道                                                                                                 | teardown 超时 force kill                                                                                  |
+| 色彩硬编码                                     | 漂移                                                                                                            | 只用 `var(--*)`；night 只覆盖变量                                                                               |
+| 文档当唯一真相                                   | overview 过期                                                                                                   | **以 git HEAD + 本 HANDOFF + 实测命令为准**                                                                     |
+| 设置按钮 aria-label 含"设置"                     | 与 UAT 页面级匹配冲突                                                                                                 | 侧栏按钮 aria-label 用"首选项"，不要用"设置"                                                                          |
+| `emptyOutDir: false`                      | 懒加载 chunk 残留导致 Failed to fetch                                                                                | 始终设为 `true`                                                                                             |
+| 直接运行旧安装目录的 exe                            | 看不到新版 UI 变更                                                                                                   | 必须用 `robocopy` 覆盖安装目录再启动，或从 dist-v7 直接启动                                                                |
+| 工作区放在顶部卡片                                 | 用户期望在左侧 Activity Bar                                                                                          | 遵循 VS Code/Cursor 模式：左侧竖条图标 + 右侧内容区                                                                     |
+| 部署前不 kill 旧进程                             | 文件被锁定，复制失败                                                                                                    | 先 `taskkill /f /im DaveDesktop.exe` 再 `robocopy`                                                        |
+| `robocopy /COPYALL`                       | 需要审计权限，普通用户无                                                                                                  | 改用 `robocopy /COPY:DAT`                                                                                 |
+| IPC 推送通道直接 webContents.send               | 绕过 `ipc-guard.ts` 契约体系与 schema 校验                                                                             | 所有推送必须走 `pushWithGuard`，在 `channelSchemas` 注册 schema                                                    |
+| 流式聊天无显式状态机                                | 弱网/快速操作下状态不一致、消息乱序                                                                                            | 必须实现状态转移矩阵，每个转移必须被状态机守卫校验                                                                               |
+| 状态所有权分片文档存在但代码隐式耦合                        | 编排域闭包引用生命周期域状态                                                                                                | 通过事件流解耦，增加门禁测试验证跨域一致性                                                                                   |
+| 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检）                                          | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿                                                         |
+| 本地 electron-builder 打包时 shell 有 GH\_TOKEN | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`）             | 本地打包命令加 `--publish never`，或临时清 GH\_TOKEN env                                                            |
+| prettier --write 后 --check 仍报 warn        | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob            | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
+| hook effect 依赖内联回调参数                      | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 \~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销）            | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275`                                     |
+| lint-staged 破坏 .archcore frontmatter      | 提交 .archcore 下 .md 时 lint-staged 显式传路径给 prettier --write 绕过 .prettierignore，把 frontmatter `---` 转成 `***`、路径转义 | `.lintstagedrc` 加 negate glob `"!.archcore/**"` 排除；.archcore 提交用 `--no-verify`                          |
 
 ### 特殊配置 / 隐藏依赖
 
