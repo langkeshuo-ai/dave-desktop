@@ -44,9 +44,11 @@ tags: \[entry-points, architecture]
 
 - src/renderer/main.tsx / App.tsx —— React 挂载 + 布局外壳（light-first，Activity Bar 40px + 侧栏 260px；settingsOpen 状态挂载 Settings）。
 - src/renderer/components/ChatView.tsx —— 流式聊天视图（store + useChatStreamBridge 消费 IPC 推送事件；done 后补拉聚合工具轨迹）。
-- src/renderer/components/ApprovalCard.tsx / PatchPreviewCard.tsx / ExecTraceCard.tsx —— 审批卡 / patch 可视化 / 执行轨迹卡（A2'）。
-- src/renderer/components/Sidebar.tsx / ActivityBar.tsx / MessageBubble.tsx / MessageInput.tsx —— 侧栏/活动栏/消息组件。
-- src/renderer/components/Settings.tsx —— 设置面板（模型/工作区/扩展/日志/关于 五 tab，全部经 window.dave.* IPC 契约）。
+- src/renderer/components/ApprovalCard.tsx / PatchPreviewCard.tsx / ExecTraceCard.tsx —— 审批卡 / patch 可视化（应用/忽略）/ 执行轨迹卡（A2'）。
+- src/renderer/components/CommandPalette.tsx —— 命令面板（⌘K/Ctrl+K，新对话/设置/导出）。
+- src/renderer/components/Sidebar.tsx / ActivityBar.tsx / MessageBubble.tsx / MessageInput.tsx —— 侧栏（含会话重命名）/活动栏/消息组件。
+- src/renderer/components/Settings.tsx —— 设置面板（模型/工作区/扩展[MCP 服务器管理+工具只读]/日志/关于[外观深浅色] 五 tab，全部经 window.dave.* IPC 契约）。
+- src/renderer/utils/export-session.ts —— 会话导出 Markdown 下载助手（ChatView 与命令面板共用）。
 
 ## HTTP（本地静态预览）
 
