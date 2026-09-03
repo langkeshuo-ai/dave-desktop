@@ -628,6 +628,16 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 
 - CI-REMOTE 剩余：用户创建 GitHub 仓库 → `git remote add origin <url>` → `git push -u origin master` → CI 首绿（ci.yml 已对齐本地 6 步门禁矩阵）
 
+### 2.18 打包验证（2026-09-03，第十轮）
+
+发布候选级 packaging 验证（不依赖外部资源）：
+
+- **EBUSY 已知坑复现**：dist-v7/win-unpacked/resources/app.asar 被运行中的 DaveDesktop.exe 锁定 → 不打旧目录
+- **新建 `electron-builder.v8.config.ts`**（继承 base，output=dist-v8, publish=undefined）隔离输出
+- **打包成功**（win x64，noproxy noproxy electron 42.7.0）：`dist-v8/dave-desktop-win-x64-setup.exe`(117.4MB) + portable + blockmap + latest.yml
+- 注意：builder 检测 CI 环境触发 publishing 尝试，因无 tag/release 自动 skip（`skipped publishing … not on tag`）——本地无害
+- 部署到安装目录（需先 kill 运行中应用，用户决定）：`taskkill /f /im DaveDesktop.exe` → `robocopy "dist-v8\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
+
 ***
 
 ## 3. 当前状态
