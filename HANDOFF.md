@@ -773,6 +773,23 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 
 - **三平台统一**：最终重推 tag（指向 `9105798`）→ release run#33763230915 三 job 全 ✓（linux 3m42s / mac 4m3s / windows 4m6s），全部资产 updated\_at 13:49-13:52Z **统一重建为最新 HEAD**（含 A2' 执行轨迹卡 + patch 修复），draft 彻底一致、notes 就绪、仅剩用户 Publish。
 
+### 2.25 本会话新增：README 承诺功能全部落地与 UI 收口（2026-09-03，第十七轮）
+
+对 README 功能清单逐项核查后，补齐 renderer 重建后丢失/缺失的 UI 入口（六项，均无新契约或复用已注册契约）：
+
+| 功能 | 提交 | 要点 |
+| --- | --- | --- |
+| 会话手动重命名 | `a510d19` | Sidebar 行内编辑（Pencil 按钮/Enter/Escape/blur），复用 `session-update-title`；修底部版本号 v0.3.0→v0.4.0 |
+| MCP 服务器管理 UI | `85d8e56`+`f5fb83f` | Settings 扩展 tab：读 `mcp-servers` → 行级 JSON 编辑/增删 → 保存并重连（复用 `mcp-servers-set` + connectAll）→ 刷新工具列表 |
+| patch 应用/忽略 | `9d3d4c9` | PatchPreviewCard 每行「应用」（复用 `workspace-apply-patch` + 失败回显）/「忽略」（本地隐去） |
+| 会话导出 Markdown | `896eb0a` | **新契约** `session:export-markdown`（security.handle + channelSchemas.id + exportLimiter 5/s）；ChatView 下载按钮；抽共享 `renderer/utils/export-session.ts`；E2E scene 5 |
+| 命令面板 | `abd561b` | 新组件 CommandPalette（⌘K/Ctrl+K、前缀过滤、↑↓/Enter/Esc）；3 命令（新对话/设置/导出）；E2E scene 6 |
+| 主题切换 | `0d4fc7d` | App theme 状态 + `html.night` classList + store `"theme"` 持久化；Settings 关于 tab 外观开关（role=switch）；E2E scene 4 增强断言 night 应用/复原 |
+
+**E2E 由 4 场景扩至 6 场景**（+scene 5 导出、scene 6 命令面板；scene 2b/4 增强断言）。
+
+**状态更正**：`Welcome/ApiKeyWizard/KeyboardHelp` 组件在 renderer 重建树中**从未存在**（非"懒加载保留"）；「启动不自动 onboarding」决策不变，手动引导入口缺失——价值边际，记为可选待办（不实现也不破坏决策）。
+
 ***
 
 ## 3. 当前状态

@@ -10,7 +10,7 @@
 | L0 单元        | `npm test`                                                     | 全部 vitest 单测（状态机、推送守卫、跨域一致性、契约、插件退避、市场升级、skills 路径安全、tool-trace 等）                           | 依据：**489 passed / 0 failed**（2026-09-03）                                     | 0 fail；数量写入本文件                          |
 | L1 类型        | `npm run typecheck`                                            | 根 + node 双 tsconfig                                                                          | 依据                                                                           | 0 error                                 |
 | L2 构建        | `npm run build`                                                | main/preload/renderer 三端产物                                                                   | 依据                                                                           | 0 error，`emptyOutDir: true` 生效          |
-| L3 真实会话 E2E  | `node tests/chat-stream.e2e.mjs`（`npm run chat:e2e` 自带 build）  | Electron+mock provider 真实链路：ask 流式 + 落库 + agent 审批 + **执行轨迹卡(scene 2b)** + 重启恢复渲染 + **设置面板** | 依据：**4 场景全过**（2026-09-03）                                                    | 全场景通过，零 console 错误                      |
+| L3 真实会话 E2E  | `node tests/chat-stream.e2e.mjs`（`npm run chat:e2e` 自带 build）  | Electron+mock provider 真实链路：ask 流式 + 落库 + agent 审批 + 执行轨迹卡 + 重启恢复渲染 + 设置面板/主题 + 导出 Markdown + 命令面板 | 依据：**6 场景全过**（2026-09-03）                                                    | 全场景通过，零 console 错误                      |
 | L4 前端原型 E2E  | `npm run preview:e2e`                                          | `frontend-preview` 原型 18 项 named-risk（含遮挡回归）                                                 | 依据                                                                           | 18/18 通过                                |
 | L5 UAT       | `node tests/electron-uat.mjs`                                  | 新链 6 场景（主界面/设置面板/技能增删/关于/持久化）                                                                | **已重写**（2026-09-03）：6/6 PASS                                                 | 全场景 + 零 console 错误                      |
 | L6 性能基线       | `node tests/electron-coldstart.mjs` / `tests/electron-fps.mjs`    | 冷启动 / 帧率                                                                                     | **已重建**（2026-09-03）：冷启动 **464ms**；FPS（真实 .chat-scroller 滚动）**144fps / P95 7ms / P99 7.1ms / slow33=0** | 冷启动 <3000ms；avg>50fps、P95<30ms、P99<50ms |
@@ -42,7 +42,7 @@
 | 日期         | 命令                                                                           | 结果                                             |
 | ---------- | ---------------------------------------------------------------------------- | ---------------------------------------------- |
 | 2026-09-03 | typecheck 双跑 + vitest                                                        | **489 passed / 0 failed**（含 tool-trace 11）     |
-| 2026-09-03 | verify-full（build → unit → chat:e2e 4 场景含 2b → preview:e2e 18/18 → uat 6 场景） | **ALL PASS (clean exit)**                      |
-| 2026-09-03 | electron-coldstart.mjs                                                       | 631ms（预算 3000ms）                               |
-| 2026-09-03 | electron-fps.mjs（2000 条混合消息）                                                 | avg 60fps / P95 16.8ms / P99 16.8ms / slow33 0 |
+| 2026-09-03 | verify-full（build → unit → chat:e2e **6 场景**含导出席/命令面板/主题 → preview:e2e 18/18 → uat 6 场景） | **ALL PASS (clean exit)**                             |
+| 2026-09-03 | electron-coldstart.mjs                                                       | 464ms（预算 3000ms）                               |
+| 2026-09-03 | electron-fps.mjs（2000 条混合消息，真实 .chat-scroller 滚动）                 | avg 144fps / P95 7ms / P99 7.1ms / slow33 0 |
 
