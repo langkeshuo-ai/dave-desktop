@@ -1157,7 +1157,8 @@ node scripts/scan-hardcoded-zh.mjs
 | 新文件未跑 prettier 直接 push                    | CI verify job 的 `prettier --check` 52s 挂（verify-full 不含 format，本地漏检）                               | 提交前跑 `npx prettier --write`；提交后确认 CI format 步骤绿                                                         |
 | 本地 electron-builder 打包时 shell 有 GH\_TOKEN | builder **自动 publish 覆盖 draft 资产**（config `publish: undefined` 不阻止；日志 `overwrite published file`）  | 本地打包命令加 `--publish never`，或临时清 GH\_TOKEN env                                                            |
 | prettier --write 后 --check 仍报 warn        | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
-| hook effect 依赖内联回调参数                      | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 \~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销） | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275`                                     |
+| hook effect 依赖内联回调参数 | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 ~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销） | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275` |
+| lint-staged 破坏 .archcore frontmatter | 提交 .archcore 下 .md 时 lint-staged 显式传路径给 prettier --write 绕过 .prettierignore，把 frontmatter `---` 转成 `***`、路径转义 | `.lintstagedrc` 加 negate glob `"!.archcore/**"` 排除；.archcore 提交用 `--no-verify` |
 
 ### 特殊配置 / 隐藏依赖
 
