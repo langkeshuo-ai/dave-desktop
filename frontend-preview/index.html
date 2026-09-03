@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-widget-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dave Desktop · 前端设计预览</title>
+<style>
+/* ============================================================
+   Dave Desktop — 前端设计原型（暖琥珀 · light-first · 三轨可视）
+   命令 / 动作 / 结果 三轨可视：动作轨道、待批变更托盘、锚点光标
+   ============================================================ */
+:root {
+  color-scheme: light;
+  --amber-50: #FFFBEB;
+  --amber-100: #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;
+  --amber-700: #B45309;
+  --amber-900: #78350F;
+  --bg: #FAF8F5;
+  --surface: #FFFFFF;
+  --surface-2: #F5F2EC;
+  --surface-3: #EFEBE3;
+  --ink: #26241F;
+  --ink-2: #6B665C;
+  --ink-3: #9C958A;
+  --line: #E7E1D7;
+  --line-2: #DCD4C6;
+  --ok: #2F9E6E;
+  --ok-bg: #E7F5EE;
+  --warn-bg: #FDF3E3;
+  --err: #C43E2E;
+  --err-bg: #FBEAE7;
+  --brand-grad: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --r: 10px;
+  --r-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(88, 66, 24, 0.05);
+  --shadow-lg: 0 12px 32px -8px rgba(88, 66, 24, 0.18);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1100px 460px at 78% -8%, rgba(245, 158, 11, 0.10), transparent 62%),
+    radial-gradient(900px 420px at -6% 108%, rgba(217, 119, 6, 0.08), transparent 60%);
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 40px 260px 1fr; height: 100vh; }
+
+/* ---------- 活动栏 ---------- */
+.activity { background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 6px; }
+.a-btn { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--ink-3); cursor: pointer; transition: all 0.12s var(--ease); border: 1px solid transparent; background: none; }
+.a-btn svg { width: 17px; height: 17px; }
+.a-btn:hover { color: var(--amber-700); background: var(--amber-50); }
+.a-btn.active { color: #fff; background: var(--brand-grad); box-shadow: 0 3px 10px -2px rgba(217, 119, 6, 0.45); }
+.a-spacer { flex: 1; }
+.a-btn.settings:hover { transform: rotate(28deg) scale(1.05); }
+
+/* ---------- 侧栏 ---------- */
+.sidebar { background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.side-head { padding: 14px 12px 10px; display: flex; gap: 8px; align-items: center; }
+.search { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid transparent; border-radius: 8px; padding: 6px 9px; color: var(--ink-3); transition: all 0.12s var(--ease); }
+.search:focus-within { background: #fff; border-color: var(--amber-400); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14); }
+.search svg { width: 13px; height: 13px; flex-shrink: 0; }
+.search input { border: 0; outline: 0; background: none; font: inherit; color: var(--ink); width: 100%; }
+.search kbd { font: 11px var(--font-mono); color: var(--ink-3); }
+.new-chat { display: flex; align-items: center; gap: 6px; background: var(--brand-grad); color: #fff; border: 0; border-radius: 8px; padding: 7px 10px; font: 500 13px var(--font-ui); cursor: pointer; white-space: nowrap; box-shadow: 0 3px 10px -2px rgba(217, 119, 6, 0.4); transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease); }
+.new-chat:hover { transform: translateY(-1px); box-shadow: 0 5px 14px -2px rgba(217, 119, 6, 0.5); }
+.new-chat svg { width: 13px; height: 13px; }
+.sess-list { flex: 1; overflow-y: auto; padding: 4px 8px 10px; }
+.sess-group { font: 600 11px var(--font-ui); color: var(--ink-3); letter-spacing: 0.06em; padding: 12px 8px 5px; display: flex; align-items: center; gap: 8px; }
+.sess-group::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.sess-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 8px; cursor: pointer; color: var(--ink-2); position: relative; transition: background 0.12s var(--ease), opacity 0.25s var(--ease); }
+.sess-item:hover { background: var(--surface-2); }
+.sess-item.active { background: var(--amber-50); color: var(--ink); box-shadow: inset 2px 0 0 var(--amber-600); }
+.sess-item svg { width: 14px; height: 14px; color: var(--ink-3); flex-shrink: 0; }
+.sess-item .t { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sess-item .del { opacity: 0; width: 18px; height: 18px; border: 0; background: none; color: var(--ink-3); border-radius: 6px; cursor: pointer; display: grid; place-items: center; transition: opacity 0.12s, background 0.12s, color 0.12s; }
+.sess-item:hover .del { opacity: 1; }
+.sess-item .del:hover { background: var(--err-bg); color: var(--err); }
+.sess-item.removing { opacity: 0; transform: translateX(-8px); }
+.side-foot { border-top: 1px solid var(--line); padding: 9px 12px; display: flex; align-items: center; gap: 8px; font: 12px var(--font-ui); color: var(--ink-2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.dot.busy { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(47,158,110,0.35);} 50% { box-shadow: 0 0 0 5px rgba(47,158,110,0);} }
+.side-foot .ver { margin-left: auto; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; }
+.sess-empty { font: 12px var(--font-ui); color: var(--ink-3); text-align: center; padding: 18px 8px; display: none; }
+
+/* ---------- 主区 ---------- */
+.main { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+.chat-head { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-bottom: 1px solid var(--line); background: rgba(250, 248, 245, 0.8); backdrop-filter: blur(8px); }
+.chat-head .title { font: 600 14px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mode-pill { display: flex; gap: 2px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 3px; }
+.mode-pill button { border: 0; background: none; font: 500 12px var(--font-ui); padding: 4px 11px; border-radius: 16px; color: var(--ink-3); cursor: pointer; transition: all 0.12s var(--ease); }
+.mode-pill button.active { background: #fff; color: var(--amber-700); box-shadow: var(--shadow-sm); }
+.mode-pill button:hover:not(.active) { color: var(--amber-700); }
+.head-badge { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* 消息流 */
+.msg-scroll { flex: 1; overflow-y: auto; padding: 22px 0 120px; scroll-behavior: smooth; }
+.msg-col { max-width: 720px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; }
+.user-msg { align-self: flex-end; max-width: 82%; background: var(--amber-600); color: #fff; padding: 10px 14px; border-radius: 14px 14px 4px 14px; font-size: 13.5px; box-shadow: var(--shadow-sm); animation: rise 0.3s var(--ease); }
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.user-msg .time { display: block; font-size: 11px; opacity: 0.7; margin-top: 3px; text-align: right; }
+.assist-msg { align-self: flex-start; max-width: 100%; font-size: 14px; color: var(--ink); position: relative; animation: rise 0.3s var(--ease); }
+.assist-msg .stream { white-space: pre-wrap; word-break: break-word; }
+.assist-msg .aborted-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font: 500 11px var(--font-ui); color: var(--amber-700); background: var(--warn-bg); border: 1px solid rgba(217,119,6,.3); padding: 2px 9px; border-radius: 20px; }
+.caret { display: inline-block; width: 2px; height: 1.05em; background: var(--amber-600); vertical-align: -2px; margin-left: 1px; animation: blink 0.9s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* 思考中 */
+.thinking { display: inline-flex; gap: 4px; padding: 4px 0; align-items: center; }
+.thinking i { width: 5px; height: 5px; border-radius: 50%; background: var(--amber-600); animation: th 1.2s ease-in-out infinite; }
+.thinking i:nth-child(2) { animation-delay: .18s; }
+.thinking i:nth-child(3) { animation-delay: .36s; }
+@keyframes th { 0%,60%,100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+
+/* 空状态 */
+.empty { margin: 10vh auto 0; text-align: center; max-width: 380px; animation: rise 0.4s var(--ease); }
+.empty .emblem { width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 16px; background: var(--brand-grad); display: grid; place-items: center; color: #fff; box-shadow: 0 14px 32px -10px rgba(217, 119, 6, 0.55); transform: rotate(-3deg); transition: transform 0.2s var(--ease); }
+.empty .emblem:hover { transform: rotate(0deg) scale(1.05); }
+.empty .emblem svg { width: 26px; height: 26px; }
+.empty h2 { font: 600 20px/1.4 var(--font-display); letter-spacing: 0.01em; color: var(--ink); }
+.empty p { font: 14px var(--font-ui); color: var(--ink-3); margin-top: 6px; }
+.empty .chip { display: inline-block; margin-top: 16px; font: 500 12px var(--font-ui); color: var(--amber-700); background: var(--amber-50); border: 1px solid rgba(217, 119, 6, 0.25); padding: 5px 13px; border-radius: 20px; }
+
+/* 动作轨道 */
+.action-strip { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.action { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; transition: all 0.18s var(--ease); animation: rise 0.3s var(--ease); }
+.action:hover { border-color: var(--line-2); box-shadow: var(--shadow-sm); }
+.action .ico { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); color: var(--ink-2); }
+.action .ico svg { width: 15px; height: 15px; }
+.action .kind { font: 600 12px var(--font-mono); color: var(--ink-2); }
+.action .brief { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+.action .meta { display: flex; align-items: center; gap: 8px; }
+.action .status { font: 500 11px var(--font-ui); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+.action.run { border-color: rgba(217,119,6,.4); background: var(--amber-50); }
+.action.run .status { background: var(--warn-bg); color: var(--amber-900); }
+.action.run .ico { background: var(--amber-100); color: var(--amber-700); animation: softpulse 1.4s ease-in-out infinite; }
+@keyframes softpulse { 50% { opacity: .55; } }
+.action.done .status { background: var(--ok-bg); color: var(--ok); }
+.action.done .ico { background: var(--ok-bg); color: var(--ok); }
+.action.writed { border-color: rgba(217,119,6,.5); box-shadow: 0 0 0 3px rgba(245,158,11,.10); }
+.action.writed .status { background: var(--brand-grad); color: #fff; font-weight: 600; animation: shim 1.5s ease-in-out infinite; }
+@keyframes shim { 50% { box-shadow: 0 0 0 4px rgba(245,158,11,.16); } }
+.action.denied { opacity: .62; }
+.action.denied .status { background: var(--surface-3); color: var(--ink-3); }
+.action .approve { display: flex; gap: 5px; animation: rise 0.25s var(--ease); }
+.action .approve button { border: 1px solid var(--line-2); background: #fff; border-radius: 7px; padding: 4px 10px; font: 500 12px var(--font-ui); cursor: pointer; transition: all 0.12s var(--ease); }
+.action .approve .ok:hover { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.action .approve .no:hover { background: var(--err-bg); border-color: var(--err); color: var(--err); }
+.action .approve button:active { transform: scale(0.96); }
+
+/* 待批变更托盘（悬浮于 composer 之上，z 层级高于输入区避免被挡点） */
+.tray { position: fixed; right: 20px; bottom: 152px; width: 300px; z-index: 40; display: flex; flex-direction: column; gap: 8px; }
+.tray.hidden { display: none; }
+.tray-title { font: 600 11px var(--font-ui); color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; padding-left: 4px; }
+.token { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber-600); border-radius: 10px; box-shadow: var(--shadow-lg); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; animation: tokenIn 0.32s var(--ease); }
+@keyframes tokenIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+.token .row { display: flex; align-items: center; gap: 8px; }
+.token .fname { font: 600 12.5px var(--font-mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.token .delta { font: 500 11px var(--font-ui); }
+.token .delta.add { color: var(--ok); }
+.token .delta.del { color: var(--err); }
+.token .acts { display: flex; gap: 6px; margin-top: 2px; }
+.token .acts button { flex: 1; border: 1px solid var(--line-2); background: #fff; border-radius: 7px; padding: 5px 8px; font: 500 12px var(--font-ui); cursor: pointer; transition: all 0.12s var(--ease); }
+.token .acts .undo { border-color: rgba(200,62,46,.35); color: var(--err); }
+.token .acts .undo:hover { background: var(--err-bg); border-color: var(--err); }
+.token .acts .peek { color: var(--ink-2); }
+.token .acts .peek:hover { border-color: var(--amber-500); color: var(--amber-700); background: var(--amber-50); }
+.token.undoing { animation: tokenOut 0.3s var(--ease) forwards; }
+@keyframes tokenOut { to { transform: translateX(30px); opacity: 0; } }
+
+/* diff 预览（层级高于 composer，避免被输入区遮挡） */
+.diff-pop { position: fixed; right: 20px; bottom: 152px; width: 420px; max-height: 320px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); z-index: 50; display: none; flex-direction: column; overflow: hidden; animation: tokenIn 0.25s var(--ease); }
+.diff-pop.open { display: flex; }
+.diff-pop .dhead { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.diff-pop .dhead .f { font: 600 12.5px var(--font-mono); flex: 1; }
+.diff-pop .dhead button { border: 0; background: none; color: var(--ink-3); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 6px; border-radius: 6px; }
+.diff-pop .dhead button:hover { background: var(--surface-3); color: var(--ink); }
+.diff-body { overflow-y: auto; padding: 8px 0; font: 12.5px/1.55 var(--font-mono); }
+.diff-body .ln { padding: 1px 14px; white-space: pre; }
+.diff-body .ln.del { background: var(--err-bg); color: var(--err); }
+.diff-body .ln.add { background: var(--ok-bg); color: var(--ok); }
+.diff-body .ln.hunk { color: var(--ink-3); padding-top: 6px; }
+.diff-body .ln.ctx { color: var(--ink-2); }
+
+/* 错误态 */
+.err-msg { align-self: flex-start; background: var(--err-bg); border: 1px solid rgba(196,62,46,.28); color: #8f2f22; border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; gap: 8px; align-items: flex-start; animation: rise 0.3s var(--ease); }
+.err-msg svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+
+/* composer */
+.composer-zone { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 24px 44px; pointer-events: none; z-index: 6; }
+.composer { pointer-events: auto; max-width: 720px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; box-shadow: var(--shadow-lg); overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+.composer:focus-within { border-color: var(--amber-500); box-shadow: 0 14px 40px -10px rgba(217,119,6,.28); }
+.comp-hint { display: flex; align-items: center; gap: 7px; padding: 8px 14px 0; font: 12px var(--font-ui); color: var(--ink-3); }
+.comp-hint .anchor { width: 8px; height: 8px; border-radius: 50%; background: var(--amber-600); flex-shrink: 0; }
+.comp-hint .anchor.pulse { animation: softpulse 1.2s ease-in-out infinite; }
+.comp-hint .anchor.ok { background: var(--ok); }
+.comp-body { display: flex; align-items: flex-end; gap: 10px; padding: 8px 10px 10px 14px; }
+.comp-body textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; font: 14px/1.5 var(--font-ui); color: var(--ink); max-height: 140px; padding: 4px 0; }
+.comp-body textarea::placeholder { color: var(--ink-3); }
+.send-btn { width: 34px; height: 34px; border-radius: 10px; border: 0; background: var(--brand-grad); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 3px 10px -2px rgba(217, 119, 6, 0.45); transition: transform 0.12s var(--ease), opacity 0.12s; }
+.send-btn:hover { transform: scale(1.06); }
+.send-btn:disabled { opacity: .5; cursor: default; transform: none; }
+.send-btn.stop { background: #fff; color: var(--err); border: 1px solid rgba(196,62,46,.4); box-shadow: none; }
+.send-btn svg { width: 16px; height: 16px; }
+.kbd-hint { font: 11px var(--font-mono); color: var(--ink-3); padding-right: 4px; white-space: nowrap; }
+
+/* 底部琥珀状态条 */
+.status-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: rgba(250,248,245,0.9); backdrop-filter: blur(8px); border-top: 1px solid var(--line); font: 12px var(--font-ui); color: var(--ink-2); z-index: 4; }
+.sb-flow { position: absolute; top: -1px; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #F59E0B 50%, transparent); background-size: 200% 100%; animation: flow 2.4s linear infinite; opacity: .95; }
+.sb-flow.hide { display: none; }
+@keyframes flow { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sb-label { display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.sb-kbd { margin-left: auto; color: var(--ink-3); font: 11px var(--font-mono); }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 9px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--ink-3); background-clip: content-box; }
+
+/* 减动效 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 活动栏 40px -->
+  <nav class="activity">
+    <button class="a-btn workspace active" data-view="workspace" title="工作区"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg></button>
+    <button class="a-btn" data-view="search" title="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+    <button class="a-btn" data-view="sessions" title="会话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+    <div class="a-spacer"></div>
+    <button class="a-btn settings" title="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button>
+  </nav>
+
+  <!-- 会话侧栏 260px -->
+  <aside class="sidebar">
+    <div class="side-head">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="sessSearch" placeholder="搜索会话…" aria-label="搜索会话"><kbd>Ctrl K</kbd></div>
+    </div>
+    <div style="padding:0 12px"><button class="new-chat" id="newChat" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新对话</button></div>
+    <div class="sess-list" id="sessList">
+      <div class="sess-group">今天</div>
+      <div class="sess-item active" data-title="翻译并更新项目说明文档"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="t">翻译并更新项目说明文档</span><button class="del" aria-label="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6"/></svg></button></div>
+      <div class="sess-item" data-title="排查启动白屏问题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="t">排查启动白屏问题</span><button class="del" aria-label="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6"/></svg></button></div>
+      <div class="sess-group">昨天</div>
+      <div class="sess-item" data-title="设计多代理编排演示"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="t">设计多代理编排演示</span><button class="del" aria-label="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6"/></svg></button></div>
+      <div class="sess-empty" id="sessEmpty">没有匹配的会话</div>
+    </div>
+    <div class="side-foot"><span class="dot" id="footDot"></span><span id="footState">就绪 · openai/gpt-5.1</span><span class="ver">v0.3.0</span></div>
+  </aside>
+
+  <!-- 主区 -->
+  <section class="main">
+    <header class="chat-head">
+      <span class="title" id="chatTitle">翻译并更新项目说明文档</span>
+      <div class="mode-pill" role="radiogroup" aria-label="模式" id="modePill">
+        <button data-mode="ask">提问</button><button data-mode="suggest" class="active">建议</button><button data-mode="auto">自动</button><button data-mode="full-auto">全自动</button>
+      </div>
+      <div class="head-badge"><span class="dot busy" id="headDot"></span></div>
+    </header>
+
+    <div class="msg-scroll" id="scroll"><div class="msg-col" id="col"></div></div>
+
+    <div class="tray hidden" id="tray"><div class="tray-title">待确认变更</div></div>
+
+    <div class="diff-pop" id="diffPop">
+      <div class="dhead"><span class="f" id="diffFile">README.md</span><button id="diffClose" aria-label="关闭">×</button></div>
+      <div class="diff-body" id="diffBody"></div>
+    </div>
+
+    <div class="composer-zone">
+      <div class="composer">
+        <div class="comp-hint"><span class="anchor pulse" id="anchorDot"></span><span id="hintText">正在输出，可随时插话打断</span></div>
+        <div class="comp-body">
+          <textarea id="input" rows="1" placeholder="输入指令，AI 将逐步执行并请求你的批准…" aria-label="输入指令"></textarea>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <button class="send-btn stop hidden" id="stopBtn" aria-label="中止" title="中止当前输出"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></button>
+            <button class="send-btn" id="sendBtn" aria-label="发送" title="发送 (Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+            <span class="kbd-hint" id="kbdHint">Enter 发送</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span class="sb-flow hide" id="sbFlow"></span>
+      <span class="sb-label" id="sbLabel"><span class="dot" id="sbDot"></span>就绪</span>
+      <span class="sb-kbd">Alt ⇧ V · 预览 v0.3</span>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ============================================================
+   Dave Desktop 交互原型：命令 → 动作轨道 → 审批 → 撤销令牌
+   ============================================================ */
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const col = $("col"), scroll = $("scroll");
+  const hintText = $("hintText"), anchorDot = $("anchorDot");
+  const sendBtn = $("sendBtn"), stopBtn = $("stopBtn"), input = $("input");
+  const sbLabel = $("sbLabel"), sbDot = $("sbDot"), sbFlow = $("sbFlow");
+  const footState = $("footState"), footDot = $("footDot"), headDot = $("headDot");
+  const tray = $("tray"), diffPop = $("diffPop"), diffBody = $("diffBody"), diffFile = $("diffFile");
+  const chatTitle = $("chatTitle"), modePill = $("modePill");
+  const sessList = $("sessList"), sessSearch = $("sessSearch");
+  const newChatBtn = $("newChat");
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  const state = { aborting: false, running: false, sessionTitle: "翻译并更新项目说明文档" };
+
+  function el(tag, cls, html) {
+    const d = document.createElement(tag);
+    if (cls) d.className = cls;
+    if (html != null) d.innerHTML = html;
+    return d;
+  }
+  function scrollBottom() { scroll.scrollTop = scroll.scrollHeight; }
+
+  /* —— 状态与提示 —— */
+  function setHint(text, busy) {
+    hintText.textContent = text;
+    anchorDot.className = "anchor" + (busy ? " pulse" : " ok");
+  }
+  function setRunning(run) {
+    state.running = run;
+    sendBtn.classList.toggle("hidden", run);
+    stopBtn.classList.toggle("hidden", !run);
+    $("kbdHint").textContent = run ? "中止当前输出" : "Enter 发送";
+    footDot.className = "dot" + (run ? " busy" : "");
+    headDot.className = "dot" + (run ? " busy" : "");
+    sbFlow.classList.toggle("hide", !run);
+    sbDot.className = "dot" + (run ? " busy" : "");
+  }
+  function setFoot(text) { footState.textContent = text; }
+  function setSb(text, dot = "ok") {
+    sbLabel.innerHTML = `<span class="dot ${dot === "busy" ? "busy" : ""}" id="sbDot2"></span>${esc(text)}`;
+  }
+
+  /* —— 消息 —— */
+  function addUser(text) {
+    const t = new Date().toTimeString().slice(0, 8);
+    const m = el("div", "user-msg", esc(text) + `<span class="time">${t}</span>`);
+    col.appendChild(m); scrollBottom();
+    return m;
+  }
+  function addAssist() { const w = el("div", "assist-msg"); const s = el("div", "stream"); w.appendChild(s); col.appendChild(w); scrollBottom(); return s; }
+  function addThinking() { const th = el("div", "thinking", "<i></i><i></i><i></i>"); const w = el("div", "assist-msg"); w.appendChild(th); col.appendChild(w); scrollBottom(); return () => w.remove(); }
+
+  async function typeText(node, text, speed = 24) {
+    for (let i = 0; i < text.length; i++) {
+      if (state.aborting) return false;
+      node.innerHTML = esc(text.slice(0, i + 1)) + '<span class="caret"></span>';
+      if (i % 3 === 0) scrollBottom();
+      await sleep(speed);
+    }
+    node.innerHTML = esc(text);
+    return true;
+  }
+
+  /* —— 动作轨道 —— */
+  function addAction({ icon, kind, brief, phase }) {
+    let strip = col.querySelector(".action-strip");
+    if (!strip) { strip = el("div", "action-strip"); col.appendChild(strip); }
+    const a = el("div", "action " + phase);
+    const label = { run: "执行中", done: "完成", writed: "待确认", denied: "已拒绝" }[phase];
+    a.innerHTML = `<div class="ico">${icon}</div>
+      <div><div class="kind">${kind}</div><div class="brief" title="${esc(brief)}">${esc(brief)}</div></div>
+      <div class="meta"><span class="status">${label}</span></div>`;
+    strip.appendChild(a); scrollBottom();
+    return a;
+  }
+  async function phaseTo(a, phase) {
+    a.className = "action " + phase;
+    a.querySelector(".status").textContent = { run: "执行中", done: "完成", writed: "待确认", denied: "已拒绝" }[phase];
+    await sleep(60);
+  }
+
+  /* —— 待批变更令牌 —— */
+  function addToken({ file, add, del, undoText }) {
+    tray.classList.remove("hidden");
+    const tk = el("div", "token");
+    tk.innerHTML = `<div class="row"><span class="fname">${file}</span><span class="delta add">+${add}</span><span class="delta del">-${del}</span></div>
+      <div class="row" style="font:12px var(--font-ui);color:var(--ink-3)">${esc(undoText)}</div>
+      <div class="acts"><button class="undo" data-act="undo">撤销本次变更</button><button class="peek" data-act="peek">查看补丁</button></div>`;
+    tk.querySelector(".undo").addEventListener("click", () => {
+      tk.classList.add("undoing"); setTimeout(() => tk.remove(), 300);
+      if (tray.querySelectorAll(".token").length <= 1) tray.classList.add("hidden");
+      const w = col.querySelector(".action.writed");
+      if (w) { w.classList.remove("writed"); w.classList.add("denied"); w.querySelector(".status").textContent = "已回滚"; }
+      setHint("已回滚 " + file + " 的变更 · 可重新请求生成", false);
+      setSb("已回滚 1 项变更 — " + file);
+    });
+    tk.querySelector(".peek").addEventListener("click", () => openDiff(file, undoText));
+    tray.appendChild(tk); scrollBottom();
+    placeOverlay();
+  }
+  function openDiff(file, ctx) {
+    diffFile.textContent = file;
+    diffBody.innerHTML = "";
+    [
+      ["hunk", "@@ -12,3 +12,3 @@ · 补丁预览"],
+      ["del", "- 项目说明"],
+      ["del", "- Dave 是一个本地的多模型代理助手"],
+      ["add", "+ Project Overview"],
+      ["add", "+ A local multi-provider agent"],
+      ["ctx", "  （篇幅较长，截断显示）"],
+    ].forEach(([cls, txt]) => diffBody.appendChild(el("div", "ln " + cls, txt)));
+    diffPop.classList.add("open"); scrollBottom();
+    placeOverlay();
+  }
+  $("diffClose").addEventListener("click", () => diffPop.classList.remove("open"));
+
+  /* —— 图标 —— */
+  const ICONS = {
+    read: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>',
+    write: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    shell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m5 9 5 5-5 5M12 19h7"/></svg>',
+  };
+
+  /* —— 主回放（可在中途中止） —— */
+  async function replay() {
+    state.aborting = false;
+    setRunning(true);
+    setHint("正在输出，可随时插话打断", true);
+    await sleep(500);
+    if (state.aborting) return;
+
+    const a1 = addAssist();
+    if (!(await typeText(a1, "好的。我先看一下 README.md 的现有结构，确认翻译范围。"))) return;
+    await sleep(280);
+
+    const actRead = addAction({ icon: ICONS.read, kind: "read_file", brief: "README.md（12 行 · 3 个段落）", phase: "run" });
+    const actCat = addAction({ icon: ICONS.read, kind: "glob+read ×2", brief: "折叠：docs/ 目录扫描 2 个文件（已合并）", phase: "run" });
+    await sleep(900);
+    await phaseTo(actRead, "done"); await phaseTo(actCat, "done");
+    await sleep(220);
+
+    const a2 = addAssist();
+    if (!(await typeText(a2, "结构清楚了。接下来我会生成 README_EN.md 并保留原文件——这会写入一个新文件，需要你批准。"))) return;
+    await sleep(400);
+
+    const actWrite = addAction({ icon: ICONS.write, kind: "write_file", brief: "README_EN.md（新增 14 行，-0 +14）", phase: "writed" });
+    actWrite.querySelector(".meta").insertAdjacentHTML("beforeend", '<span class="approve"><button class="ok">允许</button><button class="no">拒绝</button></span>');
+    const appr = actWrite.querySelector(".approve");
+    setHint("正在等待你的批准：写入 README_EN.md", true);
+
+    const decide = new Promise((res) => {
+      const ok = appr.querySelector(".ok"), no = appr.querySelector(".no");
+      ok.addEventListener("click", () => res(true));
+      no.addEventListener("click", () => res(false));
+      // 演示：若用户 6 秒内未操作，自动放行一次展示完整闭环
+      const t = setTimeout(() => { if (!ok._used && !no._used) { res(true); } }, 6000);
+      stopBtn.addEventListener("click", function onStopAbort() { res("abort"); });
+      const fin = (v) => { clearTimeout(t); ok._used = no._used = true; }
+      ok.addEventListener("click", () => fin(true)); no.addEventListener("click", () => fin(false));
+    });
+    const verdict = await decide;
+    if (verdict === "abort" || state.aborting) { setRunning(false); return; }
+
+    appr.remove();
+    if (verdict) {
+      await phaseTo(actWrite, "done");
+      await sleep(260);
+      addToken({ file: "README_EN.md", add: 14, del: 0, undoText: "由 write_file 生成 · 可在托盘内随时回滚" });
+      setHint("变更已写入。可随时在右侧回滚或查看补丁。", false);
+      setSb("完成 1 项变更 — README_EN.md");
+    } else {
+      await phaseTo(actWrite, "denied");
+      setHint("已拒绝该操作 · AI 将跳过此文件", false);
+      setSb("已拒绝 1 项变更 — README_EN.md");
+    }
+    await sleep(600);
+
+    const a3 = addAssist();
+    if (!(await typeText(a3, "还要不要我顺手执行 `npm run check` 检查一遍？这个会运行脚本。"))) return;
+    await sleep(280);
+    const actShell = addAction({ icon: ICONS.shell, kind: "shell", brief: "npm run check（运行项目校验脚本）", phase: "writed" });
+    const appr2 = el("span", "approve", '<button class="ok">允许</button><button class="no">拒绝</button>');
+    actShell.querySelector(".meta").appendChild(appr2);
+    setHint("正在等待你的批准：执行 npm run check", true);
+    const decision2 = await new Promise((res) => {
+      const ok = appr2.querySelector(".ok"), no = appr2.querySelector(".no");
+      ok.addEventListener("click", () => res(true)); no.addEventListener("click", () => res(false));
+      stopBtn.addEventListener("click", function onStopAbort2() { res("abort"); });
+      const t = setTimeout(() => { if (!ok._used && !no._used) res(false); }, 5000);
+      const fin = (v) => { clearTimeout(t); ok._used = no._used = true; };
+      ok.addEventListener("click", () => fin(true)); no.addEventListener("click", () => fin(false));
+    });
+    if (decision2 === "abort" || state.aborting) { setRunning(false); return; }
+    appr2.remove();
+    await phaseTo(actShell, decision2 ? "done" : "denied");
+    setHint(decision2 ? "校验脚本已执行" : "已拒绝该操作 · AI 将不再执行 npm run check", false);
+
+    const a4 = addAssist();
+    await typeText(a4, "本轮共 1 项文件变更，原始 README 未被改动。需要我调整翻译风格或补充其他文件时告诉我。");
+    setSb("完成 1 项变更 — 就绪");
+    setRunning(false);
+  }
+
+  function markAborted() {
+    const node = col.querySelector(".assist-msg .stream:last-child") || col.querySelector(".assist-msg:last-child .stream");
+    if (node) node.innerHTML = node.textContent.replace(/\u00a0$/, "");
+    const w = col.querySelector(".assist-msg:last-child");
+    if (w) {
+      const tag = el("span", "aborted-tag", "已中止 — 保留部分输出");
+      w.appendChild(tag);
+    }
+    setHint("已中止 · 保留已生成的部分", false);
+    setSb("已中止 — 部分输出已保留");
+    setRunning(false);
+  }
+
+  /* —— 第二轮回放（用户发送后） —— */
+  async function secondRound(userText) {
+    state.aborting = false;
+    setRunning(true);
+    setHint("正在处理你的插话，可再打断", true);
+    const removeTh = addThinking();
+    await sleep(900);
+    if (state.aborting) { removeTh(); markAborted(); return; }
+    removeTh();
+
+    const a = addAssist();
+    const reply = "收到。我已在当前上下文中记录这条补充（演示模式不产生真实改动）。继续处理原任务：README_EN.md 变更已就绪，可随时回滚或查看补丁。";
+    await typeText(a, reply);
+    setSb("已同步你的补充 — 继续处理原任务");
+    setRunning(false);
+  }
+
+  /* —— 输入与发送 —— */
+  function autoresize(el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 140) + "px"; }
+  input.addEventListener("input", () => { autoresize(input); placeOverlay(); });
+
+  /* —— 悬浮层定位：跟随 composer 实际高度，避免被输入区遮挡 —— */
+  function placeOverlay() {
+    const cz = document.querySelector(".composer-zone");
+    const base = (cz ? cz.offsetHeight + 12 : 124) + "px";
+    tray.style.bottom = base;
+    diffPop.style.bottom = base;
+  }
+  window.addEventListener("resize", placeOverlay);
+  sendBtn.addEventListener("click", send);
+  stopBtn.addEventListener("click", () => { state.aborting = true; });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  function send() {
+    const text = input.value.trim();
+    if (!text || state.running) return;
+    input.value = ""; autoresize(input);
+    addUser(text);
+    setFoot("生成中 · gpt-5.1");
+    secondRound(text);
+  }
+
+  /* —— 模式切换 —— */
+  modePill.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    modePill.querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+    b.classList.add("active");
+    setFoot("模式：" + b.textContent + " · 演示");
+  });
+
+  /* —— 会话：搜索 / 切换 / 删除 / 新对话 —— */
+  sessSearch.addEventListener("input", () => {
+    const q = sessSearch.value.trim().toLowerCase();
+    let shown = 0;
+    sessList.querySelectorAll(".sess-item").forEach((item) => {
+      const match = !q || item.querySelector(".t").textContent.toLowerCase().includes(q);
+      item.style.display = match ? "" : "none";
+      if (match) shown++;
+    });
+    sessList.querySelectorAll(".sess-group").forEach((g) => {
+      const next = g.nextElementSibling;
+      const anyVisible = next && next.classList.contains("sess-item") && next.style.display !== "none";
+      g.style.display = anyVisible ? "" : "none";
+    });
+    $("sessEmpty").style.display = shown ? "none" : "block";
+  });
+
+  sessList.addEventListener("click", (e) => {
+    const del = e.target.closest(".del");
+    if (del) {
+      const item = del.closest(".sess-item");
+      item.classList.add("removing");
+      setTimeout(() => item.remove(), 260);
+      return;
+    }
+    const item = e.target.closest(".sess-item");
+    if (!item) return;
+    sessList.querySelectorAll(".sess-item").forEach((x) => x.classList.remove("active"));
+    item.classList.add("active");
+    const title = item.dataset.title || "会话";
+    chatTitle.textContent = title;
+    state.sessionTitle = title;
+    setFoot(title === "翻译并更新项目说明文档" ? "就绪 · openai/gpt-5.1" : "演示：该会话仅展示布局");
+    setSb(title);
+  });
+
+  newChatBtn.addEventListener("click", () => {
+    state.aborting = true;
+    setRunning(false);
+    col.innerHTML = "";
+    tray.classList.add("hidden"); tray.querySelectorAll(".token").forEach((t) => t.remove());
+    diffPop.classList.remove("open");
+    chatTitle.textContent = "新对话";
+    const e = el("div", "empty");
+    e.innerHTML = `<div class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2c3 4 6 6 6 10a6 6 0 1 1-12 0c0-4 3-6 6-10z"/></svg></div>
+      <h2>新的任务，交给 Dave</h2><p>描述你想做什么——它会逐步执行，并在写文件与运行脚本前请求你的批准。</p>
+      <span class="chip">例如：「把 README 翻译成英文并新建文件」</span>`;
+    col.appendChild(e);
+    setRunning(false);
+    setHint("输入指令，开始新的会话", false);
+    setSb("新对话 — 等待指令");
+    setFoot("新对话 · openai/gpt-5.1");
+    input.focus();
+  });
+
+  /* —— 活动栏 —— */
+  document.querySelector(".activity").addEventListener("click", (e) => {
+    const b = e.target.closest(".a-btn"); if (!b || b.classList.contains("settings")) return;
+    document.querySelectorAll(".a-btn").forEach((x) => x.classList.remove("active"));
+    b.classList.add("active");
+    if (state.running) return;
+    setFoot("视图已切换（演示）");
+  });
+
+  /* —— 启动 —— */
+  replay();
+})();
+</script>
+</body>
+</html>

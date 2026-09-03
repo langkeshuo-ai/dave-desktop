@@ -1,0 +1,109 @@
+import { defineConfig } from "electron-vite"
+import tailwind from "@tailwindcss/vite"
+import { visualizer } from "rollup-plugin-visualizer"
+import type { Plugin } from "vite"
+
+// Vite injects crossorigin="anonymous" on <script type="module"> and <link rel="stylesheet">
+// tags. Under Electron's file:// origin this is treated as cross-origin and refused by
+// our CSP — so strip the attr from the built index.html. electron-vite does not expose
+// a clean knob to disable it (`html.crossorigin: ""` is ignored in v3), so we use a tiny
+// transformIndexHtml plugin.
+const stripCrossorigin = () => ({
+  name: "strip-crossorigin",
+  transformIndexHtml(html: string) {
+    return html.replace(/\s+crossorigin(\s*=\s*["'])?[^"\s>]*["']?/gi, "")
+  },
+})
+
+const devCspConnect = () => ({
+  name: "dev-csp-connect",
+  apply: "serve" as const,
+  transformIndexHtml(html: string) {
+    return html.replace(
+      "connect-src 'self';",
+      "connect-src 'self' http://localhost:5173 ws://localhost:5173;",
+    )
+  },
+})
+
+// The repository package is ESM for build tooling, while Electron main/preload
+// bundles are intentionally CommonJS. Give each generated bundle its own package
+// scope so an unpackaged production build behaves exactly like app.asar, whose
+// root metadata is rewritten to CommonJS by electron-builder.
+const cjsPackageScope = (name: string): Plugin => ({
+  name: `cjs-package-scope-${name}`,
+  generateBundle() {
+    this.emitFile({
+      type: "asset",
+      fileName: "package.json",
+      source: '{"type":"commonjs"}\n',
+    })
+  },
+})
+
+export default defineConfig({
+  main: {
+    build: {
+      rollupOptions: {
+        input: { index: "src/main/index.ts" },
+        plugins: [cjsPackageScope("main")],
+        // Explicitly externalize electron so require("electron") resolves to
+        // the built-in module at runtime, NOT the node_modules/electron package
+        // (which exports the path to the Electron binary, not the Electron API).
+        // Also externalize electron-updater — dynamic require() in index.ts.
+        external: ["electron", "electron-updater"],
+        output: {
+          format: "cjs",
+          // Pure-ESM deps (electron-store@11, conf@15) return
+          // `{ default, __esModule }` from require(). Without interop, default
+          // imports become non-constructors at runtime ("is not a constructor").
+          // Source also unwraps via resolveDefaultExport for belt-and-suspenders.
+          interop: "auto",
+          entryFileNames: "[name].js",
+        },
+      },
+    },
+  },
+  preload: {
+    build: {
+      rollupOptions: {
+        input: { index: "src/preload/index.ts" },
+        plugins: [cjsPackageScope("preload")],
+        // Same reasoning as main — sandbox preload scripts must resolve
+        // require("electron") to the built-in module, not the npm package.
+        external: ["electron"],
+        output: {
+          format: "cjs",
+          interop: "auto",
+          entryFileNames: "[name].js",
+        },
+      },
+    },
+  },
+  renderer: {
+    root: "src/renderer",
+    plugins: [tailwind(), stripCrossorigin(), devCspConnect()],
+    build: {
+      outDir: "out/renderer",
+      // 构建时清空 out/renderer,避免旧 hash 资源堆积。
+      // 动态 import 的懒加载 chunk 不体现在 index.html 静态引用里,
+      // 残留旧文件容易被误当成无用资源删除,导致打包后运行时
+      // "Failed to fetch dynamically imported module"(CommandPalette 等)。
+      emptyOutDir: true,
+      sourcemap: true,
+      modulePreload: { polyfill: false },
+      rollupOptions: {
+        input: { index: "src/renderer/index.html" },
+        plugins: [
+          visualizer({
+            filename: "out/bundle-stats.html",
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+          }) as Plugin,
+        ],
+      },
+    },
+    server: { cors: false },
+  },
+})

@@ -193,16 +193,17 @@ describe("Chat Stream State Machine", () => {
 
   // ─── 12. patch 事件 ─────────────────────────────
 
-  it("patch 事件应替换 content 内容", () => {
+  it("patch 事件不污染正文流（diff 是独立载体，content 保持）", () => {
     const state = createChatStreamState()
     const s1 = state.transition({ type: "start", sessionId: "sess-1" })
     const s2 = s1.transition({ type: "chunk", content: "Hello world", sessionId: "sess-1" })
-    const s3 = s2.transition({ type: "patch", sessionId: "sess-1", patch: "Hello there" })
+    const s3 = s2.transition({ type: "patch", sessionId: "sess-1", patch: "--- a/x\n+++ b/x" })
+    const s4 = s3.transition({ type: "chunk", content: " again", sessionId: "sess-1" })
 
-    const s = s3.getState()
+    const s = s4.getState()
     expect(s.status).toBe("streaming")
     if (s.status === "streaming") {
-      expect(s.content).toBe("Hello there")
+      expect(s.content).toBe("Hello world again")
     }
   })
 
@@ -349,5 +350,24 @@ describe("Chat Stream State Machine", () => {
       expect(s.tool).toBe("file_tree")
       expect(s.toolArgs).toEqual({ depth: 1 })
     }
+  })
+
+  // ─── 20. 幂等键按会话命名空间隔离（A 会话的 key 不影响 B 会话） ───
+
+  it("不同会话的同名 idempotentKey 互不影响", () => {
+    const m = createChatStreamState()
+    m.transition({ type: "start", sessionId: "sess-a" })
+    const sA = m
+      .transition({ type: "chunk", content: "a", sessionId: "sess-a", idempotentKey: "k1" })
+      .getState()
+    m.transition({ type: "start", sessionId: "sess-b" })
+    const sB = m
+      .transition({ type: "chunk", content: "b", sessionId: "sess-b", idempotentKey: "k1" })
+      .getState()
+    expect(sB.status).toBe("streaming")
+    if (sB.status === "streaming") {
+      expect(sB.content).toBe("b")
+    }
+    expect(sA.status).toBe("streaming")
   })
 })

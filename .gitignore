@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+dist-*/
+dist-new/
+dist-hardening/
+dist-final-hardening/
+dist-final-portable/
+coverage/
+
+# Electron runtime
+electron-binaries/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temp test directories
+ts-test-*/
+
+# Workflow session memory (not a deliverable)
+.workbuddy/
+
+# Visual regression: baselines (baseline-*.png) are tracked; diff outputs are runtime products
+tests/screenshots/diff-*.png
+
+# Legacy CLI artifacts (kept under legacy/ for reference but not tracked)
+legacy/*.exe
+legacy/*.zip
+legacy/*.7z
+legacy/*.msi
+legacy/Dave.exe
+legacy/Dave-Setup*
+
+# Lockfile is tracked intentionally — comment out to ignore
+# package-lock.json

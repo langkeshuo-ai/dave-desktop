@@ -26,10 +26,11 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:electron": "npm run build && node tests/electron-smoke.mjs",
+    "test:electron": "npm run chat:e2e",
     "preview:ui": "node frontend-preview/server.mjs",
     "preview:e2e": "node tests/frontend-preview.e2e.mjs",
     "chat:e2e": "npm run build && node tests/chat-stream.e2e.mjs",
+    "chat:e2e:real": "npm run build && node tests/chat-stream-real.e2e.mjs",
     "test:watch": "vitest",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build",
     "prepare": "husky"

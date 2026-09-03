@@ -1,0 +1,90 @@
+name: Release
+
+# 发布链路(R5):打 v* tag 触发 → verify 门禁 → 打包(签名如有证书)→ 自动上传
+# GitHub Releases(electron-builder 生成 latest.yml + blockmap,electron-updater 消费)。
+# 签名证书:secrets.WIN_CSC_LINK(base64 编码的 p12)+ secrets.WIN_CSC_KEY_PASSWORD;
+# 未配置时 electron-builder 跳过签名(SmartScreen 会拦截,发布前必须配置)。
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: verify + package + publish (windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Verify (format / lint / typecheck / test / build)
+        run: npm run verify
+
+      - name: Package + publish to GitHub Releases
+        run: npm run package:win
+        env:
+          # 代码签名证书(可选;未设置则跳过签名)
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # electron-builder 检测到 CI + GH_TOKEN 时自动发布到 tag release
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-linux:
+    name: package (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Package + publish (AppImage/deb)
+        run: npm run package:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-mac:
+    name: package (macos)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Package + publish (dmg/zip)
+        run: npm run package:mac
+        env:
+          # 无 mac 证书时允许 unsigned 构建（CSC_IDENTITY_AUTO_DISCOVERY=false）；正式发布前需配置 CSC_LINK
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

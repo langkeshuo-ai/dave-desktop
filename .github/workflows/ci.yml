@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (windows)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Format / lint / typecheck / test / build
+        run: npm run verify
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: E2E gate matrix (ipc-consistency → chat:e2e → preview:e2e → uat)
+        # 与本地 tests/V0_4_GATES.md 一致：6 步全量门禁
+        run: node tests/verify-full.mjs

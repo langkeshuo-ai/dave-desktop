@@ -107,6 +107,11 @@ function transitionState(state: StreamStateStatus, event: StreamEvent): StreamSt
     return { status: "streaming", content: "", sessionId: event.sessionId }
   }
 
+  // done / error 到达即终态：该会话 chunk 幂等 key 不再需要，立即清理防无界增长
+  if (event.type === "done" || event.type === "error") {
+    clearSessionKeys(event.sessionId)
+  }
+
   switch (state.status) {
     case "idle":
       // idle 只接受 start（已处理）和 reset（已处理）
@@ -136,7 +141,8 @@ function transitionState(state: StreamStateStatus, event: StreamEvent): StreamSt
             isShell: event.isShell,
           }
         case "patch":
-          return { status: "streaming", content: event.patch, sessionId: event.sessionId }
+          // patch（diff）是独立载体，不写入正文流：正文保持，后续 chunk 正常累加
+          return { status: "streaming", content: state.content, sessionId: event.sessionId }
         default:
           return state
       }
