@@ -638,6 +638,14 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 - 注意：builder 检测 CI 环境触发 publishing 尝试，因无 tag/release 自动 skip（`skipped publishing … not on tag`）——本地无害
 - 部署到安装目录（需先 kill 运行中应用，用户决定）：`taskkill /f /im DaveDesktop.exe` → `robocopy "dist-v8\win-unpacked" "C:\Users\C\AppData\Local\Programs\dave-desktop" /E /COPY:DAT`
 
+### 2.19 发布候选终态记录（2026-09-03，第十一轮）
+
+**代码侧 + 文档侧发布候选已完备**（恢复目标后第 5 轮确认，以下为唯一未定项）：
+
+- **版本号待用户确认**：`package.json` 仍为 `0.1.0`，功能量已达 v0.4 全集；发 tag 前需确认升 `0.4.0`（影响 latest.yml/artifactName/更新语义）
+- 发布候选证据链（全部实测）：6 步 verify-full ALL PASS · dist-v8 打包产物 · 冷启动 631ms · FPS 60fps/P95 16.8ms · 477 unit · chat:e2e 4 场景 · preview:e2e 18/18 · uat 6 场景 · IPC 一致性归零
+- 剩余阻塞（外部资源，恢复后已持续 5 轮未解除）：远端仓库 URL（push→CI）、真实 API Key（chat:e2e:real）、签名证书 secrets（WIN_CSC_*/CSC_LINK）、跨平台 runner
+
 ***
 
 ## 3. 当前状态
