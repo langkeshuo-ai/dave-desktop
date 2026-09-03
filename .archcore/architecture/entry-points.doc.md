@@ -38,11 +38,13 @@ tags: \[entry-points, architecture]
 
 - src/shared/event-contract.ts —— 事件契约闭环验证（回放 + 渲染文本还原）。
 
+- src/shared/tool-trace.ts —— 工具执行轨迹纯函数（role:"tool" 消息 → 状态推导 ok/denied/failed + 幂等聚合）。
+
 ## Renderer（React）
 
 - src/renderer/main.tsx / App.tsx —— React 挂载 + 布局外壳（light-first，Activity Bar 40px + 侧栏 260px；settingsOpen 状态挂载 Settings）。
-- src/renderer/components/ChatView.tsx —— 流式聊天视图（store + useChatStreamBridge 消费 IPC 推送事件）。
-- src/renderer/components/ApprovalCard.tsx / PatchPreviewCard.tsx —— 审批卡 / patch 可视化。
+- src/renderer/components/ChatView.tsx —— 流式聊天视图（store + useChatStreamBridge 消费 IPC 推送事件；done 后补拉聚合工具轨迹）。
+- src/renderer/components/ApprovalCard.tsx / PatchPreviewCard.tsx / ExecTraceCard.tsx —— 审批卡 / patch 可视化 / 执行轨迹卡（A2'）。
 - src/renderer/components/Sidebar.tsx / ActivityBar.tsx / MessageBubble.tsx / MessageInput.tsx —— 侧栏/活动栏/消息组件。
 - src/renderer/components/Settings.tsx —— 设置面板（模型/工作区/扩展/日志/关于 五 tab，全部经 window.dave.* IPC 契约）。
 
