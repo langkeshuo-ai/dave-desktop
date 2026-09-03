@@ -439,6 +439,7 @@ tests/cross-domain-consistency.test.ts    # 13 tests: 跨域状态一致性门�
    - `preload/index.ts`：marketplace 块新增 `upgrade()` 方法（渲染端调用闭环）
 
    - `marketplace-client.test.ts` 新增 3 个单测（升级到 catalog 最新版 / 市场目录缺失时回滚快照 / name 必填）
+
 2. **插件失败退避**（`plugin-manager.ts`）：连续失败达 `PLUGIN_FAIL_THRESHOLD = 3` 自动禁用
 
    - `PluginInfo` 新增 `fails?`/`disabled?`/`disabledAt?` 字段
@@ -450,6 +451,7 @@ tests/cross-domain-consistency.test.ts    # 13 tests: 跨域状态一致性门�
    - `loadPlugin()`：disabled 插件直接拒绝（429 语义）；main 入口缺失计一次失败；加载成功清零计数
 
    - 新增 7 个单测（阈值禁用、禁用拒绝、成功恢复、main missing 3 次自禁、成功清计数、未知插件、事件发射）
+
 3. **版本门禁整合**（`tests/V0_4_GATES.md` 矩阵落地）：
 
    - **删除** `tests/electron-smoke.mjs`（面向旧 renderer UI，被 chat:e2e 取代）
@@ -653,6 +655,30 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 - 剩余阻塞（外部资源，恢复后已持续 5 轮未解除）：远端仓库 URL（push→CI）、真实 API Key（chat:e2e:real）、签名证书 secrets（WIN\_CSC\_\*/CSC\_LINK）、跨平台 runner
 
 - 发布动作序列（资源到位后）：`git remote add origin <url>` → `git push -u origin master`（CI 首绿）→ `git tag v0.4.0` → `git push origin v0.4.0`（release 三平台出包）
+
+### 2.20 lint 门禁修复专题（2026-09-03，第十二轮）
+
+**首次验证** **`npm run verify`** **真全绿**（此前 ESLint 一直存在配置级/解析级错误）：
+
+- **根因**：typescript-eslint **v8** **`project`** **数组已废弃（error）**；`projectService` 自动发现在双 tsconfig（renderer/node）下对 src/main 部分文件**随机漏判**（不同轮次轮换）。多轮实验（allowDefaultProject / references+composite / solution-style）后定案：
+
+  - eslint `projectService: true` 聚焦 renderer/shared/preload（自动发现稳定）
+
+  - `src/main/` 整体退出 eslint（由 `tsc -p tsconfig.node.json` + 单测/E2E/契约门禁覆盖），配置/测试/脚本按类型 ignore——已注释留档
+
+- **修复真实 lint 错误**（此前被解析错误掩盖）：
+
+  - MessageBubble CodeBlock：非文本节点字符串化守卫（no-base-to-string，防 `[object Object]` 注入正文）+ copy 按钮 `void copy()`（no-misused-promises）
+
+  - ChatView：历史补拉 IIFE `void`（no-floating-promises）+ store `useMemo([])` 依赖修正（父级 key 控制重建）
+
+  - i18n init `void`（no-floating-promises）
+
+  - Settings 日志 viewer 类型化 `StructuredEvent[]`（消除 no-base-to-string）
+
+- `.prettierignore` 排除 `.archcore/`（frontmatter 非幂等）与 `.workbuddy/`；全仓 prettier 格式化一次
+
+- **验证**：`npm run verify`（format/lint/typecheck/coverage/build）**exit 0** + verify-full 6 步 ALL PASS
 
 ***
 
