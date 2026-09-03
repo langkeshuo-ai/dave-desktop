@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **Draft**（2026-09-03）——**三平台资产已统一重建为最新 HEAD**（run#33763230915 三 job 全 ✓，全部资产 updated\_at 13:49-13:52Z，含 A2' 执行轨迹卡 + patch 修复）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC\_LINK 签名；\
+> **Release v0.4.0**: **Draft**（2026-09-04）——**三平台资产已再次统一重建为最新 HEAD**（run#33776383381 三 job 全 ✓，资产 updated_at 16:05-16:07Z，含六项 UI 收口/导出契约/命令面板/主题 + A2' 执行轨迹卡）；windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 已写好；**未公开**，mac 正式发布前需配 CSC_LINK 签名；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地 `dist-v8/` 已部署（2026-09-03 17:23）到 `C:\Users\C\AppData\Local\Programs\dave-desktop` 并运行（v0.4.0 全功能）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
