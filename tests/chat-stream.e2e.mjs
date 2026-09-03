@@ -174,13 +174,21 @@ try {
   }
   process.stdout.write("chat-stream E2E passed (4 scenes + no console errors)\n")
 } catch (err) {
-  process.stdout.write(`chat-stream E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`)
-  if (consoleErrors.length > 0) process.stdout.write(`console errors: ${consoleErrors.slice(0, 3).join(" | ")}\n`)
+  process.stdout.write(
+    `chat-stream E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`,
+  )
+  if (consoleErrors.length > 0)
+    process.stdout.write(`console errors: ${consoleErrors.slice(0, 3).join(" | ")}\n`)
   process.exitCode = 1
 } finally {
   if (app) {
     try {
-      await Promise.race([app.close(), delay(10_000).then(() => { throw new Error("close timeout") })])
+      await Promise.race([
+        app.close(),
+        delay(10_000).then(() => {
+          throw new Error("close timeout")
+        }),
+      ])
     } catch {
       try {
         app.process().kill()

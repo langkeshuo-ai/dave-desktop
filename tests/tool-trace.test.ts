@@ -35,7 +35,11 @@ describe("toToolTraces", () => {
   it("保持顺序并推断状态", () => {
     const traces = toToolTraces(msgs)
     expect(traces).toHaveLength(2)
-    expect(traces[0]).toMatchObject<ToolTrace>({ name: "read_file", content: "file content", status: "ok" })
+    expect(traces[0]).toMatchObject<ToolTrace>({
+      name: "read_file",
+      content: "file content",
+      status: "ok",
+    })
     expect(traces[1].status).toBe("ok")
   })
 

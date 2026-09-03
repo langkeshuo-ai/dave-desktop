@@ -56,7 +56,10 @@ export function ExecTraceCard({ traces }: { traces: ToolTrace[] }) {
                 const Icon = STATUS_ICON[trace.status]
                 const style = STATUS_STYLE[trace.status]
                 return (
-                  <li key={i} className="rounded-lg border border-[var(--line)] bg-[var(--bg)]/60 px-2.5 py-2">
+                  <li
+                    key={i}
+                    className="rounded-lg border border-[var(--line)] bg-[var(--bg)]/60 px-2.5 py-2"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="rounded-md bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--amber-700)]">
                         {trace.name}

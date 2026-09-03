@@ -10,11 +10,7 @@ import { MessageInput } from "./MessageInput"
 import { ApprovalCard } from "./ApprovalCard"
 import { PatchPreviewCard, type PatchRecord } from "./PatchPreviewCard"
 import { ExecTraceCard } from "./ExecTraceCard"
-import {
-  toToolTraces,
-  toolTraceKey,
-  type ToolTrace,
-} from "../../shared/tool-trace"
+import { toToolTraces, toolTraceKey, type ToolTrace } from "../../shared/tool-trace"
 
 const MODES = ["ask", "suggest", "auto", "fullAuto"] as const
 type ModeKey = (typeof MODES)[number]

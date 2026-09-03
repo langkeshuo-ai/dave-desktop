@@ -8,14 +8,14 @@
 
 ## 1. 项目快照
 
-| 项       | 值                                                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------------------ |
-| 定位     | 本地 Agent 桌面客户端(Electron 42 + React 19 + TS 5.8 + Zustand 5 + Tailwind 4,中文 UI)                            |
-| 版本     | **0.4.0**(2026-09-03;构建/发布链:Windows+Linux+macOS 三平台 electron-builder 出包全绿)                      |
+| 项       | 值                                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 定位     | 本地 Agent 桌面客户端(Electron 42 + React 19 + TS 5.8 + Zustand 5 + Tailwind 4,中文 UI)                                                                       |
+| 版本     | **0.4.0**(2026-09-03;构建/发布链:Windows+Linux+macOS 三平台 electron-builder 出包全绿)                                                                        |
 | 门禁     | `node tests/verify-full.mjs` 全绿:build / **477 tests** / chat:e2e **4 场景** / preview:e2e **18/18** / uat **6 场景** / ipc-consistency 双向归零(2026-09-03) |
-| 架构     | Electron 三进程(main / preload / renderer)+ `src/shared/` 纯函数共享层(IPC 边界校验全在此,node 可单测)             |
-| 提交     | **git remote 已配置 + master 已推送**(langkeshuo-ai/dave-desktop) · CI 首绿 · **Release v0.4.0 draft**(三平台资产齐备,未公开) |
-| 安全口径 | 生产依赖 audit **0 漏洞**;IPC 白名单 + sender + 限流 + pushWithGuard 推送契约 + 状态机守卫 + skills 路径穿越白名单 |
+| 架构     | Electron 三进程(main / preload / renderer)+ `src/shared/` 纯函数共享层(IPC 边界校验全在此,node 可单测)                                                        |
+| 提交     | **git remote 已配置 + master 已推送**(langkeshuo-ai/dave-desktop) · CI 首绿 · **Release v0.4.0 draft**(三平台资产齐备,未公开)                                 |
+| 安全口径 | 生产依赖 audit **0 漏洞**;IPC 白名单 + sender + 限流 + pushWithGuard 推送契约 + 状态机守卫 + skills 路径穿越白名单                                            |
 
 ## 2. 能力矩阵(对齐 atomcode / claude code / codex / hermes 等参考项目)
 
