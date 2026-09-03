@@ -680,6 +680,8 @@ archcore「契约注册库单一真相源」约束的自动化落地：
 
 - **验证**：`npm run verify`（format/lint/typecheck/coverage/build）**exit 0** + verify-full 6 步 ALL PASS
 
+- **产物同步**：dist-v8 已按 HEAD（含 lint 修复后 renderer）重新打包（2026-09-03 15:45，version 0.4.0）
+
 ***
 
 ## 3. 当前状态
