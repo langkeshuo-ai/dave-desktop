@@ -178,11 +178,24 @@ try {
   }
   process.stdout.write("scene 5 passed (markdown export contains transcript)\n")
 
+  // ── 场景 6：命令面板（⌘K / Ctrl+K 打开 → 过滤 → Esc 关闭） ──
+  process.stdout.write("scene 6: command palette\n")
+  await window2.keyboard.press("Control+k")
+  const palette = window2.getByRole("dialog", { name: "命令面板" })
+  await palette.waitFor({ state: "visible", timeout: 10_000 })
+  await palette
+    .getByText("新对话", { exact: false })
+    .first()
+    .waitFor({ state: "visible", timeout: 5_000 })
+  await window2.keyboard.press("Escape")
+  await palette.waitFor({ state: "hidden", timeout: 5_000 })
+  process.stdout.write("scene 6 passed (command palette open/filter/close)\n")
+
   // ── 无控制台错误 ──
   if (consoleErrors.length > 0) {
     throw new Error(`console errors: ${consoleErrors.slice(0, 3).join(" | ")}`)
   }
-  process.stdout.write("chat-stream E2E passed (5 scenes + no console errors)\n")
+  process.stdout.write("chat-stream E2E passed (6 scenes + no console errors)\n")
 } catch (err) {
   process.stdout.write(
     `chat-stream E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`,

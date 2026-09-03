@@ -10,6 +10,7 @@ import { MessageInput } from "./MessageInput"
 import { ApprovalCard } from "./ApprovalCard"
 import { PatchPreviewCard, type PatchRecord } from "./PatchPreviewCard"
 import { ExecTraceCard } from "./ExecTraceCard"
+import { exportSessionMarkdown } from "../utils/export-session"
 import { toToolTraces, toolTraceKey, type ToolTrace } from "../../shared/tool-trace"
 
 const MODES = ["ask", "suggest", "auto", "fullAuto"] as const
@@ -159,20 +160,7 @@ export function ChatView({
   }
 
   // 导出会话为 Markdown（主进程生成 → Blob 下载）
-  const exportSession = async () => {
-    try {
-      const md = await window.dave?.session?.exportMarkdown(sessionId)
-      if (!md) return
-      const url = URL.createObjectURL(new Blob([md], { type: "text/markdown" }))
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${title || sessionId}.md`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      /* 下载失败静默 */
-    }
-  }
+  const exportSession = () => exportSessionMarkdown(sessionId, `${title || sessionId}.md`)
 
   // Esc 中止流式输出（流式/工具/审批均视为 busy）
   useEffect(() => {

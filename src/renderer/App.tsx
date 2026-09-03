@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ActivityBar } from "./components/ActivityBar"
 import { Sidebar, type SidebarSession } from "./components/Sidebar"
 import { ChatView } from "./components/ChatView"
 import { Settings } from "./components/Settings"
+import { CommandPalette, type PaletteAction } from "./components/CommandPalette"
+import { exportSessionMarkdown } from "./utils/export-session"
 
 /** 会话按时间归类：今天 / 昨天 / 更早（文案走 i18n） */
 function dayGroup(ts: number | undefined, t: (key: string) => string): string {
@@ -27,6 +29,19 @@ export default function App() {
   const [ready, setReady] = useState(false)
   const [activeId, setActiveId] = useState<string>("")
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // ⌘K / Ctrl+K 打开命令面板
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
 
   const refresh = useCallback(async (): Promise<SidebarSession[]> => {
     const api = window.dave?.session
@@ -83,6 +98,43 @@ export default function App() {
 
   const activeTitle = sessions.find((s) => s.id === activeId)?.title
 
+  const handlePaletteAction = (action: PaletteAction) => {
+    switch (action.type) {
+      case "newChat":
+        void newChat()
+        break
+      case "openSettings":
+        setSettingsOpen(true)
+        break
+      case "exportSession":
+        if (activeId) void exportSessionMarkdown(activeId, `${activeTitle || activeId}.md`)
+        break
+    }
+  }
+
+  const paletteCommands = useMemo(
+    () => [
+      {
+        id: "newChat",
+        label: t("common.newChat"),
+        hint: "Ctrl ⇧ O",
+        action: { type: "newChat" } as const,
+      },
+      {
+        id: "settings",
+        label: t("common.settings"),
+        hint: "Ctrl ,",
+        action: { type: "openSettings" } as const,
+      },
+      {
+        id: "export",
+        label: t("common.exportSession"),
+        action: { type: "exportSession" } as const,
+      },
+    ],
+    [t],
+  )
+
   return (
     <div className="grid h-screen grid-rows-[minmax(0,1fr)] grid-cols-[40px_260px_1fr] overflow-hidden">
       <ActivityBar onOpenSettings={() => setSettingsOpen(true)} />
@@ -106,6 +158,14 @@ export default function App() {
         />
       )}
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {paletteOpen && (
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          commands={paletteCommands}
+          onAction={handlePaletteAction}
+        />
+      )}
     </div>
   )
 }
