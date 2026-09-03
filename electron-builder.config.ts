@@ -48,9 +48,12 @@ const config: Configuration = {
     artifactName: "dave-desktop-${os}-${arch}-portable.${ext}",
   },
   mac: {
-    // icon.ico is cross-recognized by electron-builder for mac as well; only
-    // demand .icns when we actually ship one. Avoid referencing a missing file.
-    icon: "resources/icon.ico",
+    // 必须用 .icns（icon-tool 只接受 .png/.svg/.icns，拒绝 .ico）：
+    // 此前指向 icon.ico，macos runner 上 icon-tool.js 报
+    // "Unsupported input format .ico. Supported: .png, .svg, .icns"（release run
+    // 33751806833）。icon.icns 为本地从 512px PNG 预制（PNG-based 容器，
+    // 含 ic07/ic08/ic09），macos runner 无需任何实时转换。
+    icon: "resources/icon.icns",
     category: "public.app-category.productivity",
     target: ["dmg", "zip"],
   },
