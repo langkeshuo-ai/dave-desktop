@@ -4,7 +4,7 @@
 > **远端**: <https://github.com/langkeshuo-ai/dave-desktop> · 分支 `master` — **已推送**（2026-09-03，远端旧历史 79 commits 经 --allow-unrelated-histories -X ours 缝合，v0.1.0-sale tag 保留）\
 > **CI**: .github/workflows/ci.yml **首绿**（run#33748057183 @ ea13ed4，verify job：format/lint/typecheck/test/build + verify-full E2E）\
 > **关键修复**: 缺 .gitattributes 曾致 Windows CI prettier 全线误报（autocrlf CRLF）——已加 `.gitattributes` 强制 LF 根治；新 CI 提交必须保持 LF 行尾\
-> **Release v0.4.0**: **已公开**（2026-09-04，`gh release edit v0.4.0 --draft=false`）→ <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0>——三平台资产（run#33776383381 重建、最新 HEAD）windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；release notes 完整，electron-updater 通道已生效；mac 仍 unsigned、win 无签名证书，首次安装运行有 Gatekeeper/SmartScreen 提示；\
+> **Release v0.4.0**: **已公开**（2026-09-04，`gh release edit v0.4.0 --draft=false`）→ <https://github.com/langkeshuo-ai/dave-desktop/releases/tag/v0.4.0>——**tag v0.4.0 → 1b08db7**，其后 master 9 提交均纯文档（2026-09-04 已核验 tag..master 代码 diff 为零），故发布资产与 master@41c1381 **二进制等价**；三平台：windows（setup/portable）、linux（AppImage/deb）、mac（arm64 dmg/zip，unsigned）+ 3 份 latest.yml；electron-updater 通道生效；mac/win 无签名，首次安装运行有 Gatekeeper/SmartScreen 提示；\
 > **版本**: `package.json` `0.4.0`（2026-09-03 自 0.1.0 升级，latest.yml 已贯通）\
 > **安装包**: 本地安装目录已升级（2026-09-04）——**dist-v9**（win-unpacked 最新 HEAD，app.asar 09-04 01:14，含 A2' 执行轨迹卡 + 六项 UI 收口）robocopy 部署并核验；受 Defender 锁影响未启动实机（DaveDesktop 未运行）\
 > **磁盘清理**: dist-new/v2\~v7 表层已清（\~4.1GB 释放）；每目录残留 81MB `win-unpacked/resources/app.asar` 被 Defender/索引瞬态锁，进程重启后可用 `Remove-Item dist-new,dist-v2..v7 -Recurse -Force` 补清（dist-v8 候选勿动）\
