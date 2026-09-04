@@ -21,7 +21,7 @@
 
 #### Changed
 
-- 旧面向旧 renderer UI 的门禁 `electron-smoke.mjs` / `electron-uat.mjs` 删除；`test:electron` 改指 `chat:e2e`。
+- 旧面向旧 renderer UI 的门禁 `electron-smoke.mjs` 删除；`electron-uat.mjs` 旧版删除后按新 renderer 重建（现为 verify-full 的 uat 步骤，6 场景）；`test:electron` 改指 `chat:e2e`。
 - 冷启动 **464ms**（预算 3s）；FPS 2000 条混合消息真实滚动（`.chat-scroller`）**144fps / P95 7ms / P99 7.1ms / 慢帧 0**。
 - GitHub Actions checkout/setup-node v4→v5（消除 Node20 弃用警告）；git 基线提交 + `electron-builder.v9.config.ts` 隔离打包。
 

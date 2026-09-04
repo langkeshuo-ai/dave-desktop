@@ -1,13 +1,13 @@
 # Residual Risks & Tech Debt Ledger
 
-> 更新: 2026-09-03
+> 更新: 2026-09-04
 > 结论: 所有代码可收口项已关闭(截至 v0.4)。7 月后增量已收口:流式状态机 + pushWithGuard 推送契约、
 > 跨域一致性门禁、插件生命周期加固(upgrade 回滚 + 失败自动禁用退避)、市场契约闭环、
 > skills 路径穿越防御(SKILL_NAME_RE 白名单)、i18n 组件硬编码清零、设置面板视图回归、
 > 冷启动 631ms(3s 预算内)。
-> 发布链:remote 已配置且 master 已推送、CI 首绿、Release v0.4.0 draft 三平台资产齐备(win/linux/mac,更新通道 latest.yml 贯通 0.4.0)。
-> 仍待外部环境:代码签名证书(win CSC / mac CSC_LINK,当前 mac 包为 unsigned)、真实 API Key 全链路 E2E、draft 公开动作(用户决定)。
-> **以 `HANDOFF.md`(2026-09-03)为准;`tests/electron-smoke.mjs`/`electron-uat.mjs` 已删(旧 UI),旧 UAT 由 chat:e2e 4 场景 + preview:e2e 18/18 + uat 6 场景承接。**
+> 发布链:remote 已配置且 master 已推送、CI 全绿、**Release v0.4.0 已公开**(2026-09-04,三平台资产齐备 win/linux/mac,更新通道 latest.yml 贯通 0.4.0)。
+> 仍待外部环境:代码签名证书(win CSC / mac CSC_LINK,当前 win/mac 包均为 unsigned)、真实 API Key 全链路 E2E。
+> **以 `HANDOFF.md`(2026-09-04)为准;`electron-smoke.mjs` 已删除(旧 UI)、`electron-uat.mjs` 旧版删除后已按新 renderer 重建(现为 verify-full 的 uat 步骤,6 场景),chat:e2e 现为 6 场景。**
 
 ## 当前已关闭
 
@@ -39,17 +39,17 @@
 
 ## 仍待外部或真实环境验证
 
-| ID               | 级别 | 状态与原因                                                                                                                                                                                                                                                                                | 关闭条件                                                               |
-| ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| FPS-REAL         | P1   | ✅ **已关闭(2026-07-31)**:`tests/electron-fps.mjs` 真机自动采集,2000 条混合消息滚动 avg 60fps、P95/P99 16.8ms、>33.3ms 慢帧 0,写入 PERFORMANCE_REPORT.md                                                                                                                                  | 已达成(>50fps、P95<30ms、P99<50ms)                                     |
-| UAT-E2E          | P1   | 部分缓解(2026-07-31):`DAVE_TEST_MOCK_PROVIDER=1` mock 全链路覆盖流式/编辑再生成/Agent 批准/patch 预览(免真实 Key,CI 可跑);真实 API Key 场景仍缺                                                                                                                                           | 覆盖真实 Key 发消息→流式→编辑→批准;CI 稳定绿                           |
-| SIGNING          | P1   | Windows/macOS 发布未签名,取决于证书采购($200/年);electron-builder 已配置从 `WIN_CSC_LINK`/`WIN_CSC_KEY_PASSWORD` 读取                                                                                                                                                                     | 配置代码签名并验证 SmartScreen/Gatekeeper                              |
-| UPDATE-RELEASE   | P1   | 配置就绪(2026-07-31):`publish: github` + `.github/workflows/release.yml`(v* tag 触发 verify→打包→上传);缺签名证书与首次实际发布                                                                                                                                                           | 签名产物 + latest.yml + staged rollout                                 |
-| DEV-AUDIT        | P2   | 全依赖 audit 21 high(2026-07-31 复核):vitest 3.x 最新 3.2.7 仍带 coverage-v8 漏洞,4.x 修复但有 runner 回归(见台账 VITEST-RUNNER);其余链需 breaking 升级,无安全路径                                                                                                                        | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar |
-| CI               | P2   | workflow 已入库；远端 runner 首次绿灯与 package smoke 仍待观察;**外部凭据限制(2026-07-31 实证):GitHub MCP 只读可用(搜索正常)但写操作需认证(Authentication Failed: Requires authentication);alchaincyf 名下无 dave-desktop 仓库;本地无 git remote/push 凭据——需有写权限的环境建仓后 push** | PR 上 `npm ci` + verify + electron smoke 稳定；可选 package:win smoke  |
-| OS-SHELL-SANDBOX | P2   | 当前为策略层，不是 OS 隔离                                                                                                                                                                                                                                                                | utilityProcess/Job Object/AppContainer 等系统隔离方案成熟并验证        |
-| MAC-LINUX        | P3   | 本轮只有 Windows 环境                                                                                                                                                                                                                                                                     | macOS/Linux 真机构建与 smoke                                           |
-| SESSION-DB       | P3   | electron-store 当前规模够用                                                                                                                                                                                                                                                               | 数据量或事务需求触发后迁移 SQLite                                      |
+| ID               | 级别 | 状态与原因                                                                                                                                                                                                                         | 关闭条件                                                               |
+| ---------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| FPS-REAL         | P1   | ✅ **已关闭(2026-09-03 复测)**:`tests/electron-fps.mjs` 真机自动采集,2000 条混合消息滚动 avg 144fps、P95/P99 7ms/7.1ms、>33.3ms 慢帧 0,写入 PERFORMANCE_REPORT.md(2026-07-31 首测 avg 60fps/P95 16.8ms)                            | 已达成(>50fps、P95<30ms、P99<50ms)                                     |
+| UAT-E2E          | P1   | 部分缓解(2026-07-31):`DAVE_TEST_MOCK_PROVIDER=1` mock 全链路覆盖流式/编辑再生成/Agent 批准/patch 预览(免真实 Key,CI 可跑);真实 API Key 场景仍缺                                                                                    | 覆盖真实 Key 发消息→流式→编辑→批准;CI 稳定绿                           |
+| SIGNING          | P1   | Windows/macOS 发布未签名,取决于证书采购($200/年);electron-builder 已配置从 `WIN_CSC_LINK`/`WIN_CSC_KEY_PASSWORD` 读取                                                                                                              | 配置代码签名并验证 SmartScreen/Gatekeeper                              |
+| UPDATE-RELEASE   | P1   | ✅ **首次发布已完成(2026-09-04)**:v0.4.0 三平台资产已发布 + latest.yml 贯通;剩余仅签名刷新(见 SIGNING)                                                                                                                             | 签名产物 + staged rollout                                              |
+| DEV-AUDIT        | P2   | 全依赖 audit 21 high(2026-07-31 复核):vitest 3.x 最新 3.2.7 仍带 coverage-v8 漏洞,4.x 修复但有 runner 回归(见台账 VITEST-RUNNER);其余链需 breaking 升级,无安全路径                                                                 | 上游发布安全兼容版本后升级；CI 使用可信仓库输入，不处理不可信 glob/tar |
+| CI               | P2   | ✅ **已关闭(2026-09-04)**:remote 已关联 langkeshuo-ai/dave-desktop、master 已推送;CI 自 2026-09-03 起连续全绿(run#33748057183 首绿 → 2026-09-04 run#33833152583,verify job + verify-full E2E 矩阵全部通过);git push 凭据经 gh 可行 | PR 上 `npm ci` + verify + electron smoke 稳定(已达)                    |
+| OS-SHELL-SANDBOX | P2   | 当前为策略层，不是 OS 隔离                                                                                                                                                                                                         | utilityProcess/Job Object/AppContainer 等系统隔离方案成熟并验证        |
+| MAC-LINUX        | P3   | 本轮只有 Windows 环境                                                                                                                                                                                                              | macOS/Linux 真机构建与 smoke                                           |
+| SESSION-DB       | P3   | electron-store 当前规模够用                                                                                                                                                                                                        | 数据量或事务需求触发后迁移 SQLite                                      |
 
 ## 依赖审计口径
 
