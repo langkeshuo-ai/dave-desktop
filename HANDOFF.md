@@ -922,7 +922,7 @@ ROADMAP\_0.4\_SPEC 候选 A（P0 渲染端执行可视化）的收敛版 A2' 此
 | prettier --write 后 --check 仍报 warn        | 中文表格内容处于 **prettier 双稳定点接缝**（fmt(A)=B、fmt(B)=B），或 pre-commit 钩子（lint-staged/typecheck）把工作区拉回旧 blob            | 先 `git hash-object` 验证磁盘/HEAD/blob 三层；确认双稳定点则加入 `.prettierignore`（人工审阅该文件）；必要时 `git commit --no-verify` |
 | hook effect 依赖内联回调参数                      | useChatStreamBridge 原把 ChatView 内联 onEvent 放 effect 依赖 → 流式每 \~120ms render 重建 IPC 订阅（事件丢失窗口 + 开销）            | 回调入 `useRef` 持有最新引用，effect 只依赖稳定 key（store/sessionId），已修于 `a897275`                                     |
 | lint-staged 破坏 .archcore frontmatter | 提交 .archcore 下 .md 时 lint-staged 显式传路径给 prettier --write 绕过 .prettierignore，把 frontmatter `---` 转成 `***`、路径转义 | `.lintstagedrc` 加 negate glob `"!.archcore/**"` 排除；.archcore 提交用 `--no-verify` |
-| entry-points.doc.md 被环境后台格式化器持续改写 | 已实证：`git restore` 后约 1 秒，无任何命令/钩子参与，文件被后台 watcher 重写为固定 prettier 输出（frontmatter `---`→`***` + `\.` 转义 + 空行，blob 3a92857），与 commit 钩子无关（`--no-verify` 提交后同样复发） | **已设 `git update-index --skip-worktree .archcore/architecture/entry-points.doc.md`**（git 永久忽略该文件本地漂移，HEAD/远端保持干净 94b8fe1）；不要 `git add .archcore`；真要改该文件先 `git update-index --no-skip-worktree`，改完再重设 |
+| entry-points.doc.md / CHANGELOG.md 被环境后台格式化器持续改写 | 已实证：`git restore` 后约 1 秒，无任何命令/钩子参与，文件被后台 watcher 重写为固定 prettier 变体输出（frontmatter `---`→`***` + `\.` 转义 + 空行；CHANGELOG 标题 `[0.4.0]` 被转义成 `\[0.4.0]`），与 commit 钩子无关（`--no-verify` 提交后同样复发） | **已设 `git update-index --skip-worktree .archcore/architecture/entry-points.doc.md` 与 `CHANGELOG.md`**（git 永久忽略本地漂移，HEAD/远端保持干净：entry-points 94b8fe1 / CHANGELOG 3b5fc0c）；两者均已入 `.prettierignore`；不要 `git add` 这两文件；真要改：先 `--no-skip-worktree`，改完提交后重设 |
 
 ### 特殊配置 / 隐藏依赖
 
