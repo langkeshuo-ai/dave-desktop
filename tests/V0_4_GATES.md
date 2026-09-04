@@ -15,7 +15,7 @@
 | L5 UAT       | `node tests/electron-uat.mjs`                                  | 新链 6 场景（主界面/设置面板/技能增删/关于/持久化）                                                                | **已重写**（2026-09-03）：6/6 PASS                                                 | 全场景 + 零 console 错误                      |
 | L6 性能基线       | `node tests/electron-coldstart.mjs` / `tests/electron-fps.mjs`    | 冷启动 / 帧率                                                                                     | **已重建**（2026-09-03）：冷启动 **464ms**；FPS（真实 .chat-scroller 滚动）**144fps / P95 7ms / P99 7.1ms / slow33=0** | 冷启动 <3000ms；avg>50fps、P95<30ms、P99<50ms |
 | L7 IPC 契约一致性 | `node scripts/scan-ipc-consistency.mjs`                        | preload↔main 双向 M missing/DEAD                                                               | **已加入**（2026-09-03）：MISSING 0 / DEAD 0                                       | 缺口=0，exit 0                             |
-| L8 一键全量      | `node tests/verify-full.mjs`                                   | ipc-consistency → build → unit → chat:e2e → preview:e2e → uat 串行                             | 依据                                                                           | 输出 `ALL PASS (clean exit)`              |
+| L8 一键全量      | `node tests/verify-full.mjs`                                   | ipc-consistency → sender-coverage → build → unit → chat:e2e → preview:e2e → uat 串行（7 步）   | 依据                                                                           | 输出 `ALL PASS (clean exit)`              |
 
 ## v0.4 已执行的整合动作
 
@@ -33,7 +33,7 @@
 ## 待办（v0.4 后续增量）
 
 1. ~~UAT 重写~~ ✅ 已重写（2026-09-03）：`electron-uat.mjs` 新链 6 场景，已接入 verify-full。
-2. ~~冷启动 / FPS 基线~~ ✅ 已重建（2026-09-03）：冷启动 631ms；FPS 60fps / P95 16.8ms / P99 16.8ms。
+2. ~~冷启动 / FPS 基线~~ ✅ 已重建（2026-09-03）：冷启动 **464ms**；FPS（真实 .chat-scroller 滚动，2000 条混合消息）**144fps / P95 7ms / P99 7.1ms / slow33=0**。
 3. ~~会话"重启恢复渲染"场景~~ ✅ 已落地：chat:e2e 场景 3（同 userDataDir 重启 → 历史消息渲染 + 角色断言）。
 4. ~~ROADMAP 候选 A（A2' 执行轨迹卡）~~ ✅ 已落地：chat:e2e 场景 2b（审批后轨迹卡渲染，工具名+输出），tool-trace.ts 11 单测。
 
