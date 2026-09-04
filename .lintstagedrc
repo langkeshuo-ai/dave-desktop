@@ -3,5 +3,8 @@
     "prettier --write",
     "eslint --fix"
   ],
-  "!.archcore/**": []
+  "!.archcore": [],
+  "!.archcore/*": [],
+  "!.archcore/**": [],
+  "!.archcore/**/*": []
 }
