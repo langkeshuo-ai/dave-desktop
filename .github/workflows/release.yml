@@ -34,6 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Package Dave (macOS arm64)
         env:
+          DAVE_ENV: production
           NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
         run: node packages/desktop/scripts/bundle.mjs --os mac --arch arm64
@@ -42,8 +43,8 @@ jobs:
           name: dave-mac-arm64
           if-no-files-found: error
           path: |
-            packages/desktop/dist/**/*.dmg
-            packages/desktop/dist/**/*.zip
+            packages/desktop/dist/*.dmg
+            packages/desktop/dist/*.zip
 
   mac-x64:
     name: Dave macOS (x64)
@@ -68,6 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Package Dave (macOS x64)
         env:
+          DAVE_ENV: production
           NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
         run: node packages/desktop/scripts/bundle.mjs --os mac --arch x64
@@ -76,8 +78,8 @@ jobs:
           name: dave-mac-x64
           if-no-files-found: error
           path: |
-            packages/desktop/dist/**/*.dmg
-            packages/desktop/dist/**/*.zip
+            packages/desktop/dist/*.dmg
+            packages/desktop/dist/*.zip
 
   windows-x64:
     name: Dave Windows (x64)
@@ -98,6 +100,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Package Dave (Windows x64)
         env:
+          DAVE_ENV: production
           NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
           NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
         run: node packages/desktop/scripts/bundle.mjs --os win --arch x64
@@ -106,7 +109,7 @@ jobs:
           name: dave-windows-x64
           if-no-files-found: error
           path: |
-            packages/desktop/dist/**/*.exe
+            packages/desktop/dist/*.exe
 
   release:
     name: Publish GitHub Release
