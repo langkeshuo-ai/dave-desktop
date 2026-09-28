@@ -1,5 +1,5 @@
 {
-  "name": "@zcode/services",
+  "name": "@dave/services",
   "private": true,
   "type": "module",
   "imports": {
@@ -18,11 +18,11 @@
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "1.64.0",
-    "@zcode/provider": "workspace:*",
-    "@zcode/provider-node": "workspace:*",
-    "@zcode/rpc": "workspace:*",
-    "@zcode/shared": "workspace:*",
-    "@zcode/zcode-cua": "workspace:*",
+    "@dave/provider": "workspace:*",
+    "@dave/provider-node": "workspace:*",
+    "@dave/rpc": "workspace:*",
+    "@dave/shared": "workspace:*",
+    "@dave/dave-cua": "workspace:*",
     "croner": "^10.0.1",
     "ignore": "^5.3.2",
     "node-forge": "^1.4.0",

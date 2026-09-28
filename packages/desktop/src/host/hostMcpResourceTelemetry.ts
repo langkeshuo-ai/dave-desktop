@@ -1,9 +1,9 @@
-import type { IDisposable } from "@zcode/rpc";
-import type { IZCodeAgentService } from "@zcode/services";
-import { HostResponseTypes, type ProcessResourceRuntimeSurface } from "@zcode/shared";
+import type { IDisposable } from "@dave/rpc";
+import type { IDaveAgentService } from "@dave/services";
+import { HostResponseTypes, type ProcessResourceRuntimeSurface } from "@dave/shared";
 
 export function registerHostMcpResourceTelemetry(options: {
-  agentService: Pick<IZCodeAgentService, "onDynamicMcpResourceSamples">;
+  agentService: Pick<IDaveAgentService, "onDynamicMcpResourceSamples">;
   postMessage(message: unknown): void;
   runtimeSurface: ProcessResourceRuntimeSurface;
   environmentKey?: string;

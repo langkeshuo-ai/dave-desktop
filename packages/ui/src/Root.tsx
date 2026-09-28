@@ -6,7 +6,7 @@ import {
   DesktopCommandIds,
   appRuntimePreferencesChangedBroadcastPayloadSchema,
   type RemoteTarget,
-} from "@zcode/shared";
+} from "@dave/shared";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
@@ -16,7 +16,7 @@ import { DirectoryBrowser } from "@/DirectoryBrowser.js";
 import { useTabPersistence } from "@/hooks/useTabPersistence.js";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh.js";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useDaveIntl } from "@/i18n/IntlProvider.js";
 import { SSHDialog } from "@/SSHDialog.js";
 import { SettingsPage } from "@/SettingsPage.js";
 import { CodingPlanUpgradeDialogProvider } from "@/settings/CodingPlanUpgradeDialogProvider.js";
@@ -33,9 +33,9 @@ import {
   shouldShowRootStartupLoading,
   shouldOpenFallbackWorkspaceAfterCreate,
 } from "@/lib/rootStartupGate.js";
-import { StoreProvider, useZCodeStore } from "@/store/StoreProvider.js";
+import { StoreProvider, useDaveStore } from "@/store/StoreProvider.js";
 import { setMcpStorePlatform } from "@/store/mcpStore.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useDaveSessionStore } from "@/store/daveSessionStore.js";
 import { TabStoreProvider, useTabStore, useTabStoreApi } from "@/store/TabStoreProvider.js";
 import { isSettingsTab, isWorkspaceTab, type WorkspaceTabState } from "@/store/tabStore.js";
 import { logger } from "@/logger.js";
@@ -50,7 +50,7 @@ import { useRootProviderStateRefresh } from "@/root/useRootProviderStateRefresh.
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 import { useRootProviderSettingsSnapshot } from "@/root/useRootProviderSettingsSnapshot.js";
 import { useRootOAuthEffects } from "@/root/useRootOAuthEffects.js";
-import { consumeZcodeJwtInvalidRestartMarker } from "@/root/zcodeJwtInvalidRestartMarker.js";
+import { consumeDaveJwtInvalidRestartMarker } from "@/root/daveJwtInvalidRestartMarker.js";
 import { useDesktopNativeThemeSync } from "@/root/useDesktopNativeThemeSync.js";
 import { useRootPlatformEffects } from "@/root/useRootPlatformEffects.js";
 import { useRootWorkspaceActions } from "@/root/useRootWorkspaceActions.js";
@@ -187,16 +187,16 @@ function RootInner({
   // 工作区级 ServiceProvider 内（远程 Host 的 accessor），由它们取数会拿到另一台 Host 的答案。
   useDynamicWorkflowAvailabilityLoader(services.codingPlanSubscriptionService);
 
-  const { intl, locale } = useZCodeIntl();
-  const theme = useZCodeStore((state) => state.theme);
-  const user = useZCodeStore((state) => state.user);
-  const isRestoringOAuthSession = useZCodeStore((state) => state.isRestoringOAuthSession);
-  const setUser = useZCodeStore((state) => state.setUser);
-  const setIsRestoringOAuthSession = useZCodeStore((state) => state.setIsRestoringOAuthSession);
-  const setOAuthError = useZCodeStore((state) => state.setOAuthError);
-  const oauthPollingActive = useZCodeStore((state) => state.oauthPollingActive);
-  const setOAuthPollingActive = useZCodeStore((state) => state.setOAuthPollingActive);
-  const markOAuthSuccess = useZCodeStore((state) => state.markOAuthSuccess);
+  const { intl, locale } = useDaveIntl();
+  const theme = useDaveStore((state) => state.theme);
+  const user = useDaveStore((state) => state.user);
+  const isRestoringOAuthSession = useDaveStore((state) => state.isRestoringOAuthSession);
+  const setUser = useDaveStore((state) => state.setUser);
+  const setIsRestoringOAuthSession = useDaveStore((state) => state.setIsRestoringOAuthSession);
+  const setOAuthError = useDaveStore((state) => state.setOAuthError);
+  const oauthPollingActive = useDaveStore((state) => state.oauthPollingActive);
+  const setOAuthPollingActive = useDaveStore((state) => state.setOAuthPollingActive);
+  const markOAuthSuccess = useDaveStore((state) => state.markOAuthSuccess);
   const {
     settings: appSettings,
     refresh: refreshAppSettings,
@@ -204,11 +204,11 @@ function RootInner({
   } = useSettings();
   const [welcomeScreenOpenReason, setWelcomeScreenOpenReason] =
     useState<WelcomeScreenOpenReason | null>(() =>
-      consumeZcodeJwtInvalidRestartMarker() ? "session-expired" : null,
+      consumeDaveJwtInvalidRestartMarker() ? "session-expired" : null,
     );
   const [providerFamilyDomainMigrationComplete, setProviderFamilyDomainMigrationComplete] =
     useState(false);
-  const loginEntryRequest = useZCodeStore((state) => state.loginEntryRequest);
+  const loginEntryRequest = useDaveStore((state) => state.loginEntryRequest);
   const rootModelSelectionRead = useModelSelectionServiceView(services.modelSelectionService);
   const rootModelSelectionView =
     rootModelSelectionRead.state.status === "ready" ? rootModelSelectionRead.state.view : null;
@@ -265,7 +265,7 @@ function RootInner({
           return;
         }
         void refreshAppSettings();
-        void services.zcodeAgentService.syncAppRuntimePreferences(parsed.data).catch((error) => {
+        void services.daveAgentService.syncAppRuntimePreferences(parsed.data).catch((error) => {
           logger.warn("[settings] 同步跨窗口运行时偏好失败", error);
         });
         void services.botsService.syncAppRuntimePreferences(parsed.data).catch((error) => {
@@ -306,14 +306,14 @@ function RootInner({
     refreshAppSettings,
     services.botsService,
     services.broadcastService,
-    services.zcodeAgentService,
+    services.daveAgentService,
   ]);
 
   useEffect(() => {
     if (!appSettings) {
       return;
     }
-    void services.zcodeAgentService
+    void services.daveAgentService
       .syncAppRuntimePreferences({
         askUserQuestionAutoResolutionEnabled:
           appSettings.askUserQuestionAutoResolutionEnabled !== false,
@@ -335,7 +335,7 @@ function RootInner({
     appSettings?.askUserQuestionAutoResolutionEnabled,
     appSettings?.modelIoFullRetentionEnabled,
     services.botsService,
-    services.zcodeAgentService,
+    services.daveAgentService,
   ]);
 
   const tabs = useTabStore((state) => state.tabs);
@@ -379,7 +379,7 @@ function RootInner({
     }
     return activeTab.workspacePath;
   });
-  const totalUnreadTaskCount = useZCodeSessionStore((state) =>
+  const totalUnreadTaskCount = useDaveSessionStore((state) =>
     countAllUnreadTasks(state.workspaces),
   );
   const addTab = useTabStore((state) => state.addTab);
@@ -461,7 +461,7 @@ function RootInner({
   });
   const isStartupProviderLoginEntryOpen = welcomeScreenOpenReason === "startup-provider-required";
   // 首次安装时 provider 登录入口判定晚于 workspace 注入，ChatView 会先 mount 并触发草稿预热。
-  // 这里把 provider 启动检查纳入 workspace 恢复门禁，避免未连接账号前启动 ZCode session。
+  // 这里把 provider 启动检查纳入 workspace 恢复门禁，避免未连接账号前启动 Dave session。
   const canRestoreWorkspaceSession =
     !isResolvingStartupAuthState &&
     !isResolvingProviderStartupState &&

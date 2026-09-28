@@ -5,11 +5,11 @@ import type {
   SettingsSyncDiscoveryResult,
   SettingsSyncImportResult,
   SettingsSyncSelection,
-} from "@zcode/shared";
+} from "@dave/shared";
 import { logger } from "@/logger.js";
 import { useServices } from "@/hooks/useServices.js";
-import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
-import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
+import { useDaveSessionService } from "@/hooks/useDaveSessionService.js";
+import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/daveDraftSkillInvalidation.js";
 import type { SettingsSyncUiState, SettingsSyncUiTask } from "@/settings-sync/types.js";
 
 const IMPORTING_TASK_DELAY_MS = 320;
@@ -144,7 +144,7 @@ function applyTaskResults(
 
 export function useSettingsSync(params: { workspacePath?: string; workspaceIdentity?: string }) {
   const { settingsSyncService } = useServices();
-  const zcodeSessionService = useZCodeSessionService(
+  const daveSessionService = useDaveSessionService(
     params.workspacePath,
     undefined,
     params.workspaceIdentity,
@@ -462,7 +462,7 @@ export function useSettingsSync(params: { workspacePath?: string; workspaceIdent
 
         if (selections.some((selection) => selection.category === "skills")) {
           await invalidateDeferredDraftSessionForSkillChange({
-            zcodeSessionService,
+            daveSessionService,
             workspacePath: params.workspacePath,
             workspaceIdentity: params.workspaceIdentity,
             reason: "settings-sync-skill-import",
@@ -515,7 +515,7 @@ export function useSettingsSync(params: { workspacePath?: string; workspaceIdent
       params.workspaceIdentity,
       params.workspacePath,
       settingsSyncService,
-      zcodeSessionService,
+      daveSessionService,
       state.discovery,
       state.selectedKeys,
     ],

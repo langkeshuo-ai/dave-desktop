@@ -1,6 +1,6 @@
-import type { FileEntry, ZCodeTaskMeta, ZCodeTaskRuntimeStatus } from "@zcode/shared";
-import type { IFileService } from "@zcode/services";
-import type { WorkspaceZCodeUIState } from "@/store/zcodeSessionStoreTypes.js";
+import type { FileEntry, DaveTaskMeta, DaveTaskRuntimeStatus } from "@dave/shared";
+import type { IFileService } from "@dave/services";
+import type { WorkspaceDaveUIState } from "@/store/daveSessionStoreTypes.js";
 import { isChatTaskRunning } from "@/lib/chatStatus.js";
 import { logger } from "@/logger.js";
 
@@ -39,8 +39,8 @@ for (let index = 1; index <= 9; index += 1) {
 }
 
 export function hasRunningWorkspaceChat(params: {
-  workspaceState: Pick<WorkspaceZCodeUIState, "draftRuntime" | "taskRuntimeByTaskId">;
-  taskItems: Pick<ZCodeTaskMeta, "taskId">[];
+  workspaceState: Pick<WorkspaceDaveUIState, "draftRuntime" | "taskRuntimeByTaskId">;
+  taskItems: Pick<DaveTaskMeta, "taskId">[];
 }): boolean {
   if (isChatTaskRunning(params.workspaceState.draftRuntime.status)) {
     return true;
@@ -51,7 +51,7 @@ export function hasRunningWorkspaceChat(params: {
   );
 }
 
-function isWorkspaceRemovalBlockingRuntimeStatus(status: ZCodeTaskRuntimeStatus): boolean {
+function isWorkspaceRemovalBlockingRuntimeStatus(status: DaveTaskRuntimeStatus): boolean {
   return isChatTaskRunning(status);
 }
 

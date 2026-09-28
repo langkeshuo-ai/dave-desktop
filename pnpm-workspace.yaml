@@ -1,8 +1,8 @@
 packages:
   - packages/*
-  - apps/zcode-cli
-  - apps/zcode-cli/packages/*
-  - apps/zcode-cli/tools/*
+  - apps/dave-cli
+  - apps/dave-cli/packages/*
+  - apps/dave-cli/tools/*
 supportedArchitectures:
   os:
     - current

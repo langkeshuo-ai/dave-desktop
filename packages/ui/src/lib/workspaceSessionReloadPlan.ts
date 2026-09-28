@@ -1,17 +1,17 @@
-import type { ZCodeProvider, ZCodeError } from "@zcode/shared";
+import type { DaveProvider, DaveError } from "@dave/shared";
 import { buildWorkspacePrepareUiError } from "@/lib/chatPrepareError.js";
 
 const WORKSPACE_SESSION_RELOAD_DEBOUNCE_MS = 1200;
 
 interface WorkspaceSessionReloadDraftErrorContext {
   workspacePath: string;
-  provider: ZCodeProvider;
+  provider: DaveProvider;
 }
 
 export function buildWorkspaceSessionReloadDraftError(
   err: unknown,
   context: WorkspaceSessionReloadDraftErrorContext,
-): ZCodeError & { detail?: string } {
+): DaveError & { detail?: string } {
   return buildWorkspacePrepareUiError(err, {
     workspacePath: context.workspacePath,
     provider: context.provider,

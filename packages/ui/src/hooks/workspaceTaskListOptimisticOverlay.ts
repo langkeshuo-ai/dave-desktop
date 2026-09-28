@@ -1,16 +1,16 @@
 import { useMemo } from "react";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { DaveTaskMeta } from "@dave/shared";
 import type { WorkspaceTabState } from "@/store/tabStore.js";
 import { buildTaskEntityKey, buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
-import { compareZCodeTaskListItems } from "@/lib/taskListOrdering.js";
-import { mergeTaskWithOptimisticMeta } from "@/lib/zcodeTaskMetaMerge.js";
-import { selectWorkspaceZCodeState, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import type { GroupedDraftTaskState } from "@/store/zcodeSessionStoreTypes.js";
+import { compareDaveTaskListItems } from "@/lib/taskListOrdering.js";
+import { mergeTaskWithOptimisticMeta } from "@/lib/daveTaskMetaMerge.js";
+import { selectWorkspaceDaveState, useDaveSessionStore } from "@/store/daveSessionStore.js";
+import type { GroupedDraftTaskState } from "@/store/daveSessionStoreTypes.js";
 import { mergeTaskListMembershipFields } from "@/v4/taskListRowActivity.js";
 
 export interface WorkspaceOptimisticTaskOverlay {
   activeTaskId: string | null;
-  tasks: ZCodeTaskMeta[];
+  tasks: DaveTaskMeta[];
   promotedGroupedDraftTaskByTaskId: Record<string, GroupedDraftTaskState>;
 }
 
@@ -23,12 +23,12 @@ interface WorkspaceOptimisticScope {
 }
 
 export function mergeWorkspaceTaskListItemsWithOptimistic(params: {
-  items: readonly ZCodeTaskMeta[];
-  optimisticTasks: readonly ZCodeTaskMeta[];
+  items: readonly DaveTaskMeta[];
+  optimisticTasks: readonly DaveTaskMeta[];
   activeTaskId: string | null;
   sortBy: WorkspaceTaskListSortBy;
   visibleLimit: number | null;
-}): ZCodeTaskMeta[] {
+}): DaveTaskMeta[] {
   const taskByKey = new Map(params.items.map((task) => [buildTaskEntityKey(task), task] as const));
 
   for (const optimisticTask of params.optimisticTasks) {
@@ -56,7 +56,7 @@ export function mergeWorkspaceTaskListItemsWithOptimistic(params: {
   }
 
   const sortedItems = [...taskByKey.values()].sort((left, right) =>
-    compareZCodeTaskListItems(left, right, params.sortBy),
+    compareDaveTaskListItems(left, right, params.sortBy),
   );
   return params.visibleLimit === null ? sortedItems : sortedItems.slice(0, params.visibleLimit);
 }
@@ -77,10 +77,10 @@ export function useWorkspaceTaskOptimisticOverlayByWorkspaceKey(
     () => JSON.parse(workspaceScopeSignature) as WorkspaceOptimisticScope[],
     [workspaceScopeSignature],
   );
-  const optimisticTaskListSignature = useZCodeSessionStore((state) =>
+  const optimisticTaskListSignature = useDaveSessionStore((state) =>
     JSON.stringify(
       workspaceScopes.map((scope) => {
-        const workspaceState = selectWorkspaceZCodeState(
+        const workspaceState = selectWorkspaceDaveState(
           state,
           scope.workspacePath,
           scope.workspaceIdentity,
@@ -114,10 +114,10 @@ export function useWorkspaceTaskOptimisticOverlayByWorkspaceKey(
   );
 
   return useMemo(() => {
-    const state = useZCodeSessionStore.getState();
+    const state = useDaveSessionStore.getState();
     return new Map<string, WorkspaceOptimisticTaskOverlay>(
       workspaceScopes.map((scope) => {
-        const workspaceState = selectWorkspaceZCodeState(
+        const workspaceState = selectWorkspaceDaveState(
           state,
           scope.workspacePath,
           scope.workspaceIdentity,

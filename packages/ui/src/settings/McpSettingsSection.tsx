@@ -3,29 +3,29 @@
  * MCP Settings Section
  *
  * Manages MCP server configuration in the settings page.
- * Supports the unified ZCode Agent MCP source backed by settings directories.
+ * Supports the unified Dave Agent MCP source backed by settings directories.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  convertToZCodeAgentMcpServer,
+  convertToDaveAgentMcpServer,
   TID_MCP_OPEN_AUTHORIZATION_BUTTON,
   TID_PLUGIN_MCP_SERVER_ROW,
   testId,
-} from "@zcode/shared";
+} from "@dave/shared";
 import type {
   RemoteTarget,
-  ZCodeAvailablePluginSummary,
-  ZCodeAgentMcpServer,
-  ZCodeMcpListMode,
-  ZCodeMcpServer,
-  ZCodeMcpServerStatusSnapshot,
-  ZCodePluginInfo,
-} from "@zcode/shared";
-import { isZCodeAgentMcpStatusModeUnsupportedError, type IMcpSyncService } from "@zcode/services";
+  DaveAvailablePluginSummary,
+  DaveAgentMcpServer,
+  DaveMcpListMode,
+  DaveMcpServer,
+  DaveMcpServerStatusSnapshot,
+  DavePluginInfo,
+} from "@dave/shared";
+import { isDaveAgentMcpStatusModeUnsupportedError, type IMcpSyncService } from "@dave/services";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useDaveIntl } from "@/i18n/IntlProvider.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { logger } from "@/logger.js";
 import { McpServerForm } from "@/settings/McpServerForm.js";
@@ -73,7 +73,7 @@ import { SettingsSegmentedTabs } from "@/settings/SettingsSegmentedTabs.js";
 import { formatRemoteSkillSyncTarget } from "@/settings/RemoteSkillSyncDialog.js";
 import { selectPluginsForScope } from "@/settings/pluginCapabilityProjection.js";
 
-const DEFAULT_MCP_SOURCE: ServerScope = "zcodeagentmcp";
+const DEFAULT_MCP_SOURCE: ServerScope = "daveagentmcp";
 const MCP_OAUTH_AUTHORIZATION_STATUS_REFRESH_MS = 1_000;
 const MCP_OAUTH_AUTHORIZATION_STATUS_REFRESH_DURATION_MS = 5 * 60_000;
 const MCP_OAUTH_AUTHORIZATION_FOLLOWUP_REFRESH_ATTEMPTS = 10;
@@ -106,24 +106,24 @@ async function refreshMcpServerStatusList({
   workspacePath,
   mcpSyncService,
 }: {
-  beginServerStatusListRefresh: (mode?: ZCodeMcpListMode) => number;
+  beginServerStatusListRefresh: (mode?: DaveMcpListMode) => number;
   markServerStatusListRefreshFailed?: (
     error: string,
     requestEpoch: number,
-    mode?: ZCodeMcpListMode,
+    mode?: DaveMcpListMode,
   ) => void;
   mergeServerStatusSnapshots: (
-    statuses: Record<string, ZCodeMcpServerStatusSnapshot>,
+    statuses: Record<string, DaveMcpServerStatusSnapshot>,
     requestEpoch: number,
-    mode?: ZCodeMcpListMode,
+    mode?: DaveMcpListMode,
   ) => void;
   getCurrentWorkspaceKey: () => string;
-  mode?: ZCodeMcpListMode;
-  mcpServers?: ZCodeAgentMcpServer[];
+  mode?: DaveMcpListMode;
+  mcpServers?: DaveAgentMcpServer[];
   requestedWorkspaceKey: string;
   workspaceIdentity?: string;
   workspacePath: string;
-  // mcp/list 收敛到 IMcpSyncService——UI 不直接触达 zcodeAgentService。
+  // mcp/list 收敛到 IMcpSyncService——UI 不直接触达 daveAgentService。
   mcpSyncService: Pick<IMcpSyncService, "listWorkspaceMcpServerStatuses">;
 }): Promise<McpServerStatusListRefreshOutcome> {
   if (!requestedWorkspaceKey || getCurrentWorkspaceKey() !== requestedWorkspaceKey) {
@@ -147,7 +147,7 @@ async function refreshMcpServerStatusList({
     if (getCurrentWorkspaceKey() !== requestedWorkspaceKey) {
       return "stale-workspace";
     }
-    if (refreshMode === "status" && isZCodeAgentMcpStatusModeUnsupportedError(error)) {
+    if (refreshMode === "status" && isDaveAgentMcpStatusModeUnsupportedError(error)) {
       return "status-mode-unsupported";
     }
     markServerStatusListRefreshFailed?.(
@@ -160,7 +160,7 @@ async function refreshMcpServerStatusList({
 }
 
 interface McpOAuthAuthorizationPendingRefresh {
-  mcpServers: ZCodeAgentMcpServer[];
+  mcpServers: DaveAgentMcpServer[];
   pendingKey: string;
   workspaceKey: string;
 }
@@ -181,7 +181,7 @@ function transitionMcpAutoStatusListRefreshKey(
 }
 
 interface McpOAuthAuthorizationFollowupRefresh {
-  mcpServers: ZCodeAgentMcpServer[];
+  mcpServers: DaveAgentMcpServer[];
   refreshKey: string;
   workspaceKey: string;
 }
@@ -196,7 +196,7 @@ function transitionMcpOAuthAuthorizationPendingRefresh({
 }: {
   activeWorkspaceKey: string;
   existingFollowup?: McpOAuthAuthorizationFollowupRefresh | null;
-  mcpServers: ZCodeAgentMcpServer[];
+  mcpServers: DaveAgentMcpServer[];
   now?: () => number;
   pendingKey: string;
   previous: McpOAuthAuthorizationPendingRefresh | null;
@@ -313,19 +313,19 @@ function createMcpStatusListRefreshQueue(): McpStatusListRefreshQueue {
 }
 
 function buildMcpOAuthAuthorizationStatusRefreshServers(
-  servers: ZCodeMcpServer[],
-  statusSnapshots: Record<string, ZCodeMcpServerStatusSnapshot> = {},
-): ZCodeAgentMcpServer[] {
+  servers: DaveMcpServer[],
+  statusSnapshots: Record<string, DaveMcpServerStatusSnapshot> = {},
+): DaveAgentMcpServer[] {
   const pendingSnapshotNames = new Set(
     Object.entries(statusSnapshots)
       .filter(([, snapshot]) => Boolean(snapshot.authorization?.authorizationUrl))
       .map(([serverName]) => serverName),
   );
-  const result: ZCodeAgentMcpServer[] = [];
+  const result: DaveAgentMcpServer[] = [];
   const seenNames = new Set<string>();
 
   for (const server of servers) {
-    if (server.source !== "zcodeagentmcp" || !server.enabled) {
+    if (server.source !== "daveagentmcp" || !server.enabled) {
       continue;
     }
     const hasPendingAuthorization =
@@ -333,20 +333,20 @@ function buildMcpOAuthAuthorizationStatusRefreshServers(
     if (!hasPendingAuthorization || seenNames.has(server.name)) {
       continue;
     }
-    const zcodeAgentServer = convertToZCodeAgentMcpServer(server.name, server.config);
-    if (!zcodeAgentServer) {
+    const daveAgentServer = convertToDaveAgentMcpServer(server.name, server.config);
+    if (!daveAgentServer) {
       continue;
     }
     seenNames.add(server.name);
-    result.push(zcodeAgentServer);
+    result.push(daveAgentServer);
   }
 
   return result;
 }
 
-function buildMcpOAuthAuthorizationStatusRefreshOptions(mcpServers: ZCodeAgentMcpServer[]): {
+function buildMcpOAuthAuthorizationStatusRefreshOptions(mcpServers: DaveAgentMcpServer[]): {
   mode: "status";
-  mcpServers: ZCodeAgentMcpServer[];
+  mcpServers: DaveAgentMcpServer[];
 } {
   return {
     // OAuth pending/follow-up/focus 刷新只读运行态，不能让 pending 子集进入 connect replace 路径。
@@ -355,9 +355,9 @@ function buildMcpOAuthAuthorizationStatusRefreshOptions(mcpServers: ZCodeAgentMc
   };
 }
 
-function buildMcpServerStatusListKey(servers: ZCodeMcpServer[]): string {
+function buildMcpServerStatusListKey(servers: DaveMcpServer[]): string {
   return servers
-    .filter((server) => server.source === "zcodeagentmcp")
+    .filter((server) => server.source === "daveagentmcp")
     .map((server) => {
       const enabledKey = server.enabled ? "enabled" : "disabled";
       return `${server.id}:${enabledKey}:${JSON.stringify(server.config)}`;
@@ -365,7 +365,7 @@ function buildMcpServerStatusListKey(servers: ZCodeMcpServer[]): string {
     .join("|");
 }
 
-function buildPluginMcpServerStatusListKey(plugins: ZCodePluginInfo[]): string {
+function buildPluginMcpServerStatusListKey(plugins: DavePluginInfo[]): string {
   return plugins
     .map((plugin) => {
       const declaredNames = plugin.declaredMcpServerNames ?? [];
@@ -395,13 +395,13 @@ function shouldShowPluginMcpServersInMcpSettings(isRemoteSyncContext: boolean): 
 }
 
 function buildPendingMcpOAuthAuthorizationRefreshKey(
-  servers: ZCodeMcpServer[],
-  statusSnapshots: Record<string, ZCodeMcpServerStatusSnapshot> = {},
+  servers: DaveMcpServer[],
+  statusSnapshots: Record<string, DaveMcpServerStatusSnapshot> = {},
 ): string {
   const localPendingKeys = servers
     .filter(
       (server) =>
-        server.source === "zcodeagentmcp" &&
+        server.source === "daveagentmcp" &&
         server.enabled &&
         Boolean(server.authorization?.authorizationUrl),
     )
@@ -418,10 +418,10 @@ function PluginMcpServerList({
   onOpenAuthorization,
 }: {
   items: PluginMcpServerItem[];
-  pluginListingById: ReadonlyMap<string, ZCodeAvailablePluginSummary["listing"]>;
+  pluginListingById: ReadonlyMap<string, DaveAvailablePluginSummary["listing"]>;
   onOpenAuthorization?: (item: PluginMcpServerItem) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   const openAuthorizationLabel = intl.formatMessage({
     id: "settings.mcp.oauth.openAuthorization",
   });
@@ -566,7 +566,7 @@ export function McpSettingsSection({
   onOpenPluginStore,
   showMarketplaceBreadcrumb = false,
 }: McpSettingsSectionProps) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useDaveIntl();
   const confirmDialog = useConfirmDialog();
   const services = useWorkspaceServices(
     workspacePath,
@@ -614,7 +614,7 @@ export function McpSettingsSection({
 
   const [showForm, setShowForm] = useState(false);
   const [formScopeKey, setFormScopeKey] = useState(parentScopeKey);
-  const [editingServer, setEditingServer] = useState<ZCodeMcpServer | null>(null);
+  const [editingServer, setEditingServer] = useState<DaveMcpServer | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [remoteMcpSyncOpen, setRemoteMcpSyncOpen] = useState(false);
   const query = searchQuery;
@@ -712,8 +712,8 @@ export function McpSettingsSection({
   const lastAutoStatusListRefreshKeyRef = useRef("");
   const requestMcpServerStatusList = useCallback(
     async (options?: {
-      mcpServers?: ZCodeAgentMcpServer[];
-      mode?: ZCodeMcpListMode;
+      mcpServers?: DaveAgentMcpServer[];
+      mode?: DaveMcpListMode;
       trigger?: McpStatusListRefreshTrigger;
     }) => {
       const trigger = options?.trigger ?? "auto";
@@ -752,7 +752,7 @@ export function McpSettingsSection({
       // skipReason 已经覆盖了这个分支，这里只为类型收窄。
       if (!requestedWorkspacePath) return;
       const requestedMcpServers =
-        options?.mcpServers ?? useMcpStore.getState().getEnabledMcpServersForZCode("zcode");
+        options?.mcpServers ?? useMcpStore.getState().getEnabledMcpServersForDave("dave");
       await statusListRefreshQueueRef.current?.request(async () => {
         if (!isRequestCurrent()) {
           return;
@@ -1242,7 +1242,7 @@ export function McpSettingsSection({
     void requestMcpServerStatusList();
   }
 
-  async function handleSave(form: FormState, prev?: ZCodeMcpServer) {
+  async function handleSave(form: FormState, prev?: DaveMcpServer) {
     if (!activeWorkspacePath) {
       return;
     }
@@ -1273,7 +1273,7 @@ export function McpSettingsSection({
     onFormScopeKeyChange?.(null);
   }
 
-  async function handleDelete(server: ZCodeMcpServer) {
+  async function handleDelete(server: DaveMcpServer) {
     const confirmed = await confirmDialog({
       title: intl.formatMessage({ id: "settings.mcp.deleteConfirmTitle" }, { name: server.name }),
       description: intl.formatMessage({
@@ -1296,7 +1296,7 @@ export function McpSettingsSection({
     onFormScopeKeyChange?.(null);
   }
 
-  function handleEdit(server: ZCodeMcpServer) {
+  function handleEdit(server: DaveMcpServer) {
     const ownerWorkspace = workspaceTabs.find((tab) => tab.workspacePath === server.projectPath);
     const ownedScopeKey =
       server.scope === "workspace"
@@ -1319,7 +1319,7 @@ export function McpSettingsSection({
     setShowForm(true);
   }
 
-  function handleOpenAuthorization(server: ZCodeMcpServer) {
+  function handleOpenAuthorization(server: DaveMcpServer) {
     const authorizationUrl = server.authorization?.authorizationUrl;
     if (!authorizationUrl) {
       return;

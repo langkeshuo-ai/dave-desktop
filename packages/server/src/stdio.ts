@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { Emitter, VSBuffer, SocketProtocol, ChannelServer, type ISocket } from "@zcode/rpc";
+import { Emitter, VSBuffer, SocketProtocol, ChannelServer, type ISocket } from "@dave/rpc";
 import {
-  IZCodeAgentService,
-  createZCodeAgentConnectionScope,
+  IDaveAgentService,
+  createDaveAgentConnectionScope,
   type ServiceCollection,
-} from "@zcode/services";
+} from "@dave/services";
 
 /**
  * Wrap process.stdin/stdout as an ISocket for RPC communication.
@@ -57,9 +57,9 @@ export function createStdioServer(services: ServiceCollection) {
   const socket = wrapStdio();
   const protocol = new SocketProtocol(socket);
   const channelServer = new ChannelServer(protocol, "stdio");
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(IDaveAgentService);
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(agentService, {
+    ? createDaveAgentConnectionScope(agentService, {
         connectionId: `server-stdio-${randomUUID()}`,
         clientMode: "desktop-continuous",
         role: "trusted-host-relay",
@@ -68,7 +68,7 @@ export function createStdioServer(services: ServiceCollection) {
   services.exposeOnChannelServer(
     channelServer,
     connectionScope
-      ? new Map([[IZCodeAgentService.channelName, connectionScope.service]])
+      ? new Map([[IDaveAgentService.channelName, connectionScope.service]])
       : new Map(),
   );
   let stopPromise: Promise<void> | undefined;

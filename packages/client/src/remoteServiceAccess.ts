@@ -1,4 +1,4 @@
-import { ProxyChannel, type IChannelClient } from "@zcode/rpc";
+import { ProxyChannel, type IChannelClient } from "@dave/rpc";
 import {
   IFileService,
   IMediaPreviewService,
@@ -10,9 +10,9 @@ import {
   IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
-  IZCodeTaskService,
-  IZCodeAgentService,
-  IZCodeSessionService,
+  IDaveTaskService,
+  IDaveAgentService,
+  IDaveSessionService,
   ICuaPermissionService,
   IConversationShareService,
   IBotsService,
@@ -41,7 +41,7 @@ import {
   IPromptAttachmentTransferService,
   IWindowControllerService,
   type IServiceAccessor,
-} from "@zcode/services";
+} from "@dave/services";
 
 /**
  * RemoteServiceAccess — 通过 ChannelClient 自动创建类型安全的服务代理
@@ -59,10 +59,10 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly onboardingRecordService: IOnboardingRecordService;
   readonly credentialService: ICredentialService;
   readonly broadcastService: IBroadcastService;
-  readonly zcodeTaskService: IZCodeTaskService;
+  readonly daveTaskService: IDaveTaskService;
   readonly windowControllerService: IWindowControllerService;
-  readonly zcodeAgentService: IZCodeAgentService;
-  readonly zcodeSessionService: IZCodeSessionService;
+  readonly daveAgentService: IDaveAgentService;
+  readonly daveSessionService: IDaveSessionService;
   // cuaPermissionService 在 IServiceAccessor 上是可选（远端/bots host 不提供），但桌面 renderer
   // 经 RPC 一定能拿到（main host 始终注册此 descriptor；非 macOS / 未启用时方法返回 available:false）。
   readonly cuaPermissionService: ICuaPermissionService;
@@ -126,17 +126,17 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.broadcastService = ProxyChannel.toService<IBroadcastService>(
       channelClient.getChannel(IBroadcastService.channelName),
     );
-    this.zcodeTaskService = ProxyChannel.toService<IZCodeTaskService>(
-      channelClient.getChannel(IZCodeTaskService.channelName),
+    this.daveTaskService = ProxyChannel.toService<IDaveTaskService>(
+      channelClient.getChannel(IDaveTaskService.channelName),
     );
     this.windowControllerService = ProxyChannel.toService<IWindowControllerService>(
       channelClient.getChannel(IWindowControllerService.channelName),
     );
-    this.zcodeAgentService = ProxyChannel.toService<IZCodeAgentService>(
-      channelClient.getChannel(IZCodeAgentService.channelName),
+    this.daveAgentService = ProxyChannel.toService<IDaveAgentService>(
+      channelClient.getChannel(IDaveAgentService.channelName),
     );
-    this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
-      channelClient.getChannel(IZCodeSessionService.channelName),
+    this.daveSessionService = ProxyChannel.toService<IDaveSessionService>(
+      channelClient.getChannel(IDaveSessionService.channelName),
     );
     this.cuaPermissionService = ProxyChannel.toService<ICuaPermissionService>(
       channelClient.getChannel(ICuaPermissionService.channelName),

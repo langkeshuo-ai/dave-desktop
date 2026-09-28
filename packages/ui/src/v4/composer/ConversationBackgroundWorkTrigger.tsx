@@ -1,10 +1,10 @@
 import { memo, useMemo } from "react";
 import { ActivityIcon, BotIcon, SquareTerminalIcon, Workflow } from "lucide-react";
-import { TID_V4_COMPOSER_BACKGROUND_WORK_TRIGGER } from "@zcode/shared";
-import type { BackgroundWorkSummary } from "@zcode/shared/zcode-protocol-v4";
+import { TID_V4_COMPOSER_BACKGROUND_WORK_TRIGGER } from "@dave/shared";
+import type { BackgroundWorkSummary } from "@dave/shared/dave-protocol-v4";
 import { Button } from "@/components/ui/button.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useDaveIntl } from "@/i18n/IntlProvider.js";
 
 interface ComposerBackgroundWorkCounts {
   bashCount: number;
@@ -56,7 +56,7 @@ function ConversationBackgroundWorkTriggerImpl({
   onOpen,
   openTarget = "panel",
 }: ConversationBackgroundWorkTriggerProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   const counts = useMemo(
     () => getComposerBackgroundWorkCounts(backgroundWorks, runningSubagentCount),
     [backgroundWorks, runningSubagentCount],

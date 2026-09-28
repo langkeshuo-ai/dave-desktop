@@ -1,5 +1,5 @@
 {
-  "name": "@zcode/formal-proof",
+  "name": "@dave/formal-proof",
   "private": true,
   "type": "module",
   "exports": {

@@ -4,17 +4,17 @@ import {
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
   type PersonalProviderConfigRecoveryEvent,
   type NodeProviderConfigRuntimeOptions,
-} from "@zcode/provider-node";
+} from "@dave/provider-node";
 import type { ModelProviderConfig } from "./legacyModelProviderSerialized.js";
 import { getAppConfigDir } from "../paths.js";
 import { importLegacyPersonalProviderConfig } from "./legacyPersonalProviderConfigImporter.js";
 
 export interface ProviderConfigRuntimeOptions {
-  readonly zcodeBuiltinFilePath: string;
-  readonly zcodeBuiltinActiveFilePath?: string;
-  readonly zcodeBuiltinRemote?: NodeProviderConfigRuntimeOptions["zcodeBuiltinRemote"];
-  readonly zcodeBuiltinEnvironment?: NodeProviderConfigRuntimeOptions["zcodeBuiltinEnvironment"];
-  readonly onZCodeBuiltinRefreshError?: (error: unknown) => void;
+  readonly daveBuiltinFilePath: string;
+  readonly daveBuiltinActiveFilePath?: string;
+  readonly daveBuiltinRemote?: NodeProviderConfigRuntimeOptions["daveBuiltinRemote"];
+  readonly daveBuiltinEnvironment?: NodeProviderConfigRuntimeOptions["daveBuiltinEnvironment"];
+  readonly onDaveBuiltinRefreshError?: (error: unknown) => void;
   readonly onPersonalConfigRecovery?: (event: PersonalProviderConfigRecoveryEvent) => void;
   readonly onPersonalConfigPollingError?: (error: unknown) => void;
   readonly personalFilePath?: string;
@@ -25,7 +25,7 @@ export interface ProviderConfigRuntimeOptions {
 
 /**
  * Services 装配层：提供 App 配置目录和已发布旧配置的一次性迁移入口。
- * 配置迁移保留 ZCode 用户的供应商数据，文件运行时由 @zcode/provider-node 唯一实现。
+ * 配置迁移保留 Dave 用户的供应商数据，文件运行时由 @dave/provider-node 唯一实现。
  */
 export class ProviderConfigRuntime {
   readonly configService: NodeProviderConfigRuntime["configService"];
@@ -33,11 +33,11 @@ export class ProviderConfigRuntime {
 
   constructor(options: ProviderConfigRuntimeOptions) {
     const runtimeOptions: NodeProviderConfigRuntimeOptions = {
-      zcodeBuiltinFilePath: options.zcodeBuiltinFilePath,
-      zcodeBuiltinActiveFilePath: options.zcodeBuiltinActiveFilePath,
-      zcodeBuiltinRemote: options.zcodeBuiltinRemote,
-      zcodeBuiltinEnvironment: options.zcodeBuiltinEnvironment,
-      onZCodeBuiltinRefreshError: options.onZCodeBuiltinRefreshError,
+      daveBuiltinFilePath: options.daveBuiltinFilePath,
+      daveBuiltinActiveFilePath: options.daveBuiltinActiveFilePath,
+      daveBuiltinRemote: options.daveBuiltinRemote,
+      daveBuiltinEnvironment: options.daveBuiltinEnvironment,
+      onDaveBuiltinRefreshError: options.onDaveBuiltinRefreshError,
       onPersonalConfigRecovery: options.onPersonalConfigRecovery,
       onPersonalConfigPollingError: options.onPersonalConfigPollingError,
       personalFilePath:
@@ -65,16 +65,16 @@ export class ProviderConfigRuntime {
     return this.#runtime.personalRepository;
   }
 
-  resolveZCodeBuiltinActiveFilePath(): Promise<string> {
-    return this.#runtime.resolveZCodeBuiltinActiveFilePath();
+  resolveDaveBuiltinActiveFilePath(): Promise<string> {
+    return this.#runtime.resolveDaveBuiltinActiveFilePath();
   }
 
-  refreshZCodeBuiltin(options?: { readonly force?: boolean }) {
-    return this.#runtime.refreshZCodeBuiltin(options);
+  refreshDaveBuiltin(options?: { readonly force?: boolean }) {
+    return this.#runtime.refreshDaveBuiltin(options);
   }
 
-  onDidCheckZCodeBuiltin(listener: () => Promise<void>): () => void {
-    return this.#runtime.onDidCheckZCodeBuiltin(listener);
+  onDidCheckDaveBuiltin(listener: () => Promise<void>): () => void {
+    return this.#runtime.onDidCheckDaveBuiltin(listener);
   }
 
   dispose(): void {

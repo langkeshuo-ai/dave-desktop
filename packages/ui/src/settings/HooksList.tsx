@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { Anchor, Download, ShieldCheck } from "lucide-react";
-import type { Hook, PluginHookDetail, PluginScope } from "@zcode/shared";
+import type { Hook, PluginHookDetail, PluginScope } from "@dave/shared";
 import { Badge } from "@/components/ui/badge.js";
 import { Button } from "@/components/ui/button.js";
 import { Switch } from "@/components/ui/switch.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useDaveIntl } from "@/i18n/IntlProvider.js";
 import { PluginInstallEmptyState } from "@/settings/PluginInstallEmptyState.js";
 import { PluginStoreAvatar } from "@/settings/PluginStoreAvatar.js";
 import type { StorePluginItem } from "@/settings/pluginStoreListing.js";
@@ -103,7 +103,7 @@ export function HooksList({
   installedEmptyTitle?: string;
   showInstalledSection?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   const groupedSections = groupHookSections(editableHooks, compatibilityHooks, pluginHooks);
   const sections: HookSection[] =
     showInstalledSection && editableHooks.length === 0
@@ -258,13 +258,13 @@ function ConfiguredHookRow({
   onEdit: (hook: Hook) => void;
   onTrust?: (hook: Hook) => Promise<void>;
   onToggle: (hook: Hook, enabled: boolean) => Promise<void>;
-  /** 上游/祖先 zcode.json 的只读工作区 Hook：不可编辑、不可 toggle，但仍可逐条 Trust。 */
+  /** 上游/祖先 dave.json 的只读工作区 Hook：不可编辑、不可 toggle，但仍可逐条 Trust。 */
   readOnly?: boolean;
   requiresTrust: boolean;
   trustActionAvailable: boolean;
   trusting: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   return (
     <HookItemFrame
       testId="configured-hook-row"
@@ -318,7 +318,7 @@ function CompatibilityHookRow({
   hook: Hook;
   onImport: (hook: Hook) => Promise<void>;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   return (
     <HookItemFrame
       actions={
@@ -334,7 +334,7 @@ function CompatibilityHookRow({
 }
 
 function PluginHookItem({ hook }: { hook: PluginHookRow }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useDaveIntl();
   return (
     <HookItemFrame testId="plugin-hook-row" pluginIconItem={hook.pluginIconItem}>
       <HookContent

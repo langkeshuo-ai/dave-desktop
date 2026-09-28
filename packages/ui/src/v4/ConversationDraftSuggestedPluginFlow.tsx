@@ -1,13 +1,13 @@
 import {
-  ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
-  type ZCodePluginsResolveSuggestedReferenceResult,
-} from "@zcode/shared";
+  DAVE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+  type DavePluginsResolveSuggestedReferenceResult,
+} from "@dave/shared";
 
 export interface DraftSuggestedPluginFlow {
   anchorItemId: string;
   operationId: string;
   plugin: { stableId: string; label: string };
-  result?: ZCodePluginsResolveSuggestedReferenceResult;
+  result?: DavePluginsResolveSuggestedReferenceResult;
   stage: "checking" | "missing" | "disabled" | "unavailable";
 }
 
@@ -39,12 +39,12 @@ export async function trackDraftSuggestedPluginOperation<T>(
 }
 
 export function resolveDraftSuggestedPluginFlowStage(
-  result: ZCodePluginsResolveSuggestedReferenceResult,
+  result: DavePluginsResolveSuggestedReferenceResult,
 ): DraftSuggestedPluginFlow["stage"] {
   const { status } = result;
   if (
     (status === "ready" || status === "disabled" || status === "missing") &&
-    (result.marketplace !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
+    (result.marketplace !== DAVE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
       result.sourceTrust !== "official" ||
       !result.pluginName)
   ) {

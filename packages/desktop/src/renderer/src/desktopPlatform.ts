@@ -1,5 +1,5 @@
-import { recordArmsCustomEventForE2E } from "@zcode/ui";
-import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
+import { recordArmsCustomEventForE2E } from "@dave/ui";
+import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@dave/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
 
@@ -10,157 +10,157 @@ export function createDesktopPlatform(options: {
     canSelectFilePath: true,
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
-    selectDirectory: () => window.zcode.selectDirectory(),
-    selectFile: () => window.zcode.selectFile(),
-    selectFiles: () => window.zcode.selectFiles?.() ?? Promise.resolve([]),
-    createTempTextAttachment: (payload) => window.zcode.createTempTextAttachment(payload),
-    onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
-    onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+    selectDirectory: () => window.dave.selectDirectory(),
+    selectFile: () => window.dave.selectFile(),
+    selectFiles: () => window.dave.selectFiles?.() ?? Promise.resolve([]),
+    createTempTextAttachment: (payload) => window.dave.createTempTextAttachment(payload),
+    onRemoteConnectionLog: (handler) => window.dave.onRemoteConnectionLog(handler),
+    onRemoteSessionClosed: (handler) => window.dave.onRemoteSessionClosed(handler),
     onBotRemoteWorkspaceReconnected: (handler) =>
-      window.zcode.onBotRemoteWorkspaceReconnected(handler),
+      window.dave.onBotRemoteWorkspaceReconnected(handler),
     activateOrSetWorkspace: (path) =>
-      window.zcode.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
+      window.dave.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
     connectRemote: (remoteOptions, requestId, context) =>
-      window.zcode.connectRemote(remoteOptions, requestId, context),
+      window.dave.connectRemote(remoteOptions, requestId, context),
     cancelPendingRemoteConnection: (requestId) =>
-      window.zcode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
+      window.dave.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
     bindRemoteWorkspaceSessionContext: (context) =>
-      window.zcode.bindRemoteWorkspaceSessionContext?.(context) ?? Promise.resolve(),
-    disposeRemoteSession: (sessionId) => window.zcode.disposeRemoteSession(sessionId),
-    isDockerAvailable: () => window.zcode.isDockerAvailable(),
-    listWSLDistros: () => window.zcode.listWSLDistros(),
-    listDockerContainers: () => window.zcode.listDockerContainers(),
-    listSSHConfigAliases: () => window.zcode.listSSHConfigAliases(),
-    loadMcpFromUserDirectory: (payload) => window.zcode.loadMcpFromUserDirectory(payload),
-    saveMcpToUserDirectory: (payload) => window.zcode.saveMcpToUserDirectory(payload),
-    migrateLegacyCommonMcp: (payload) => window.zcode.migrateLegacyCommonMcp(payload),
-    openExternal: (url) => window.zcode.openExternal(url),
-    openFeedback: () => window.zcode.executeDesktopCommand(DesktopCommandIds.OpenFeedback),
-    openCommunity: () => window.zcode.executeDesktopCommand(DesktopCommandIds.OpenCommunity),
-    canOpenCommunity: (locale) => window.zcode.canOpenCommunity(locale),
-    openInFileManager: (path) => window.zcode.openInFileManager(path),
-    openExternalFile: (path) => window.zcode.openExternalFile(path),
-    openCuaPermissionOnboarding: window.zcode.openCuaPermissionOnboarding
+      window.dave.bindRemoteWorkspaceSessionContext?.(context) ?? Promise.resolve(),
+    disposeRemoteSession: (sessionId) => window.dave.disposeRemoteSession(sessionId),
+    isDockerAvailable: () => window.dave.isDockerAvailable(),
+    listWSLDistros: () => window.dave.listWSLDistros(),
+    listDockerContainers: () => window.dave.listDockerContainers(),
+    listSSHConfigAliases: () => window.dave.listSSHConfigAliases(),
+    loadMcpFromUserDirectory: (payload) => window.dave.loadMcpFromUserDirectory(payload),
+    saveMcpToUserDirectory: (payload) => window.dave.saveMcpToUserDirectory(payload),
+    migrateLegacyCommonMcp: (payload) => window.dave.migrateLegacyCommonMcp(payload),
+    openExternal: (url) => window.dave.openExternal(url),
+    openFeedback: () => window.dave.executeDesktopCommand(DesktopCommandIds.OpenFeedback),
+    openCommunity: () => window.dave.executeDesktopCommand(DesktopCommandIds.OpenCommunity),
+    canOpenCommunity: (locale) => window.dave.canOpenCommunity(locale),
+    openInFileManager: (path) => window.dave.openInFileManager(path),
+    openExternalFile: (path) => window.dave.openExternalFile(path),
+    openCuaPermissionOnboarding: window.dave.openCuaPermissionOnboarding
       ? (permissionOptions) =>
-          window.zcode.openCuaPermissionOnboarding?.(permissionOptions) ??
+          window.dave.openCuaPermissionOnboarding?.(permissionOptions) ??
           Promise.resolve({ success: false, error: "not_supported" })
       : undefined,
-    prepareCuaHelperPermissionDrag: window.zcode.prepareCuaHelperPermissionDrag
+    prepareCuaHelperPermissionDrag: window.dave.prepareCuaHelperPermissionDrag
       ? () =>
-          window.zcode.prepareCuaHelperPermissionDrag?.() ??
+          window.dave.prepareCuaHelperPermissionDrag?.() ??
           Promise.resolve({ success: false, error: "not_supported" })
       : undefined,
-    startCuaHelperPermissionDrag: window.zcode.startCuaHelperPermissionDrag
-      ? () => window.zcode.startCuaHelperPermissionDrag?.()
+    startCuaHelperPermissionDrag: window.dave.startCuaHelperPermissionDrag
+      ? () => window.dave.startCuaHelperPermissionDrag?.()
       : undefined,
-    registerOAuthState: (payload) => window.zcode.registerOAuthState(payload),
-    onOAuthCallback: (callback) => window.zcode.onOAuthCallback(callback),
-    onPaymentCallback: (callback) => window.zcode.onPaymentCallback(callback),
-    onShareImport: (callback) => window.zcode.onShareImport?.(callback) ?? (() => {}),
-    notifyRendererReady: () => window.zcode.notifyRendererReady(),
-    reportTelemetryEvent: (payload) => window.zcode.reportTelemetryEvent(payload),
+    registerOAuthState: (payload) => window.dave.registerOAuthState(payload),
+    onOAuthCallback: (callback) => window.dave.onOAuthCallback(callback),
+    onPaymentCallback: (callback) => window.dave.onPaymentCallback(callback),
+    onShareImport: (callback) => window.dave.onShareImport?.(callback) ?? (() => {}),
+    notifyRendererReady: () => window.dave.notifyRendererReady(),
+    reportTelemetryEvent: (payload) => window.dave.reportTelemetryEvent(payload),
     reportArmsCustomEvent: (payload) => {
       recordArmsCustomEventForE2E(payload);
-      return window.zcode.reportArmsCustomEvent(payload);
+      return window.dave.reportArmsCustomEvent(payload);
     },
-    getRendererActionTraceConfig: window.zcode.getRendererActionTraceConfig
-      ? () => window.zcode.getRendererActionTraceConfig!()
+    getRendererActionTraceConfig: window.dave.getRendererActionTraceConfig
+      ? () => window.dave.getRendererActionTraceConfig!()
       : undefined,
-    onRendererActionTraceConfigChanged: window.zcode.onRendererActionTraceConfigChanged
-      ? (callback) => window.zcode.onRendererActionTraceConfigChanged!(callback)
+    onRendererActionTraceConfigChanged: window.dave.onRendererActionTraceConfigChanged
+      ? (callback) => window.dave.onRendererActionTraceConfigChanged!(callback)
       : undefined,
-    reportLocalTtftBatch: (batch) => window.zcode.reportLocalTtftBatch(batch),
-    reportRendererActionTraceBatch: window.zcode.reportRendererActionTraceBatch
-      ? (batch) => window.zcode.reportRendererActionTraceBatch!(batch)
+    reportLocalTtftBatch: (batch) => window.dave.reportLocalTtftBatch(batch),
+    reportRendererActionTraceBatch: window.dave.reportRendererActionTraceBatch
+      ? (batch) => window.dave.reportRendererActionTraceBatch!(batch)
       : undefined,
-    reportRendererHeapSample: window.zcode.reportRendererHeapSample
-      ? (sample) => window.zcode.reportRendererHeapSample!(sample)
+    reportRendererHeapSample: window.dave.reportRendererHeapSample
+      ? (sample) => window.dave.reportRendererHeapSample!(sample)
       : undefined,
-    showTaskNotification: (payload) => window.zcode.showTaskNotification(payload),
-    syncWindowTabs: (paths) => window.zcode.syncWindowTabs(paths),
-    syncWindowUnreadCount: (count) => window.zcode.syncWindowUnreadCount(count),
-    syncActiveTaskSession: (sessionId) => window.zcode.syncActiveTaskSession(sessionId),
-    syncAppSettings: (patch) => window.zcode.syncAppSettings?.(patch),
-    setShortcutRecordingActive: (active) => window.zcode.setShortcutRecordingActive?.(active),
-    onFocusTab: (handler) => window.zcode.onFocusTab(handler),
-    onNewTab: (handler) => window.zcode.onNewTab(handler),
+    showTaskNotification: (payload) => window.dave.showTaskNotification(payload),
+    syncWindowTabs: (paths) => window.dave.syncWindowTabs(paths),
+    syncWindowUnreadCount: (count) => window.dave.syncWindowUnreadCount(count),
+    syncActiveTaskSession: (sessionId) => window.dave.syncActiveTaskSession(sessionId),
+    syncAppSettings: (patch) => window.dave.syncAppSettings?.(patch),
+    setShortcutRecordingActive: (active) => window.dave.setShortcutRecordingActive?.(active),
+    onFocusTab: (handler) => window.dave.onFocusTab(handler),
+    onNewTab: (handler) => window.dave.onNewTab(handler),
     onCloseActiveContextRequest: (handler) =>
-      window.zcode.onCloseActiveContextRequest?.(handler) ?? (() => {}),
-    onOpenBrowserUrl: (handler) => window.zcode.onOpenBrowserUrl?.(handler) ?? (() => {}),
+      window.dave.onCloseActiveContextRequest?.(handler) ?? (() => {}),
+    onOpenBrowserUrl: (handler) => window.dave.onOpenBrowserUrl?.(handler) ?? (() => {}),
     onBrowserViewScreenshotSurfacePrepare: (handler) =>
-      window.zcode.onBrowserViewScreenshotSurfacePrepare?.(handler) ?? (() => {}),
+      window.dave.onBrowserViewScreenshotSurfacePrepare?.(handler) ?? (() => {}),
     onBrowserViewScreenshotSurfaceRelease: (handler) =>
-      window.zcode.onBrowserViewScreenshotSurfaceRelease?.(handler) ?? (() => {}),
+      window.dave.onBrowserViewScreenshotSurfaceRelease?.(handler) ?? (() => {}),
     browserViewScreenshotSurfaceReady: (payload) =>
-      window.zcode.browserViewScreenshotSurfaceReady?.(payload),
+      window.dave.browserViewScreenshotSurfaceReady?.(payload),
     ...desktopBrowserPlatformBridge,
-    onNewTask: (handler) => window.zcode.onNewTask(handler),
+    onNewTask: (handler) => window.dave.onNewTask(handler),
     onOpenWorkspace: (handler) => {
       // 开发态或升级后的旧窗口可能仍运行未暴露 onOpenWorkspace 的 preload，
       // renderer 直接调用会在启动时崩溃。这里和 activateOrSetWorkspace 一样做兼容兜底，
       // 缺少该 bridge 时只禁用原生菜单回调，不影响应用继续打开。
-      return window.zcode.onOpenWorkspace?.(handler) ?? (() => {});
+      return window.dave.onOpenWorkspace?.(handler) ?? (() => {});
     },
-    onOpenWorkspacePath: (handler) => window.zcode.onOpenWorkspacePath?.(handler) ?? (() => {}),
-    onOpenFeedbackDialog: (handler) => window.zcode.onOpenFeedbackDialog?.(handler) ?? (() => {}),
-    onOpenTicketsPanel: (handler) => window.zcode.onOpenTicketsPanel?.(handler) ?? (() => {}),
-    onWindowFullscreenChanged: (handler) => window.zcode.onWindowFullscreenChanged(handler),
-    getDesktopWindowChromeState: window.zcode.getDesktopWindowChromeState
-      ? () => window.zcode.getDesktopWindowChromeState!()
+    onOpenWorkspacePath: (handler) => window.dave.onOpenWorkspacePath?.(handler) ?? (() => {}),
+    onOpenFeedbackDialog: (handler) => window.dave.onOpenFeedbackDialog?.(handler) ?? (() => {}),
+    onOpenTicketsPanel: (handler) => window.dave.onOpenTicketsPanel?.(handler) ?? (() => {}),
+    onWindowFullscreenChanged: (handler) => window.dave.onWindowFullscreenChanged(handler),
+    getDesktopWindowChromeState: window.dave.getDesktopWindowChromeState
+      ? () => window.dave.getDesktopWindowChromeState!()
       : undefined,
-    onDesktopWindowChromeStateChanged: window.zcode.onDesktopWindowChromeStateChanged
-      ? (handler) => window.zcode.onDesktopWindowChromeStateChanged!(handler)
+    onDesktopWindowChromeStateChanged: window.dave.onDesktopWindowChromeStateChanged
+      ? (handler) => window.dave.onDesktopWindowChromeStateChanged!(handler)
       : undefined,
-    getWindowControlsOverlayMetrics: () => window.zcode.getWindowControlsOverlayMetrics?.() ?? null,
+    getWindowControlsOverlayMetrics: () => window.dave.getWindowControlsOverlayMetrics?.() ?? null,
     onWindowControlsOverlayChanged: (handler) =>
-      window.zcode.onWindowControlsOverlayChanged?.(handler) ?? (() => {}),
+      window.dave.onWindowControlsOverlayChanged?.(handler) ?? (() => {}),
     getDesktopZoomLevel: () =>
-      window.zcode.getDesktopZoomLevel?.() ?? Promise.resolve({ zoomLevel: 0 }),
+      window.dave.getDesktopZoomLevel?.() ?? Promise.resolve({ zoomLevel: 0 }),
     onDesktopZoomLevelChanged: (handler) =>
-      window.zcode.onDesktopZoomLevelChanged?.(handler) ?? (() => {}),
-    onTaskNotificationClick: (handler) => window.zcode.onTaskNotificationClick(handler),
-    exportLogs: () => window.zcode.exportLogs(),
+      window.dave.onDesktopZoomLevelChanged?.(handler) ?? (() => {}),
+    onTaskNotificationClick: (handler) => window.dave.onTaskNotificationClick(handler),
+    exportLogs: () => window.dave.exportLogs(),
     captureWindowScreenshot: () =>
-      window.zcode.captureWindowScreenshot?.() ?? Promise.resolve(null),
-    onUpdateReady: (callback) => window.zcode.onUpdateReady(callback),
-    onUpdateCheckResult: (callback) => window.zcode.onUpdateCheckResult(callback),
-    onUpdateStateChanged: (callback) => window.zcode.onUpdateStateChanged?.(callback) ?? (() => {}),
+      window.dave.captureWindowScreenshot?.() ?? Promise.resolve(null),
+    onUpdateReady: (callback) => window.dave.onUpdateReady(callback),
+    onUpdateCheckResult: (callback) => window.dave.onUpdateCheckResult(callback),
+    onUpdateStateChanged: (callback) => window.dave.onUpdateStateChanged?.(callback) ?? (() => {}),
     getUpdateState: () =>
-      window.zcode.getUpdateState?.() ?? Promise.resolve({ kind: "idle", enabled: true }),
-    downloadUpdate: () => window.zcode.downloadUpdate?.() ?? Promise.resolve(),
-    cancelUpdateDownload: () => window.zcode.cancelUpdateDownload?.() ?? Promise.resolve(),
-    openUpdateStatusWindow: () => window.zcode.openUpdateStatusWindow?.() ?? Promise.resolve(),
+      window.dave.getUpdateState?.() ?? Promise.resolve({ kind: "idle", enabled: true }),
+    downloadUpdate: () => window.dave.downloadUpdate?.() ?? Promise.resolve(),
+    cancelUpdateDownload: () => window.dave.cancelUpdateDownload?.() ?? Promise.resolve(),
+    openUpdateStatusWindow: () => window.dave.openUpdateStatusWindow?.() ?? Promise.resolve(),
     getAutoUpdatePreferences: () =>
-      window.zcode.getAutoUpdatePreferences?.() ??
+      window.dave.getAutoUpdatePreferences?.() ??
       Promise.resolve({ autoDownloadAndInstallUpdates: false }),
     setAutoDownloadAndInstallUpdates: (enabled) =>
-      window.zcode.setAutoDownloadAndInstallUpdates?.(enabled) ?? Promise.resolve(),
+      window.dave.setAutoDownloadAndInstallUpdates?.(enabled) ?? Promise.resolve(),
     getDesktopSessionActivity: () =>
-      window.zcode.getDesktopSessionActivity?.() ??
+      window.dave.getDesktopSessionActivity?.() ??
       Promise.resolve({ runningAgentSessionCount: 0 }),
-    getZCodeStdioTapDevState: () =>
-      window.zcode.getZCodeStdioTapDevState?.() ??
+    getDaveStdioTapDevState: () =>
+      window.dave.getDaveStdioTapDevState?.() ??
       Promise.resolve({ enabled: false, visible: false, logDir: "", statePath: "" }),
-    onSettingsChanged: (callback) => window.zcode.onSettingsChanged?.(callback) ?? (() => {}),
+    onSettingsChanged: (callback) => window.dave.onSettingsChanged?.(callback) ?? (() => {}),
     onApplicationLocaleChanged: (callback) =>
-      window.zcode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
-    onPostUpdateReleaseNotes: (callback) => window.zcode.onPostUpdateReleaseNotes(callback),
+      window.dave.onApplicationLocaleChanged?.(callback) ?? (() => {}),
+    onPostUpdateReleaseNotes: (callback) => window.dave.onPostUpdateReleaseNotes(callback),
     acknowledgePostUpdateReleaseNotes: (version) =>
-      window.zcode.acknowledgePostUpdateReleaseNotes(version),
-    skipUpdateVersion: (version) => window.zcode.skipUpdateVersion?.(version) ?? Promise.resolve(),
-    quitAndInstallUpdate: () => window.zcode.quitAndInstallUpdate(),
-    getInstalledEditors: () => window.zcode.getInstalledEditors(),
+      window.dave.acknowledgePostUpdateReleaseNotes(version),
+    skipUpdateVersion: (version) => window.dave.skipUpdateVersion?.(version) ?? Promise.resolve(),
+    quitAndInstallUpdate: () => window.dave.quitAndInstallUpdate(),
+    getInstalledEditors: () => window.dave.getInstalledEditors(),
     getApplicationIcon: (bundleId) =>
-      window.zcode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
+      window.dave.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>
-      window.zcode.openInEditor(editorId, path, editorOptions),
-    executeDesktopCommand: (command) => window.zcode.executeDesktopCommand(command),
-    setApplicationLocale: (locale) => window.zcode.setApplicationLocale(locale),
+      window.dave.openInEditor(editorId, path, editorOptions),
+    executeDesktopCommand: (command) => window.dave.executeDesktopCommand(command),
+    setApplicationLocale: (locale) => window.dave.setApplicationLocale(locale),
     getSystemLocale: () =>
-      window.zcode.getSystemLocale?.() ??
+      window.dave.getSystemLocale?.() ??
       Promise.resolve(navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US"),
-    setTitleBarTheme: (theme) => window.zcode.setTitleBarTheme(theme),
+    setTitleBarTheme: (theme) => window.dave.setTitleBarTheme(theme),
     getDeviceId: () =>
-      (window as Window & { __ZCODE_DEVICE_ID__?: string }).__ZCODE_DEVICE_ID__ ?? "",
+      (window as Window & { __DAVE_DEVICE_ID__?: string }).__DAVE_DEVICE_ID__ ?? "",
   };
 }

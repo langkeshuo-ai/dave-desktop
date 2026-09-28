@@ -1,4 +1,4 @@
-const ZCODE_PROCESS_PREFIX = "zcode";
+const DAVE_PROCESS_PREFIX = "dave";
 const MAX_PROCESS_NAME_SEGMENT_LENGTH = 24;
 
 function sanitizeProcessNameSegment(value: string | null | undefined): string | null {
@@ -18,11 +18,11 @@ function sanitizeProcessNameSegment(value: string | null | undefined): string | 
   return normalized.slice(0, MAX_PROCESS_NAME_SEGMENT_LENGTH);
 }
 
-function joinZCodeProcessName(...segments: Array<string | null | undefined>): string {
+function joinDaveProcessName(...segments: Array<string | null | undefined>): string {
   const sanitizedSegments = segments
     .map((segment) => sanitizeProcessNameSegment(segment))
     .filter((segment): segment is string => Boolean(segment));
-  return [ZCODE_PROCESS_PREFIX, ...sanitizedSegments].join("-");
+  return [DAVE_PROCESS_PREFIX, ...sanitizedSegments].join("-");
 }
 
 function pickWorkspaceTag(workspacePath: string | null | undefined): string | undefined {
@@ -35,44 +35,44 @@ function pickWorkspaceTag(workspacePath: string | null | undefined): string | un
   return parts.at(-1) ?? trimmedPath;
 }
 
-export function formatZCodeMainProcessName(): string {
-  return joinZCodeProcessName("main");
+export function formatDaveMainProcessName(): string {
+  return joinDaveProcessName("main");
 }
 
-export function formatZCodeGpuProcessName(): string {
-  return joinZCodeProcessName("gpu");
+export function formatDaveGpuProcessName(): string {
+  return joinDaveProcessName("gpu");
 }
 
-export function formatZCodeHostProcessName(label?: string): string {
-  return joinZCodeProcessName("host", label);
+export function formatDaveHostProcessName(label?: string): string {
+  return joinDaveProcessName("host", label);
 }
 
-export function formatZCodeRendererProcessName(windowTitle?: string): string {
+export function formatDaveRendererProcessName(windowTitle?: string): string {
   const normalizedTitle = windowTitle?.trim();
-  if (!normalizedTitle || normalizedTitle === "ZCode") {
-    return joinZCodeProcessName("renderer", "main");
+  if (!normalizedTitle || normalizedTitle === "Dave") {
+    return joinDaveProcessName("renderer", "main");
   }
 
   if (normalizedTitle === "Resource Manager") {
-    return joinZCodeProcessName("renderer", "resource-manager");
+    return joinDaveProcessName("renderer", "resource-manager");
   }
 
-  const remoteWindowPrefix = "ZCode - ";
+  const remoteWindowPrefix = "Dave - ";
   if (normalizedTitle.startsWith(remoteWindowPrefix)) {
-    return joinZCodeProcessName(
+    return joinDaveProcessName(
       "renderer",
       "remote",
       normalizedTitle.slice(remoteWindowPrefix.length),
     );
   }
 
-  return joinZCodeProcessName("renderer", normalizedTitle);
+  return joinDaveProcessName("renderer", normalizedTitle);
 }
 
-export function formatZCodeAgentProcessName(provider: string, workspacePath?: string): string {
-  return joinZCodeProcessName("agent", provider, pickWorkspaceTag(workspacePath));
+export function formatDaveAgentProcessName(provider: string, workspacePath?: string): string {
+  return joinDaveProcessName("agent", provider, pickWorkspaceTag(workspacePath));
 }
 
-export function formatZCodeUtilityProcessName(name?: string, type = "utility"): string {
-  return joinZCodeProcessName(type, name);
+export function formatDaveUtilityProcessName(name?: string, type = "utility"): string {
+  return joinDaveProcessName(type, name);
 }

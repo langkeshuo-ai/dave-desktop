@@ -1,5 +1,5 @@
-import type { IServiceAccessor } from "@zcode/services";
-import { createUuid } from "@zcode/shared";
+import type { IServiceAccessor } from "@dave/services";
+import { createUuid } from "@dave/shared";
 
 export interface TerminalSessionDescriptor {
   id: string;

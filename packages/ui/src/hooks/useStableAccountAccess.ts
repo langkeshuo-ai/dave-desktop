@@ -1,7 +1,7 @@
 import { useRef } from "react";
-import type { ZCodeAccountAccess, ZCodeProviderAccountAccess } from "@zcode/shared";
+import type { DaveAccountAccess, DaveProviderAccountAccess } from "@dave/shared";
 
-type StableAccountAccess = ZCodeProviderAccountAccess | ZCodeAccountAccess;
+type StableAccountAccess = DaveProviderAccountAccess | DaveAccountAccess;
 
 /** Schema 解析会为同一份 Account Access 生成新对象；hook 依赖必须按配置值稳定。 */
 export function useStableAccountAccess(
