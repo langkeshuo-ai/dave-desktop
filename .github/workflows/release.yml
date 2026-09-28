@@ -47,7 +47,11 @@ jobs:
 
   mac-x64:
     name: Dave macOS (x64)
-    runs-on: macos-13
+    # Cross-build x64 on an Apple Silicon runner: Intel (macos-13) runners have
+    # limited capacity and queue for a long time. electron-builder downloads the
+    # x64 Electron and x64 prebuilt node-pty/tools; the window-bounds helper is
+    # built as a universal binary anyway.
+    runs-on: macos-15
     timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
