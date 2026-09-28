@@ -1,0 +1,128 @@
+name: Release Dave
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "构建完成后发布到 GitHub Releases（取消勾选则只保留 Actions 产物）"
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "dave-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  mac-arm64:
+    name: Dave macOS (arm64)
+    runs-on: macos-15
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Package Dave (macOS arm64)
+        env:
+          NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+        run: node packages/desktop/scripts/bundle.mjs --os mac --arch arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dave-mac-arm64
+          if-no-files-found: error
+          path: |
+            packages/desktop/dist/**/*.dmg
+            packages/desktop/dist/**/*.zip
+
+  mac-x64:
+    name: Dave macOS (x64)
+    runs-on: macos-13
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Package Dave (macOS x64)
+        env:
+          NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+        run: node packages/desktop/scripts/bundle.mjs --os mac --arch x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dave-mac-x64
+          if-no-files-found: error
+          path: |
+            packages/desktop/dist/**/*.dmg
+            packages/desktop/dist/**/*.zip
+
+  windows-x64:
+    name: Dave Windows (x64)
+    runs-on: windows-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Package Dave (Windows x64)
+        env:
+          NPM_CONFIG_ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
+          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+        run: node packages/desktop/scripts/bundle.mjs --os win --arch x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dave-windows-x64
+          if-no-files-found: error
+          path: |
+            packages/desktop/dist/**/*.exe
+
+  release:
+    name: Publish GitHub Release
+    needs: [mac-arm64, mac-x64, windows-x64]
+    if: github.event_name == 'push' || github.event.inputs.publish_release != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Resolve version
+        id: ver
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: List packaged files
+        run: find artifacts -type f
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dave-v${{ steps.ver.outputs.v }}
+          name: Dave v${{ steps.ver.outputs.v }}
+          generate_release_notes: true
+          files: artifacts/**/*
